@@ -3,74 +3,20 @@ import { useParams, useNavigate } from 'react-router';
 import { ShoppingBag, ChevronLeft, Plus, Minus, Search, X, BellRing, Receipt, Utensils, Coffee, LayoutGrid, Droplets, Star, User, Gift, ChevronRight, MessageCircle, CreditCard, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { useMenu, type MenuItem } from '@/hooks/useMenu';
+import { createOrder } from '@/lib/api/order';
 
-type MenuItem = {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  desc: string;
-  image: string;
-  badge: string;
-  options?: {
-    name: string;
-    choices: { name: string; price: number }[];
-    required: boolean;
-  }[];
+const CATEGORY_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  '브런치': Utensils,
+  '커피': Coffee,
+  '음료': Droplets,
+  '디저트': Star,
 };
 
-const MENU_ITEMS: MenuItem[] = [
-  { 
-    id: '1', name: '아보카도 쉬림프 오픈 샌드위치', price: 14500, category: '브런치', desc: '바삭한 사워도우에 신선한 아보카도 과카몰리와 그릴드 쉬림프, 수란을 얹은 시그니처 브런치', image: 'https://images.unsplash.com/photo-1593903971086-da1ad90da20b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhdm9jYWRvJTIwdG9hc3QlMjBicnVuY2h8ZW58MXx8fHwxNzczMDYwMDIyfDA&ixlib=rb-4.1.0&q=80&w=1080', badge: 'BEST',
-    options: [
-      { name: '빵 변경', choices: [{ name: '사워도우 (기본)', price: 0 }, { name: '호밀빵', price: 1000 }, { name: '글루텐프리', price: 2000 }], required: true },
-      { name: '토핑 추가', choices: [{ name: '수란 추가', price: 1500 }, { name: '베이컨 추가', price: 2000 }, { name: '쉬림프 추가', price: 3500 }], required: false }
-    ]
-  },
-  { 
-    id: '2', name: '시그니처 트러플 크림 파스타', price: 18000, category: '브런치', desc: '진한 3가지 버섯 크림소스와 생트러플 오일이 들어간 꾸덕한 파스타', image: 'https://images.unsplash.com/photo-1625331725309-83e4f3c1373b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkZWxpY2lvdXMlMjBidXJnZXJ8ZW58MXx8fHwxNzcyOTgyOTM5fDA&ixlib=rb-4.1.0&q=80&w=1080', badge: '추천',
-    options: [
-      { name: '면 변경', choices: [{ name: '스파게티 (기본)', price: 0 }, { name: '리가토니', price: 0 }, { name: '펜네', price: 0 }], required: true },
-      { name: '맵기 조절', choices: [{ name: '기본 (안맵게)', price: 0 }, { name: '약간 맵게', price: 0 }], required: true }
-    ]
-  },
-  { 
-    id: '3', name: '프레시 리코타 샐러드 볼', price: 12000, category: '브런치', desc: '매일 아침 직접 만드는 수제 리코타 치즈와 제철 과일, 구운 견과류', image: 'https://images.unsplash.com/photo-1620019989479-d52fcedd99fe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMHNhbGFkJTIwYm93bHxlbnwxfHx8fDE3NzMwMDk3OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080', badge: '' 
-  },
-  { 
-    id: '4', name: '아메리카노', price: 4500, category: '커피', desc: '2가지 원두 중 선택 가능 (고소한맛/산미있는맛)', image: 'https://images.unsplash.com/photo-1681026859292-58c3b2041bfd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpY2VkJTIwYW1lcmljYW5vJTIwY29mZmVlfGVufDF8fHx8MTc3Mjk3OTM1MHww&ixlib=rb-4.1.0&q=80&w=1080', badge: '인기',
-    options: [
-      { name: '온도', choices: [{ name: 'HOT', price: 0 }, { name: 'ICE', price: 0 }], required: true },
-      { name: '원두 선택', choices: [{ name: '너티 블렌드 (고소)', price: 0 }, { name: '베리 블렌드 (산미)', price: 0 }, { name: '디카페인', price: 500 }], required: true },
-      { name: '사이즈 업', choices: [{ name: '기본 (Tall)', price: 0 }, { name: '사이즈업 (+1샷)', price: 1000 }], required: true },
-    ]
-  },
-  { 
-    id: '5', name: '크림 바닐라 라떼', price: 6000, category: '커피', desc: '수제 바닐라 빈 시럽과 쫀쫀한 크림이 올라간 시그니처 커피', image: 'https://images.unsplash.com/photo-1669162364316-a74b2d661d1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXR0ZSUyMGFydCUyMGNvZmZlZXxlbnwxfHx8fDE3NzI5ODg1OTh8MA&ixlib=rb-4.1.0&q=80&w=1080', badge: '',
-    options: [
-      { name: '온도', choices: [{ name: 'HOT', price: 0 }, { name: 'ICE', price: 0 }], required: true },
-      { name: '우유 변경', choices: [{ name: '일반 우유', price: 0 }, { name: '오트 우유', price: 800 }, { name: '락토프리', price: 500 }], required: true },
-    ]
-  },
-  { 
-    id: '6', name: '리얼 자몽 에이드', price: 6500, category: '음료', desc: '통자몽을 그대로 착즙해 상큼함이 터지는 스파클링 에이드', image: 'https://images.unsplash.com/photo-1717378486722-2f4ae7ccbc92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmFwZWZydWl0JTIwYWRlJTIwY29sZCUyMGRyaW5rfGVufDF8fHx8MTc3MzA4MTQ5MXww&ixlib=rb-4.1.0&q=80&w=1080', badge: 'NEW' 
-  },
-  { 
-    id: '7', name: '브라운치즈 크로플', price: 8500, category: '디저트', desc: '프랑스산 버터로 구운 크로플에 하겐다즈 바닐라 아이스크림과 브라운 치즈', image: 'https://images.unsplash.com/photo-1635617210703-049ab025446e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjcm9mZmxlJTIwZGVzc2VydHxlbnwxfHx8fDE3NzMwODE0OTF8MA&ixlib=rb-4.1.0&q=80&w=1080', badge: '추천' 
-  },
-];
-
-const CATEGORIES = [
-  { id: '전체', icon: LayoutGrid },
-  { id: '브런치', icon: Utensils },
-  { id: '커피', icon: Coffee },
-  { id: '음료', icon: Droplets },
-  { id: '디저트', icon: Star }
-];
-
 export function CustomerMenu() {
-  const { id } = useParams();
+  const { storeSlug, tableId } = useParams();
   const navigate = useNavigate();
+  const { store, table, categories, items, loading, error } = useMenu(storeSlug, tableId);
   const [activeCategory, setActiveCategory] = useState('전체');
   const [cart, setCart] = useState<{ id: string, cartId: string, name: string, price: number, qty: number, options: string[], image: string }[]>([]);
   
@@ -105,7 +51,15 @@ export function CustomerMenu() {
     status: string;
   }>>([]);
 
-  const filteredItems = MENU_ITEMS.filter(item => 
+  const categoryTabs = [
+    { id: '전체', icon: LayoutGrid },
+    ...categories.map(cat => ({
+      id: cat.name,
+      icon: CATEGORY_ICON_MAP[cat.name] ?? LayoutGrid,
+    })),
+  ];
+
+  const filteredItems = items.filter(item =>
     activeCategory === '전체' ? true : item.category === activeCategory
   );
 
@@ -188,37 +142,57 @@ export function CustomerMenu() {
     }).filter(item => item.qty > 0));
   };
 
-  const handleOrder = () => {
-    if (totalItems === 0) return;
-    
-    const newOrder = {
-      id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
-      items: cart.map(item => ({
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-        options: item.options
-      })),
-      total: totalPrice,
-      time: new Date(),
-      status: '조리 대기중'
-    };
+  const handleOrder = async () => {
+    if (totalItems === 0 || !store || !table) return;
 
-    setOrderHistory(prev => [newOrder, ...prev]);
+    try {
+      const result = await createOrder({
+        storeId: store.id,
+        tableId: table.id,
+        items: cart.map(item => ({
+          menuItemId: item.id,
+          menuItemName: item.name,
+          unitPrice: item.price,
+          quantity: item.qty,
+          totalPrice: item.price * item.qty,
+          selectedOptions: item.options.map(opt => {
+            const [group, choice] = opt.split(': ');
+            return { group, choice, extra_price: 0 };
+          }),
+        })),
+      });
 
-    toast.success(`주문이 성공적으로 접수되었습니다! (${id}번 테이블)`, {
-      description: '주방으로 주문이 전달되었습니다.',
-      duration: 4000,
-    });
-    
-    if (user) {
-      const earnedPoints = Math.floor(totalPrice * 0.05);
-      setUser(prev => prev ? { ...prev, points: prev.points + earnedPoints } : null);
-      toast(`포인트 ${earnedPoints.toLocaleString()}P가 적립되었습니다.`, { icon: '✨' });
+      const newOrder = {
+        id: result.orderId,
+        items: cart.map(item => ({
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+          options: item.options
+        })),
+        total: totalPrice,
+        time: new Date(),
+        status: '조리 대기중'
+      };
+
+      setOrderHistory(prev => [newOrder, ...prev]);
+
+      toast.success(`주문이 성공적으로 접수되었습니다! (${table.table_number}번 테이블)`, {
+        description: '주방으로 주문이 전달되었습니다.',
+        duration: 4000,
+      });
+
+      if (user) {
+        const earnedPoints = Math.floor(totalPrice * 0.05);
+        setUser(prev => prev ? { ...prev, points: prev.points + earnedPoints } : null);
+        toast(`포인트 ${earnedPoints.toLocaleString()}P가 적립되었습니다.`, { icon: '✨' });
+      }
+
+      setCart([]);
+      setIsCartOpen(false);
+    } catch (err) {
+      toast.error('주문에 실패했습니다. 다시 시도해주세요.');
     }
-
-    setCart([]);
-    setIsCartOpen(false);
   };
 
   const handleCallStaff = (reason: string) => {
@@ -234,6 +208,9 @@ export function CustomerMenu() {
     setIsLoginOpen(false);
     toast.success('로그인이 완료되었습니다!');
   };
+
+  if (loading) return <div className="flex items-center justify-center h-screen">로딩 중...</div>;
+  if (error) return <div className="flex items-center justify-center h-screen text-red-500">오류가 발생했습니다</div>;
 
   return (
     <div className="min-h-screen bg-zinc-900 sm:bg-zinc-100 flex justify-center pb-0 sm:pb-28 font-sans">
@@ -269,7 +246,7 @@ export function CustomerMenu() {
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-center">
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 1, type: "spring" }} className="bg-orange-500/20 text-orange-400 font-bold px-6 py-2.5 rounded-full text-sm inline-flex items-center gap-2 mb-6 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> 테이블 {id}번 인식 완료
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> 테이블 {table?.table_number}번 인식 완료
                 </motion.div>
                 <h2 className="text-3xl font-black mb-3 tracking-tight">메뉴판을 준비하고 있어요</h2>
                 <p className="text-zinc-400 text-sm font-medium">잠시만 기다려주세요...</p>
@@ -318,7 +295,7 @@ export function CustomerMenu() {
 
           <div className="absolute bottom-6 left-6 z-10">
             <p className="text-white/80 text-sm font-bold mb-1.5 drop-shadow-md">{user ? `${user.name}님, 환영합니다! 지금 계신 곳은` : '환영합니다! 지금 계신 곳은'}</p>
-            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">테이블 {id} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
+            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">테이블 {table?.table_number} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
           </div>
         </div>
 
@@ -340,7 +317,7 @@ export function CustomerMenu() {
         <div className="flex-1 flex overflow-hidden bg-zinc-50">
           {/* Left Vertical Categories */}
           <div className="w-[84px] sm:w-[96px] bg-white border-r border-zinc-200 overflow-y-auto no-scrollbar shrink-0 flex flex-col z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-            {CATEGORIES.map(cat => {
+            {categoryTabs.map(cat => {
               const isActive = activeCategory === cat.id;
               const Icon = cat.icon;
               return (
