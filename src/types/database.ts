@@ -1,0 +1,625 @@
+// ============================================================
+// database.ts — TypeScript types generated from TableFlow schema v4
+// Keep in sync with supabase/migrations/20260315000001_initial_schema.sql
+// ============================================================
+
+// ============================================================
+// Enum types
+// ============================================================
+
+export type AlimtalkEvent =
+  | 'order_created'
+  | 'waiting_created'
+  | 'waiting_called'
+  | 'waiting_cancelled'
+
+export type MemberRole = 'owner' | 'manager' | 'staff'
+
+export type TableStatus = 'available' | 'occupied' | 'cleaning'
+
+export type ItemBadge = 'best' | 'recommended'
+
+export type OrderStatus =
+  | 'created'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'served'
+  | 'cancelled'
+
+export type PaymentStatus = 'unpaid' | 'paid' | 'failed' | 'refunded'
+
+export type PaymentMethod = 'card' | 'cash' | 'kakaopay' | 'naverpay'
+
+export type WaitingStatus =
+  | 'waiting'
+  | 'called'
+  | 'seated'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show'
+
+export type NotificationStatus = 'pending' | 'sent' | 'failed'
+
+export type NotificationProvider = 'kakao_alimtalk'
+
+// ============================================================
+// Table row types
+// ============================================================
+
+export interface StoreRow {
+  id: string
+  owner_id: string
+  name: string
+  slug: string
+  address: string | null
+  phone: string | null
+  logo_url: string | null
+  created_at: string
+}
+
+export interface StoreInsert {
+  id?: string
+  owner_id: string
+  name: string
+  slug: string
+  address?: string | null
+  phone?: string | null
+  logo_url?: string | null
+  created_at?: string
+}
+
+export interface StoreUpdate {
+  id?: string
+  owner_id?: string
+  name?: string
+  slug?: string
+  address?: string | null
+  phone?: string | null
+  logo_url?: string | null
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface StoreSettingsRow {
+  id: string
+  store_id: string
+  kakao_receiver_phone: string | null
+  alimtalk_enabled: boolean
+}
+
+export interface StoreSettingsInsert {
+  id?: string
+  store_id: string
+  kakao_receiver_phone?: string | null
+  alimtalk_enabled?: boolean
+}
+
+export interface StoreSettingsUpdate {
+  id?: string
+  store_id?: string
+  kakao_receiver_phone?: string | null
+  alimtalk_enabled?: boolean
+}
+
+// ------------------------------------------------------------
+
+export interface StoreQueueSequenceRow {
+  store_id: string
+  current_number: number
+}
+
+export interface StoreQueueSequenceInsert {
+  store_id: string
+  current_number?: number
+}
+
+export interface StoreQueueSequenceUpdate {
+  store_id?: string
+  current_number?: number
+}
+
+// ------------------------------------------------------------
+
+export interface PlatformAlimtalkTemplateRow {
+  id: string
+  event: AlimtalkEvent
+  template_code: string
+  template_body: string
+  is_active: boolean
+  updated_at: string
+}
+
+export interface PlatformAlimtalkTemplateInsert {
+  id?: string
+  event: AlimtalkEvent
+  template_code: string
+  template_body: string
+  is_active?: boolean
+  updated_at?: string
+}
+
+export interface PlatformAlimtalkTemplateUpdate {
+  id?: string
+  event?: AlimtalkEvent
+  template_code?: string
+  template_body?: string
+  is_active?: boolean
+  updated_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface StoreMemberRow {
+  id: string
+  store_id: string
+  user_id: string
+  role: MemberRole
+  created_at: string
+}
+
+export interface StoreMemberInsert {
+  id?: string
+  store_id: string
+  user_id: string
+  role?: MemberRole
+  created_at?: string
+}
+
+export interface StoreMemberUpdate {
+  id?: string
+  store_id?: string
+  user_id?: string
+  role?: MemberRole
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface TableRow {
+  id: string
+  store_id: string
+  table_number: number
+  name: string | null
+  capacity: number | null
+  status: TableStatus
+  qr_token: string
+  created_at: string
+}
+
+export interface TableInsert {
+  id?: string
+  store_id: string
+  table_number: number
+  name?: string | null
+  capacity?: number | null
+  status?: TableStatus
+  qr_token?: string
+  created_at?: string
+}
+
+export interface TableUpdate {
+  id?: string
+  store_id?: string
+  table_number?: number
+  name?: string | null
+  capacity?: number | null
+  status?: TableStatus
+  qr_token?: string
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface MenuCategoryRow {
+  id: string
+  store_id: string
+  name: string
+  sort_order: number
+  created_at: string
+}
+
+export interface MenuCategoryInsert {
+  id?: string
+  store_id: string
+  name: string
+  sort_order?: number
+  created_at?: string
+}
+
+export interface MenuCategoryUpdate {
+  id?: string
+  store_id?: string
+  name?: string
+  sort_order?: number
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface MenuItemRow {
+  id: string
+  store_id: string
+  category_id: string
+  name: string
+  description: string | null
+  price: number
+  image_url: string | null
+  badge: ItemBadge | null
+  is_available: boolean
+  is_deleted: boolean
+  deleted_at: string | null
+  sort_order: number
+  created_at: string
+}
+
+export interface MenuItemInsert {
+  id?: string
+  store_id: string
+  category_id: string
+  name: string
+  description?: string | null
+  price: number
+  image_url?: string | null
+  badge?: ItemBadge | null
+  is_available?: boolean
+  is_deleted?: boolean
+  deleted_at?: string | null
+  sort_order?: number
+  created_at?: string
+}
+
+export interface MenuItemUpdate {
+  id?: string
+  store_id?: string
+  category_id?: string
+  name?: string
+  description?: string | null
+  price?: number
+  image_url?: string | null
+  badge?: ItemBadge | null
+  is_available?: boolean
+  is_deleted?: boolean
+  deleted_at?: string | null
+  sort_order?: number
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface OptionGroupRow {
+  id: string
+  store_id: string
+  menu_item_id: string
+  name: string
+  is_required: boolean
+  sort_order: number
+}
+
+export interface OptionGroupInsert {
+  id?: string
+  store_id: string
+  menu_item_id: string
+  name: string
+  is_required?: boolean
+  sort_order?: number
+}
+
+export interface OptionGroupUpdate {
+  id?: string
+  store_id?: string
+  menu_item_id?: string
+  name?: string
+  is_required?: boolean
+  sort_order?: number
+}
+
+// ------------------------------------------------------------
+
+export interface OptionChoiceRow {
+  id: string
+  store_id: string
+  option_group_id: string
+  name: string
+  extra_price: number
+  sort_order: number
+}
+
+export interface OptionChoiceInsert {
+  id?: string
+  store_id: string
+  option_group_id: string
+  name: string
+  extra_price?: number
+  sort_order?: number
+}
+
+export interface OptionChoiceUpdate {
+  id?: string
+  store_id?: string
+  option_group_id?: string
+  name?: string
+  extra_price?: number
+  sort_order?: number
+}
+
+// ------------------------------------------------------------
+
+export interface OrderRow {
+  id: string
+  store_id: string
+  table_id: string | null
+  status: OrderStatus
+  payment_status: PaymentStatus
+  payment_method: PaymentMethod | null
+  subtotal_price: number
+  discount_price: number
+  tax_price: number
+  total_price: number
+  guest_name: string | null
+  special_requests: string | null
+  created_at: string
+}
+
+export interface OrderInsert {
+  id?: string
+  store_id: string
+  table_id?: string | null
+  status?: OrderStatus
+  payment_status?: PaymentStatus
+  payment_method?: PaymentMethod | null
+  subtotal_price: number
+  discount_price?: number
+  tax_price?: number
+  total_price: number
+  guest_name?: string | null
+  special_requests?: string | null
+  created_at?: string
+}
+
+export interface OrderUpdate {
+  id?: string
+  store_id?: string
+  table_id?: string | null
+  status?: OrderStatus
+  payment_status?: PaymentStatus
+  payment_method?: PaymentMethod | null
+  subtotal_price?: number
+  discount_price?: number
+  tax_price?: number
+  total_price?: number
+  guest_name?: string | null
+  special_requests?: string | null
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface SelectedOption {
+  group: string
+  choice: string
+  extra_price: number
+}
+
+export interface OrderItemRow {
+  id: string
+  store_id: string
+  order_id: string
+  menu_item_id: string | null
+  menu_item_name: string
+  unit_price: number
+  quantity: number
+  total_price: number
+  selected_options: SelectedOption[] | null
+}
+
+export interface OrderItemInsert {
+  id?: string
+  store_id: string
+  order_id: string
+  menu_item_id?: string | null
+  menu_item_name: string
+  unit_price: number
+  quantity: number
+  total_price: number
+  selected_options?: SelectedOption[] | null
+}
+
+export interface OrderItemUpdate {
+  id?: string
+  store_id?: string
+  order_id?: string
+  menu_item_id?: string | null
+  menu_item_name?: string
+  unit_price?: number
+  quantity?: number
+  total_price?: number
+  selected_options?: SelectedOption[] | null
+}
+
+// ------------------------------------------------------------
+
+export interface WaitingRow {
+  id: string
+  store_id: string
+  queue_number: number
+  phone: string
+  party_size: number
+  status: WaitingStatus
+  table_id: string | null
+  called_at: string | null
+  seated_at: string | null
+  completed_at: string | null
+  created_at: string
+}
+
+export interface WaitingInsert {
+  id?: string
+  store_id: string
+  queue_number: number
+  phone: string
+  party_size: number
+  status?: WaitingStatus
+  table_id?: string | null
+  called_at?: string | null
+  seated_at?: string | null
+  completed_at?: string | null
+  created_at?: string
+}
+
+export interface WaitingUpdate {
+  id?: string
+  store_id?: string
+  queue_number?: number
+  phone?: string
+  party_size?: number
+  status?: WaitingStatus
+  table_id?: string | null
+  called_at?: string | null
+  seated_at?: string | null
+  completed_at?: string | null
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface WaitingNotificationRow {
+  id: string
+  store_id: string
+  waiting_id: string
+  event: AlimtalkEvent
+  status: NotificationStatus
+  provider: NotificationProvider
+  sent_at: string | null
+  error_msg: string | null
+  created_at: string
+}
+
+export interface WaitingNotificationInsert {
+  id?: string
+  store_id: string
+  waiting_id: string
+  event: AlimtalkEvent
+  status?: NotificationStatus
+  provider?: NotificationProvider
+  sent_at?: string | null
+  error_msg?: string | null
+  created_at?: string
+}
+
+export interface WaitingNotificationUpdate {
+  id?: string
+  store_id?: string
+  waiting_id?: string
+  event?: AlimtalkEvent
+  status?: NotificationStatus
+  provider?: NotificationProvider
+  sent_at?: string | null
+  error_msg?: string | null
+  created_at?: string
+}
+
+// ============================================================
+// Supabase Database type (for createClient<Database>)
+// ============================================================
+
+export interface Database {
+  public: {
+    Tables: {
+      stores: {
+        Row: StoreRow
+        Insert: StoreInsert
+        Update: StoreUpdate
+      }
+      store_settings: {
+        Row: StoreSettingsRow
+        Insert: StoreSettingsInsert
+        Update: StoreSettingsUpdate
+      }
+      store_queue_sequences: {
+        Row: StoreQueueSequenceRow
+        Insert: StoreQueueSequenceInsert
+        Update: StoreQueueSequenceUpdate
+      }
+      platform_alimtalk_templates: {
+        Row: PlatformAlimtalkTemplateRow
+        Insert: PlatformAlimtalkTemplateInsert
+        Update: PlatformAlimtalkTemplateUpdate
+      }
+      store_members: {
+        Row: StoreMemberRow
+        Insert: StoreMemberInsert
+        Update: StoreMemberUpdate
+      }
+      tables: {
+        Row: TableRow
+        Insert: TableInsert
+        Update: TableUpdate
+      }
+      menu_categories: {
+        Row: MenuCategoryRow
+        Insert: MenuCategoryInsert
+        Update: MenuCategoryUpdate
+      }
+      menu_items: {
+        Row: MenuItemRow
+        Insert: MenuItemInsert
+        Update: MenuItemUpdate
+      }
+      option_groups: {
+        Row: OptionGroupRow
+        Insert: OptionGroupInsert
+        Update: OptionGroupUpdate
+      }
+      option_choices: {
+        Row: OptionChoiceRow
+        Insert: OptionChoiceInsert
+        Update: OptionChoiceUpdate
+      }
+      orders: {
+        Row: OrderRow
+        Insert: OrderInsert
+        Update: OrderUpdate
+      }
+      order_items: {
+        Row: OrderItemRow
+        Insert: OrderItemInsert
+        Update: OrderItemUpdate
+      }
+      waitings: {
+        Row: WaitingRow
+        Insert: WaitingInsert
+        Update: WaitingUpdate
+      }
+      waiting_notifications: {
+        Row: WaitingNotificationRow
+        Insert: WaitingNotificationInsert
+        Update: WaitingNotificationUpdate
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      next_queue_number: {
+        Args: { p_store_id: string }
+        Returns: number
+      }
+      my_store_ids: {
+        Args: Record<string, never>
+        Returns: string[]
+      }
+    }
+    Enums: {
+      alimtalk_event: AlimtalkEvent
+      member_role: MemberRole
+      table_status: TableStatus
+      item_badge: ItemBadge
+      order_status: OrderStatus
+      payment_status: PaymentStatus
+      payment_method: PaymentMethod
+      waiting_status: WaitingStatus
+      notification_status: NotificationStatus
+      notification_provider: NotificationProvider
+    }
+  }
+}
