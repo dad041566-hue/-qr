@@ -6,7 +6,6 @@ interface AuthContextValue {
   user: StoreUser | null
   loading: boolean
   isFirstLogin: boolean
-  signInWithKakao: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
@@ -61,13 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function signInWithKakao() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: { redirectTo: `${window.location.origin}/admin` },
-    })
-  }
-
   async function signInWithEmail(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
@@ -79,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isFirstLogin, signInWithKakao, signInWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isFirstLogin, signInWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   )
