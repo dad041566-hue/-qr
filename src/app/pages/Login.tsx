@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { Utensils, Mail, Lock, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import { Input } from '@/app/components/ui/input'
 import { Button } from '@/app/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -15,21 +14,10 @@ interface EmailFormValues {
 
 export function Login() {
   const navigate = useNavigate()
-  const { signInWithKakao, signInWithEmail, isFirstLogin } = useAuth()
-  const [kakaoLoading, setKakaoLoading] = useState(false)
+  const { signInWithEmail, isFirstLogin } = useAuth()
   const [emailLoading, setEmailLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<EmailFormValues>()
-
-  async function handleKakao() {
-    setKakaoLoading(true)
-    try {
-      await signInWithKakao()
-    } catch {
-      toast.error('카카오 로그인에 실패했습니다.')
-      setKakaoLoading(false)
-    }
-  }
 
   async function handleEmail(values: EmailFormValues) {
     setEmailLoading(true)
@@ -61,86 +49,56 @@ export function Login() {
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
           <h1 className="text-lg font-semibold text-zinc-900 mb-5 text-center">로그인</h1>
 
-          <Tabs defaultValue="owner" className="w-full">
-            <TabsList className="w-full mb-5">
-              <TabsTrigger value="owner" className="flex-1">점주 로그인</TabsTrigger>
-              <TabsTrigger value="staff" className="flex-1">직원 로그인</TabsTrigger>
-            </TabsList>
-
-            {/* 점주: 카카오 */}
-            <TabsContent value="owner">
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-zinc-500 text-center mb-1">
-                  카카오 계정으로 간편하게 로그인하세요.
-                </p>
-                <button
-                  onClick={handleKakao}
-                  disabled={kakaoLoading}
-                  className="w-full flex items-center justify-center gap-2.5 h-11 rounded-xl font-semibold text-[#3C1E1E] bg-[#FEE500] hover:bg-[#f0d800] transition-colors disabled:opacity-60"
-                >
-                  {/* 카카오 말풍선 아이콘 (SVG inline) */}
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.632 1.608 4.95 4.063 6.37L5.25 21l4.688-2.531A11.63 11.63 0 0012 18.75c5.523 0 10-3.477 10-7.75S17.523 3 12 3z" />
-                  </svg>
-                  {kakaoLoading ? '로그인 중...' : '카카오로 시작하기'}
-                </button>
+          <form onSubmit={handleSubmit(handleEmail)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-zinc-600" htmlFor="email">
+                이메일
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="staff@example.com"
+                  className="pl-9"
+                  aria-invalid={!!errors.email}
+                  {...register('email', { required: '이메일을 입력하세요.' })}
+                />
               </div>
-            </TabsContent>
+              {errors.email && (
+                <p className="text-xs text-red-500">{errors.email.message}</p>
+              )}
+            </div>
 
-            {/* 직원: 이메일+비번 */}
-            <TabsContent value="staff">
-              <form onSubmit={handleSubmit(handleEmail)} className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-zinc-600" htmlFor="email">
-                    이메일
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="staff@example.com"
-                      className="pl-9"
-                      aria-invalid={!!errors.email}
-                      {...register('email', { required: '이메일을 입력하세요.' })}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="text-xs text-red-500">{errors.email.message}</p>
-                  )}
-                </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-zinc-600" htmlFor="password">
+                비밀번호
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="비밀번호"
+                  className="pl-9"
+                  aria-invalid={!!errors.password}
+                  {...register('password', { required: '비밀번호를 입력하세요.' })}
+                />
+              </div>
+              {errors.password && (
+                <p className="text-xs text-red-500">{errors.password.message}</p>
+              )}
+            </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-zinc-600" htmlFor="password">
-                    비밀번호
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="비밀번호"
-                      className="pl-9"
-                      aria-invalid={!!errors.password}
-                      {...register('password', { required: '비밀번호를 입력하세요.' })}
-                    />
-                  </div>
-                  {errors.password && (
-                    <p className="text-xs text-red-500">{errors.password.message}</p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={emailLoading}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-1"
-                >
-                  <LogIn className="w-4 h-4" />
-                  {emailLoading ? '로그인 중...' : '로그인'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <Button
+              type="submit"
+              disabled={emailLoading}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-1"
+            >
+              <LogIn className="w-4 h-4" />
+              {emailLoading ? '로그인 중...' : '로그인'}
+            </Button>
+          </form>
         </div>
 
         <p className="text-center text-xs text-zinc-400 mt-6">
