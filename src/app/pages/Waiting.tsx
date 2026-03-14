@@ -2,12 +2,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ChevronLeft, Users, Phone, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { createWaiting, getWaitingStatus } from '@/lib/api/waiting';
+import { useMyWaiting } from '@/hooks/useMyWaiting';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Waiting() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const storeId = user?.storeId ?? '';
+
   const [step, setStep] = useState(1); // 1: Phone, 2: Pax, 3: Complete
   const [phone, setPhone] = useState('010');
   const [pax, setPax] = useState(2);
+  const [queueNumber, setQueueNumber] = useState(0);
+  const [waitingId, setWaitingId] = useState('');
+  const [waitingCount, setWaitingCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const { status: waitingStatus, myPosition } = useMyWaiting(storeId, waitingId, queueNumber);
 
   const handleKeypad = (num: string) => {
     if (phone.length < 13) {
@@ -29,13 +42,23 @@ export function Waiting() {
     }
   };
 
-  const handleComplete = () => {
-    setStep(3);
-    setTimeout(() => {
-      setStep(1);
-      setPhone('010');
-      setPax(2);
-    }, 5000);
+  const handleComplete = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const rawPhone = phone.replace(/-/g, '');
+      const result = await createWaiting({ storeId, phone: rawPhone, partySize: pax });
+      setQueueNumber(result.queueNumber);
+      setWaitingId(result.waitingId);
+      const status = await getWaitingStatus(storeId, result.waitingId);
+      setWaitingCount(status.totalWaiting);
+      setStep(3);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '등록 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -115,11 +138,17 @@ export function Waiting() {
                     <button onClick={() => setPax(Math.min(20, pax + 1))} className="w-16 h-16 bg-white shadow-sm rounded-2xl text-3xl font-bold text-zinc-600 active:scale-95">+</button>
                   </div>
 
-                  <button 
+                  {submitError && (
+                    <p className="text-red-500 text-sm font-medium mb-4 text-center">{submitError}</p>
+                  )}
+                  <button
                     onClick={handleComplete}
-                    className="w-full py-5 bg-orange-500 text-white rounded-2xl text-xl font-black shadow-lg shadow-orange-500/30 transition-all hover:bg-orange-600 active:scale-95"
+                    disabled={isSubmitting}
+                    className={`w-full py-5 rounded-2xl text-xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95 ${
+                      isSubmitting ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed' : 'bg-orange-500 text-white hover:bg-orange-600'
+                    }`}
                   >
-                    대기 등록 완료하기
+                    {isSubmitting ? '등록 중...' : '대기 등록 완료하기'}
                   </button>
                 </div>
               </motion.div>
@@ -137,16 +166,22 @@ export function Waiting() {
                 <h2 className="text-3xl font-extrabold text-zinc-900 mb-4">대기 등록이 완료되었습니다!</h2>
                 <div className="bg-zinc-50 px-8 py-6 rounded-3xl w-full max-w-sm mb-8 border border-zinc-100">
                   <p className="text-zinc-500 font-medium mb-1">고객님의 대기 번호는</p>
-                  <p className="text-5xl font-black text-orange-500 mb-4">12<span className="text-2xl text-zinc-800 ml-1">번</span></p>
+                  <p className="text-5xl font-black text-orange-500 mb-4">{queueNumber}<span className="text-2xl text-zinc-800 ml-1">번</span></p>
                   <div className="flex justify-between items-center text-sm font-bold text-zinc-600 border-t border-zinc-200 pt-4">
                     <span>현재 내 앞 대기</span>
-                    <span className="text-red-500 text-lg">3팀</span>
+                    <span className="text-red-500 text-lg">{waitingStatus === 'called' ? '호출됨' : `${myPosition}팀`}</span>
                   </div>
                 </div>
-                <p className="text-zinc-500 font-medium leading-relaxed">
-                  카카오톡 알림톡으로 안내 메시지를 발송해 드렸습니다.<br/>
-                  입장 순서가 되면 카카오톡으로 알려드립니다.
-                </p>
+                {waitingStatus === 'called' ? (
+                  <div className="bg-green-50 border border-green-200 px-8 py-6 rounded-3xl w-full max-w-sm">
+                    <p className="text-green-700 font-black text-xl">호출되었습니다! 입장해 주세요.</p>
+                  </div>
+                ) : (
+                  <p className="text-zinc-500 font-medium leading-relaxed">
+                    카카오톡 알림톡으로 안내 메시지를 발송해 드렸습니다.<br/>
+                    입장 순서가 되면 카카오톡으로 알려드립니다.
+                  </p>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
