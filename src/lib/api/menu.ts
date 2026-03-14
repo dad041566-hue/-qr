@@ -16,6 +16,16 @@ export async function getStoreBySlug(slug: string): Promise<StoreRow> {
     .single()
 
   if (error) throw new Error(`매장을 찾을 수 없습니다: ${error.message}`)
+
+  if (!data.is_active) {
+    throw new Error('현재 서비스를 이용할 수 없습니다.')
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  if (data.subscription_end !== null && data.subscription_end < today) {
+    throw new Error('현재 서비스를 이용할 수 없습니다.')
+  }
+
   return data
 }
 
