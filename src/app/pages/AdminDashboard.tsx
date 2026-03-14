@@ -1,37 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { ChevronLeft, Bell, Clock, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid, UtensilsCrossed, Settings, BarChart4, TrendingUp, Users, Receipt, Search, Home, ChefHat, Check, AlertCircle, Menu, Volume2, UserX, ToggleLeft, ToggleRight, PenSquare, Plus, QrCode, Printer, Download, Link2, X, Image as ImageIcon, Minus, Gift, ChevronRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '@/hooks/useAuth';
+import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
+import { useRealtimeTables } from '@/hooks/useRealtimeTables';
+import { useMenuAdmin } from '@/hooks/useMenuAdmin';
+import { getDailyRevenue, type DailyRevenueRow } from '@/lib/api/admin';
 
-// Advanced Mock Data
-const MOCK_ORDERS = [
-  { id: 'ORD-1044', table: 5, items: [{ name: '아보카도 샌드위치', qty: 2, price: 14500 }, { name: '아메리카노', qty: 1, option: '산미', price: 4500 }], total: 33500, status: 'pending', time: 1, type: 'Dine-in', pax: 0 },
-  { id: 'ORD-1043', table: 2, items: [{ name: '리코타 샐러드', qty: 1, price: 12000 }], total: 12000, status: 'pending', time: 3, type: 'Dine-in', pax: 0 },
-  { id: 'ORD-1042', table: 8, items: [{ name: '브라운치즈 크로플', qty: 1, price: 8500 }, { name: '바닐라 라떼', qty: 2, price: 6000 }], total: 20500, status: 'preparing', time: 8, type: 'Dine-in', pax: 0 },
-  { id: 'ORD-1041', table: 4, items: [{ name: '트러플 크림 파스타', qty: 2, price: 18000 }, { name: '자몽 에이드', qty: 2, price: 6500 }], total: 49000, status: 'preparing', time: 15, type: 'Dine-in', pax: 0 },
-  { id: 'ORD-1040', table: 1, items: [{ name: '아메리카노', qty: 2, price: 4500 }], total: 9000, status: 'completed', time: 2, type: 'Takeout', pax: 0 },
-];
+// ============================================================
+// Adapter helpers — map Supabase row shapes to the UI-local shapes
+// so that the existing JSX template can remain unchanged.
+// ============================================================
 
-const TABLES = [
-  { id: 1, status: 'available', time: '', amount: 0, pax: 0 },
-  { id: 2, status: 'occupied', time: '12m', amount: 12000, pax: 2 },
-  { id: 3, status: 'available', time: '', amount: 0, pax: 0 },
-  { id: 4, status: 'occupied', time: '45m', amount: 49000, pax: 4 },
-  { id: 5, status: 'occupied', time: '5m', amount: 33500, pax: 2 }, 
-  { id: 6, status: 'cleaning', time: '5m', amount: 0, pax: 0 },
-  { id: 7, status: 'available', time: '', amount: 0, pax: 0 },
-  { id: 8, status: 'occupied', time: '20m', amount: 20500, pax: 2 },
-  { id: 9, status: 'available', time: '', amount: 0, pax: 0 },
-];
+interface UIOrderItem {
+  name: string;
+  qty: number;
+  price: number;
+  option?: string;
+}
 
-const MOCK_WAITING = [
-  { id: 12, phone: '010-****-1234', pax: 2, time: '5분 전', status: 'waiting' },
-  { id: 13, phone: '010-****-5678', pax: 4, time: '2분 전', status: 'waiting' },
-  { id: 14, phone: '010-****-9012', pax: 2, time: '방금 전', status: 'waiting' },
-];
+interface UIOrder {
+  id: string;
+  table: number;
+  items: UIOrderItem[];
+  total: number;
+  status: string;
+  time: number;
+  type: string;
+  pax: number;
+}
 
+function minutesAgo(iso: string): number {
+  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+function adaptOrder(o: OrderWithItems, tableNumberMap: Map<string, number>): UIOrder {
+  return {
+    id: o.id,
+    table: tableNumberMap.get(o.table_id ?? '') ?? 0,
+    items: (o.order_items ?? []).map((it) => ({
+      name: it.menu_item_name,
+      qty: it.quantity,
+      price: it.unit_price,
+      option: it.selected_options?.map((so) => so.choice).join(', ') || undefined,
+    })),
+    total: o.total_price,
+    status: o.status === 'created' || o.status === 'confirmed' ? 'pending'
+      : o.status === 'ready' ? 'completed'
+      : o.status,
+    time: minutesAgo(o.created_at),
+    type: 'Dine-in',
+    pax: 0,
+  };
+}
+
+interface UITable {
+  id: number;
+  _realId: string;
+  status: string;
+  time: string;
+  amount: number;
+  pax: number;
+}
+
+interface UIMenu {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: boolean;
+  image?: string;
+  desc?: string;
+  badge?: string;
+  options: any[];
+}
+
+// Revenue / analytics chart data (static placeholders — will be replaced by getDailyRevenue)
 const REVENUE_DATA = [
   { time: '10시', amount: 12, prev: 8 },
   { time: '11시', amount: 25, prev: 18 },
@@ -67,49 +114,99 @@ const TOP_MENUS = [
   { name: '크로플', sales: 31 },
 ];
 
-const MOCK_MENUS = [
-  { 
-    id: 'm1', name: '아보카도 쉬림프 오픈 샌드위치', category: '브런치', price: 14500, stock: true,
-    options: [
-      { id: 'opt1', name: '빵 변경', choices: [{ name: '사워도우 (기본)', price: 0 }, { name: '호밀빵', price: 1000 }, { name: '글루텐프리', price: 2000 }], required: true },
-      { id: 'opt2', name: '토핑 추가', choices: [{ name: '수란 추가', price: 1500 }, { name: '베이컨 추가', price: 2000 }, { name: '쉬림프 추가', price: 3500 }], required: false }
-    ]
-  },
-  { 
-    id: 'm2', name: '시그니처 트러플 크림 파스타', category: '브런치', price: 18000, stock: true,
-    options: [
-      { id: 'opt3', name: '면 변경', choices: [{ name: '스파게티 (기본)', price: 0 }, { name: '리가토니', price: 0 }, { name: '펜네', price: 0 }], required: true },
-      { id: 'opt4', name: '맵기 조절', choices: [{ name: '기본 (안맵게)', price: 0 }, { name: '약간 맵게', price: 0 }], required: true }
-    ]
-  },
-  { id: 'm3', name: '프레시 리코타 샐러드 볼', category: '브런치', price: 12000, stock: false, options: [] },
-  { 
-    id: 'm4', name: '아메리카노', category: '커피', price: 4500, stock: true,
-    options: [
-      { id: 'opt5', name: '온도', choices: [{ name: 'HOT', price: 0 }, { name: 'ICE', price: 0 }], required: true },
-      { id: 'opt6', name: '원두 선택', choices: [{ name: '너티 블렌드 (고소)', price: 0 }, { name: '베리 블렌드 (산미)', price: 0 }, { name: '디카페인', price: 500 }], required: true },
-      { id: 'opt7', name: '사이즈 업', choices: [{ name: '기본 (Tall)', price: 0 }, { name: '사이즈업 (+1샷)', price: 1000 }], required: true }
-    ]
-  },
-  { 
-    id: 'm5', name: '크림 바닐라 라떼', category: '커피', price: 6000, stock: true,
-    options: [
-      { id: 'opt8', name: '온도', choices: [{ name: 'HOT', price: 0 }, { name: 'ICE', price: 0 }], required: true },
-      { id: 'opt9', name: '우유 변경', choices: [{ name: '일반 우유', price: 0 }, { name: '오트 우유', price: 800 }, { name: '락토프리', price: 500 }], required: true }
-    ]
-  },
-  { id: 'm6', name: '리얼 자몽 에이드', category: '음료', price: 6500, stock: true, options: [] },
-  { id: 'm7', name: '브라운치즈 크로플', category: '디저트', price: 8500, stock: true, options: [] },
+const MOCK_WAITING = [
+  { id: 12, phone: '010-****-1234', pax: 2, time: '5분 전', status: 'waiting' },
+  { id: 13, phone: '010-****-5678', pax: 4, time: '2분 전', status: 'waiting' },
+  { id: 14, phone: '010-****-9012', pax: 2, time: '방금 전', status: 'waiting' },
 ];
 
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState(MOCK_ORDERS);
-  const [tables, setTables] = useState(TABLES);
+  const { user } = useAuth();
+  const storeId = user?.storeId ?? '';
+
+  // --- Supabase hooks ---
+  const { orders: rawOrders, loading: ordersLoading, updateOrderStatus: apiUpdateOrderStatus, deleteOrder: apiDeleteOrder } = useOrders(storeId || null);
+  const { tables: rawTables, loading: tablesLoading, updateTableStatus: apiUpdateTableStatus } = useRealtimeTables(storeId || null);
+  const { menuItems: rawMenuItems, categories: rawCategories, loading: menuLoading, addMenuItem, editMenuItem, removeMenuItem, toggleAvailability, uploadImage } = useMenuAdmin(storeId || null);
+
+  // Build table_id → table_number lookup
+  const tableNumberMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of rawTables) m.set(t.id, t.table_number);
+    return m;
+  }, [rawTables]);
+
+  // Build category_id → category name lookup
+  const categoryNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of rawCategories) m.set(c.id, c.name);
+    return m;
+  }, [rawCategories]);
+
+  // Adapt orders from Supabase shape → UI shape
+  const adaptedOrders = useMemo<UIOrder[]>(
+    () => rawOrders.map((o) => adaptOrder(o, tableNumberMap)),
+    [rawOrders, tableNumberMap],
+  );
+
+  // Adapt tables from Supabase shape → UI shape (amount/pax/time are UI-only)
+  const adaptedTables = useMemo<UITable[]>(
+    () => rawTables.map((t) => ({
+      id: t.table_number,
+      _realId: t.id,
+      status: t.status,
+      time: t.status === 'occupied' ? '' : '',
+      amount: 0,
+      pax: 0,
+    })),
+    [rawTables],
+  );
+
+  // Adapt menus from Supabase shape → UI shape
+  const adaptedMenus = useMemo<UIMenu[]>(
+    () => rawMenuItems.map((m) => ({
+      id: m.id,
+      name: m.name,
+      category: categoryNameMap.get(m.category_id) ?? '',
+      price: m.price,
+      stock: m.is_available,
+      image: m.image_url ?? undefined,
+      desc: m.description ?? undefined,
+      badge: m.badge ?? undefined,
+      options: [],
+    })),
+    [rawMenuItems, categoryNameMap],
+  );
+
+  // Local UI state backed by adapted data
+  const [orders, setOrders] = useState<UIOrder[]>([]);
+  const [tables, setTables] = useState<UITable[]>([]);
+  const [menus, setMenus] = useState<UIMenu[]>([]);
   const [waitings, setWaitings] = useState(MOCK_WAITING);
-  const [menus, setMenus] = useState(MOCK_MENUS);
+
+  // Sync adapted data into local state when hooks update
+  useEffect(() => { setOrders(adaptedOrders); }, [adaptedOrders]);
+  useEffect(() => {
+    setTables((prev) => {
+      // Preserve UI-only fields (amount, pax, time) for tables that already exist
+      const prevMap = new Map(prev.map((t) => [t.id, t]));
+      return adaptedTables.map((t) => {
+        const existing = prevMap.get(t.id);
+        if (existing) {
+          return { ...t, amount: existing.amount, pax: existing.pax, time: existing.time };
+        }
+        return t;
+      });
+    });
+  }, [adaptedTables]);
+  useEffect(() => { setMenus(adaptedMenus); }, [adaptedMenus]);
+
   const [appMode, setAppMode] = useState<'pos' | 'admin'>('pos'); // pos, admin
   const [activeTab, setActiveTab] = useState('orders'); // pos: orders, tables, waiting / admin: analytics, menu, customers, qr, event, settings
+
+  // Loading guard
+  if (!user) return <div className="flex items-center justify-center h-screen"><span className="text-zinc-500 font-bold">로딩 중...</span></div>;
   
   
   // Event & Store Settings State
@@ -211,27 +308,28 @@ export function AdminDashboard() {
     }));
   };
 
-  const handleSaveMenu = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveMenu = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newMenu = {
-      id: editingMenu ? editingMenu.id : `m${Date.now()}`,
-      name: formData.get('name') as string,
-      category: formData.get('category') as string,
-      price: Number(formData.get('price')),
-      desc: formData.get('desc') as string || '',
-      badge: formData.get('badge') as string === '없음' ? undefined : formData.get('badge') as string,
-      stock: editingMenu ? editingMenu.stock : true,
-      image: editingMenu?.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
-      options: menuOptions.filter(opt => opt.name.trim() !== '')
-    };
+    const name = formData.get('name') as string;
+    const categoryName = formData.get('category') as string;
+    const price = Number(formData.get('price'));
+    const desc = formData.get('desc') as string || '';
+    const badgeVal = formData.get('badge') as string;
+    const badge = badgeVal === '없음' ? null : (badgeVal?.toLowerCase() as any) || null;
 
-    if (editingMenu) {
-      setMenus(prev => prev.map(m => m.id === editingMenu.id ? { ...m, ...newMenu } : m));
-      toast.success('메뉴가 성공적으로 수정되었습니다.');
-    } else {
-      setMenus(prev => [newMenu, ...prev]);
-      toast.success('새 메뉴가 등록되었습니다.');
+    // Find category_id from name
+    const cat = rawCategories.find(c => c.name === categoryName);
+    const category_id = cat?.id ?? '';
+
+    try {
+      if (editingMenu) {
+        await editMenuItem(editingMenu.id, { name, category_id, price, description: desc || null, badge });
+      } else {
+        await addMenuItem({ store_id: storeId, name, category_id, price, description: desc || null, badge });
+      }
+    } catch {
+      // toast already handled by hook
     }
     setIsMenuModalOpen(false);
   };
@@ -315,12 +413,16 @@ export function AdminDashboard() {
   };
 
   const handleCheckoutTable = (id: number) => {
+    const realId = findRealTableId(id);
+    if (realId) apiUpdateTableStatus(realId, 'cleaning');
     setTables(prev => prev.map(t => t.id === id ? { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 } : t));
     toast.success(`${id}번 테이블 정산이 완료되었습니다. 정리 대기 중입니다.`);
     setIsTableModalOpen(false);
   };
 
   const cancelTableOrder = (id: number) => {
+    const realId = findRealTableId(id);
+    if (realId) apiUpdateTableStatus(realId, 'available');
     setTables(prev => prev.map(t => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t));
     toast.success(`${id}번 테이블 주문이 전체 취소되었습니다.`);
     setIsTableModalOpen(false);
@@ -384,12 +486,17 @@ export function AdminDashboard() {
   };
 
   const markTableOccupied = (id: number) => {
+    const realId = findRealTableId(id);
+    if (realId) apiUpdateTableStatus(realId, 'occupied');
     setTables(prev => prev.map(t => t.id === id ? { ...t, status: 'occupied', amount: 0, time: '방금 전', pax: 2 } : t));
     toast.success(`${id}번 테이블 착석 처리되었습니다.`);
     setIsTableModalOpen(false);
   };
 
   const updateOrderStatus = (id: string, newStatus: string) => {
+    // Map UI status to DB OrderStatus
+    const dbStatus = newStatus === 'pending' ? 'confirmed' : newStatus === 'completed' ? 'ready' : newStatus as any;
+    apiUpdateOrderStatus(id, dbStatus);
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
     if (newStatus === 'preparing') toast.success(`주방으로 전달되었습니다.`, { icon: <ChefHat className="w-5 h-5 text-orange-500"/> });
     if (newStatus === 'completed') toast.success(`서빙을 준비해주세요.`, { icon: <CheckCircle2 className="w-5 h-5 text-green-500"/> });
@@ -401,11 +508,19 @@ export function AdminDashboard() {
   };
 
   const deleteOrder = (id: string) => {
+    apiDeleteOrder(id);
     setOrders(prev => prev.filter(o => o.id !== id));
     toast.success(`주문이 삭제되었습니다.`);
   };
 
+  // Helper to find real table UUID from table_number
+  const findRealTableId = (tableNumber: number): string | undefined => {
+    return tables.find(t => t.id === tableNumber)?._realId;
+  };
+
   const markTableAvailable = (id: number) => {
+    const realId = findRealTableId(id);
+    if (realId) apiUpdateTableStatus(realId, 'available');
     setTables(prev => prev.map(t => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t));
     toast.info(`${id}번 테이블 정리가 완료되었습니다.`);
   };
@@ -420,15 +535,16 @@ export function AdminDashboard() {
   };
 
   const toggleMenuStock = (id: string) => {
+    const menu = menus.find(m => m.id === id);
+    if (menu) toggleAvailability(id, menu.stock);
     setMenus(prev => prev.map(m => m.id === id ? { ...m, stock: !m.stock } : m));
-    toast.info('메뉴 품절 상태가 변경되었습니다.');
   };
 
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const completedOrders = orders.filter(o => o.status === 'completed');
-  
-  const totalToday = 2452000;
+
+  const totalToday = orders.reduce((sum, o) => sum + o.total, 0);
   const occupiedTables = tables.filter(t => t.status === 'occupied').length;
 
   const renderDashboard = () => (
@@ -1523,11 +1639,11 @@ export function AdminDashboard() {
         <div className="p-4 border-t border-zinc-800/50">
           <div className="bg-zinc-900 rounded-2xl p-4 flex items-center gap-3 mb-3 border border-zinc-800">
             <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-white shrink-0">
-              강남
+              {(user?.storeName ?? '').slice(0, 2)}
             </div>
             <div className="truncate">
-              <p className="text-white font-bold text-sm truncate">강남본점</p>
-              <p className="text-[11px] text-zinc-500 font-medium mt-0.5">최고관리자</p>
+              <p className="text-white font-bold text-sm truncate">{user?.storeName ?? ''}</p>
+              <p className="text-[11px] text-zinc-500 font-medium mt-0.5">{user?.role === 'owner' ? '최고관리자' : user?.role === 'manager' ? '매니저' : '직원'}</p>
             </div>
             <button className="ml-auto text-zinc-500 hover:text-white shrink-0">
               <Settings className="w-5 h-5" />
@@ -1775,7 +1891,18 @@ export function AdminDashboard() {
                       메뉴 이미지
                       <span className="text-xs font-medium text-zinc-400 font-normal">권장 사이즈 800x800px</span>
                     </label>
-                    <div className="w-full h-48 bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center text-zinc-400 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all cursor-pointer group relative overflow-hidden">
+                    <input type="file" accept="image/*" className="hidden" id="menu-image-input" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const url = await uploadImage(file);
+                        if (editingMenu) {
+                          setEditingMenu((prev: any) => ({ ...prev, image: url }));
+                        }
+                      } catch { /* handled by hook */ }
+                      e.target.value = '';
+                    }} />
+                    <div onClick={() => document.getElementById('menu-image-input')?.click()} className="w-full h-48 bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center text-zinc-400 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all cursor-pointer group relative overflow-hidden">
                       {editingMenu?.image ? (
                         <>
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex flex-col items-center justify-center text-white">
