@@ -1,95 +1,106 @@
 import { supabase } from '@/lib/supabase'
 import type { StoreRow } from '@/types/database'
 
-// ============================================================
-// Stores
-// ============================================================
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1`
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export async function getAllStores(): Promise<StoreRow[]> {
-  const { data, error } = await supabase
-    .from('stores')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data ?? []) as StoreRow[]
+function assertAuthConfig() {
+  if (!SUPABASE_URL || !ANON_KEY) {
+    throw new Error('Supabase 환경 변수가 누락되었습니다.')
+  }
 }
 
-export async function createStore(params: {
+async function callSuperadmin<T>(action: string, body?: unknown): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('로그인이 필요합니다.')
+  assertAuthConfig()
+
+  const url = `${EDGE_FUNCTION_URL}/superadmin?action=${action}`
+  const res = await fetch(url, {
+    method: body ? 'POST' : 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': ANON_KEY,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? '요청 실패')
+  return json as T
+}
+
+export async function checkSuperAdmin(): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return false
+  assertAuthConfig()
+
+  const url = `${EDGE_FUNCTION_URL}/check-superadmin`
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': ANON_KEY,
+    },
+  })
+
+  if (!res.ok) return false
+  const json = await res.json()
+  return json.allowed === true
+}
+
+interface CreateStoreWithOwnerResponse {
+  store: StoreRow
+}
+
+async function callCreateStoreWithOwner<T>(body: unknown): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('로그인이 필요합니다.')
+  assertAuthConfig()
+
+  const url = `${EDGE_FUNCTION_URL}/create-store-with-owner`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  })
+
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? '요청 실패')
+  return json as T
+}
+
+export async function getAllStores(): Promise<StoreRow[]> {
+  return callSuperadmin<StoreRow[]>('list-stores')
+}
+
+export interface CreateStoreWithOwnerParams {
   name: string
   slug: string
   address?: string
   phone?: string
-}): Promise<StoreRow> {
-  const { data, error } = await supabase
-    .from('stores')
-    .insert({
-      owner_id: '00000000-0000-0000-0000-000000000000', // placeholder; real owner set after account creation
-      name: params.name,
-      slug: params.slug,
-      address: params.address ?? null,
-      phone: params.phone ?? null,
-    } as any)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data as StoreRow
+  subscriptionStart?: string
+  subscriptionEnd?: string
+  ownerEmail: string
+  ownerPassword: string
 }
 
-export async function updateStoreSubscription(
-  storeId: string,
-  params: {
-    subscription_start: string
-    subscription_end: string
-    is_active: boolean
-  },
-): Promise<void> {
-  const { error } = await supabase
-    .from('stores')
-    .update(params as any)
-    .eq('id', storeId)
-
-  if (error) throw error
+export async function createStoreWithOwner(params: CreateStoreWithOwnerParams): Promise<StoreRow> {
+  const data = await callCreateStoreWithOwner<CreateStoreWithOwnerResponse>(params)
+  return data.store
 }
 
-// ============================================================
-// Owner account
-// ============================================================
-
-export async function createOwnerAccount(params: {
-  email: string
-  password: string
+export async function updateStoreSubscription(params: {
   storeId: string
+  subscriptionStart: string | null
+  subscriptionEnd: string | null
+  isActive: boolean
 }): Promise<void> {
-  // Create the Supabase Auth user via admin API
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: params.email,
-    password: params.password,
-    email_confirm: true,
-  })
-
-  if (authError) throw authError
-  if (!authData.user) throw new Error('사용자 생성에 실패했습니다.')
-
-  const userId = authData.user.id
-
-  // Update the store's owner_id
-  const { error: storeError } = await supabase
-    .from('stores')
-    .update({ owner_id: userId } as any)
-    .eq('id', params.storeId)
-
-  if (storeError) throw storeError
-
-  // Link to store_members as owner
-  const { error: memberError } = await supabase
-    .from('store_members')
-    .insert({
-      store_id: params.storeId,
-      user_id: userId,
-      role: 'owner',
-    })
-
-  if (memberError) throw memberError
+  await callSuperadmin('update-subscription', params)
 }

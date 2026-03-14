@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { isStoreSubscriptionActive } from '@/lib/utils/subscription'
 
 /**
  * 매장의 이용 기간이 유효한지 확인
@@ -14,9 +15,5 @@ export async function checkStoreActive(storeId: string): Promise<boolean> {
     .single()
 
   if (error || !data) return false
-  if (!data.is_active) return false
-  if (data.subscription_end === null) return true
-
-  const today = new Date().toISOString().slice(0, 10)
-  return data.subscription_end >= today
+  return isStoreSubscriptionActive(data)
 }

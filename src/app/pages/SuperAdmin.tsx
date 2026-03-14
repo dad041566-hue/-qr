@@ -23,11 +23,12 @@ import {
 import { useAuthContext } from '@/contexts/AuthContext'
 import {
   getAllStores,
-  createStore,
   updateStoreSubscription,
-  createOwnerAccount,
+  createStoreWithOwner,
+  type CreateStoreWithOwnerParams,
 } from '@/lib/api/superadmin'
 import type { StoreRow } from '@/types/database'
+import { getKstDateString, isStoreSubscriptionActive } from '@/lib/utils/subscription'
 
 // Extended store type that includes subscription fields (added via migration)
 interface StoreWithSub extends StoreRow {
@@ -36,11 +37,22 @@ interface StoreWithSub extends StoreRow {
   is_active?: boolean | null
 }
 
+const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,}$/
+
+function normalizeSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+}
+
 function getStoreStatus(store: StoreWithSub): 'active' | 'expired' | 'inactive' {
-  if (store.is_active === false) return 'inactive'
+  if (!isStoreSubscriptionActive(store)) return 'inactive'
   if (!store.subscription_end) return 'active'
-  const now = new Date().toISOString().slice(0, 10)
-  return store.subscription_end >= now ? 'active' : 'expired'
+  return store.subscription_end >= getKstDateString() ? 'active' : 'expired'
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -87,10 +99,11 @@ function SubEditDialog({ store, onClose, onSaved }: SubEditDialogProps) {
     }
     setLoading(true)
     try {
-      await updateStoreSubscription(store.id, {
-        subscription_start: start,
-        subscription_end: end,
-        is_active: isActive,
+      await updateStoreSubscription({
+        storeId: store.id,
+        subscriptionStart: start,
+        subscriptionEnd: end,
+        isActive,
       })
       toast.success('이용기간이 업데이트되었습니다.')
       onSaved()
@@ -272,35 +285,47 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name || !form.slug) {
+    const slug = normalizeSlug(form.slug)
+
+    if (!form.name || !slug) {
       toast.error('매장명과 Slug는 필수입니다.')
       return
     }
+    if (!SLUG_REGEX.test(slug)) {
+      toast.error('Slug는 영문 소문자/숫자/하이픈만 허용됩니다.')
+      return
+    }
+
+    if (form.ownerPassword.length < PASSWORD_MIN_LENGTH) {
+      toast.error('비밀번호는 최소 8자 이상이어야 합니다.')
+      return
+    }
+
+    if (!PASSWORD_REGEX.test(form.ownerPassword)) {
+      toast.error('임시 비밀번호는 특수문자를 1개 이상 포함해야 합니다.')
+      return
+    }
+
+    if (form.subscriptionStart && form.subscriptionEnd && form.subscriptionEnd < form.subscriptionStart) {
+      toast.error('이용 종료일은 시작일보다 빠를 수 없습니다.')
+      return
+    }
+
     if (!form.ownerEmail || !form.ownerPassword) {
       toast.error('점주 이메일과 임시 비밀번호를 입력하세요.')
       return
     }
     setLoading(true)
     try {
-      const store = await createStore({
+      await createStoreWithOwner({
         name: form.name,
-        slug: form.slug,
+        slug,
         address: form.address || undefined,
         phone: form.phone || undefined,
-      })
-
-      if (form.subscriptionStart || form.subscriptionEnd) {
-        await updateStoreSubscription(store.id, {
-          subscription_start: form.subscriptionStart || new Date().toISOString().slice(0, 10),
-          subscription_end: form.subscriptionEnd || new Date().toISOString().slice(0, 10),
-          is_active: true,
-        })
-      }
-
-      await createOwnerAccount({
-        email: form.ownerEmail,
-        password: form.ownerPassword,
-        storeId: store.id,
+        subscriptionStart: form.subscriptionStart || undefined,
+        subscriptionEnd: form.subscriptionEnd || undefined,
+        ownerEmail: form.ownerEmail,
+        ownerPassword: form.ownerPassword,
       })
 
       toast.success(`'${form.name}' 매장이 생성되었습니다.`)
@@ -339,7 +364,7 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
             <Input
               placeholder="예) tasty-restaurant"
               value={form.slug}
-              onChange={(e) => handleChange('slug', e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+              onChange={(e) => handleChange('slug', normalizeSlug(e.target.value))}
               required
             />
           </div>
