@@ -56,6 +56,9 @@ export interface StoreRow {
   phone: string | null
   logo_url: string | null
   created_at: string
+  subscription_start: string | null  // date → string (ISO)
+  subscription_end: string | null
+  is_active: boolean
 }
 
 export interface StoreInsert {
@@ -67,6 +70,9 @@ export interface StoreInsert {
   phone?: string | null
   logo_url?: string | null
   created_at?: string
+  subscription_start?: string | null
+  subscription_end?: string | null
+  is_active?: boolean
 }
 
 export interface StoreUpdate {
@@ -78,6 +84,9 @@ export interface StoreUpdate {
   phone?: string | null
   logo_url?: string | null
   created_at?: string
+  subscription_start?: string | null
+  subscription_end?: string | null
+  is_active?: boolean
 }
 
 // ------------------------------------------------------------
