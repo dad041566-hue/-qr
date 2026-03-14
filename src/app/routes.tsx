@@ -6,6 +6,8 @@ import { Waiting } from "./pages/Waiting";
 import { Login } from "./pages/Login";
 import { ChangePassword } from "./pages/ChangePassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { SuperAdmin } from "./pages/SuperAdmin";
+import { SuperAdminRoute } from "./components/SuperAdminRoute";
 
 export const router = createBrowserRouter([
   { path: "/", Component: Home },
@@ -27,6 +29,14 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <AdminDashboard />
       </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/superadmin",
+    Component: () => (
+      <SuperAdminRoute>
+        <SuperAdmin />
+      </SuperAdminRoute>
     ),
   },
 ]);
