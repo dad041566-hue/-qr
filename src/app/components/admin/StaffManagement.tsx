@@ -101,7 +101,7 @@ export function StaffManagement({ storeId, currentUserId }: Props) {
     }
     if (!confirm(`이 직원을 삭제하시겠습니까?`)) return
     try {
-      await deactivateStaffMember(member.id)
+      await deactivateStaffMember(member.id, storeId)
       toast.success('직원이 삭제됐습니다.')
       setMembers((prev) => prev.filter((m) => m.id !== member.id))
       setCreatedStaffList((prev) => prev.filter((c) => c.memberId !== member.id))
