@@ -28,7 +28,7 @@ import {
   type CreateStoreWithOwnerParams,
 } from '@/lib/api/superadmin'
 import type { StoreRow } from '@/types/database'
-import { getKstDateString, isStoreSubscriptionActive } from '@/lib/utils/subscription'
+import { getKstDateString } from '@/lib/utils/subscription'
 
 // Extended store type that includes subscription fields (added via migration)
 interface StoreWithSub extends StoreRow {
@@ -50,7 +50,7 @@ function normalizeSlug(value: string): string {
 }
 
 function getStoreStatus(store: StoreWithSub): 'active' | 'expired' | 'inactive' {
-  if (!isStoreSubscriptionActive(store)) return 'inactive'
+  if (!store.is_active) return 'inactive'
   if (!store.subscription_end) return 'active'
   return store.subscription_end >= getKstDateString() ? 'active' : 'expired'
 }

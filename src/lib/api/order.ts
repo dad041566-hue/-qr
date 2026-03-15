@@ -51,7 +51,13 @@ export async function createOrder(params: {
     .from('order_items')
     .insert(orderItems)
 
-  if (itemsError) throw new Error(`주문 아이템 저장 실패: ${itemsError.message}`)
+  if (itemsError) {
+    await supabase
+      .from('orders')
+      .delete()
+      .eq('id', order.id)
+    throw new Error(`주문 아이템 저장 실패: ${itemsError.message}`)
+  }
 
   return { orderId: order.id }
 }

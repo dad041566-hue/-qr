@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Input } from '@/app/components/ui/input'
 import { Button } from '@/app/components/ui/button'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 interface FormValues {
   newPassword: string
@@ -16,6 +17,7 @@ const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
 
 export function ChangePassword() {
   const navigate = useNavigate()
+  const { refreshStoreUser } = useAuth()
   const [loading, setLoading] = useState(false)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>()
@@ -30,12 +32,15 @@ export function ChangePassword() {
       // mark is_first_login = false in store_members
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase
+        const { error: memberError } = await supabase
           .from('store_members')
           .update({ is_first_login: false })
           .eq('user_id', user.id)
+
+        if (memberError) throw memberError
       }
 
+      await refreshStoreUser()
       toast.success('비밀번호가 변경되었습니다.')
       navigate('/admin', { replace: true })
     } catch (err: any) {

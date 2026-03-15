@@ -4,12 +4,21 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
 function json(data: unknown, status = 200) {
+  const response = typeof status === 'number'
+    ? { status }
+    : { ...status }
+
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    ...response,
+    headers: {
+      'Content-Type': 'application/json',
+      ...((response as ResponseInit).headers ?? {}),
+      ...corsHeaders,
+    },
   })
 }
 
@@ -84,63 +93,36 @@ serve(async (req) => {
       return json(data)
     }
 
-    if (action === 'create-store-with-owner') {
-      const body = await req.json()
-      const { storeName, storeSlug, address, phone, subscriptionStart, subscriptionEnd, ownerEmail, ownerPassword } = body
-
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(storeSlug)) {
-        return json({ error: 'slug는 소문자 영문, 숫자, 하이픈만 허용됩니다.' }, 400)
-      }
-      if (!ownerPassword || ownerPassword.length < 8) {
-        return json({ error: '비밀번호는 최소 8자 이상이어야 합니다.' }, 400)
-      }
-
-      // 1. 점주 계정 생성
-      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-        email: ownerEmail,
-        password: ownerPassword,
-        email_confirm: true,
-      })
-      if (authError) throw new Error(`계정 생성 실패: ${authError.message}`)
-
-      // 2. 매장 생성
-      const { data: store, error: storeError } = await adminClient
-        .from('stores')
-        .insert({
-          owner_id: authData.user.id,
-          name: storeName,
-          slug: storeSlug,
-          address: address ?? null,
-          phone: phone ?? null,
-          subscription_start: subscriptionStart ?? null,
-          subscription_end: subscriptionEnd ?? null,
-          is_active: true,
-        })
-        .select()
-        .single()
-
-      if (storeError) {
-        await adminClient.auth.admin.deleteUser(authData.user.id)
-        throw new Error(`매장 생성 실패: ${storeError.message}`)
-      }
-
-      // 3. store_members 연결
-      const { error: memberError } = await adminClient
-        .from('store_members')
-        .insert({ store_id: store.id, user_id: authData.user.id, role: 'owner', is_first_login: true })
-
-      if (memberError) {
-        await adminClient.auth.admin.deleteUser(authData.user.id)
-        await adminClient.from('stores').delete().eq('id', store.id)
-        throw new Error(`멤버 연결 실패: ${memberError.message}`)
-      }
-
-      return json({ store, userId: authData.user.id })
-    }
-
     if (action === 'update-subscription') {
-      const body = await req.json()
+      if (req.method !== 'POST') {
+        return json({ error: 'Method not allowed' }, { status: 405 })
+      }
+
+      let body: { storeId?: unknown; subscriptionStart?: unknown; subscriptionEnd?: unknown; isActive?: unknown }
+      try {
+        body = await req.json()
+      } catch {
+        return json({ error: 'Invalid JSON body' }, { status: 400 })
+      }
+
       const { storeId, subscriptionStart, subscriptionEnd, isActive } = body
+      if (typeof storeId !== 'string' || storeId.trim() === '') {
+        return json({ error: 'storeId is required' }, { status: 400 })
+      }
+
+      if (typeof subscriptionStart !== 'string' && subscriptionStart !== null) {
+        return json({ error: 'subscriptionStart must be string or null' }, { status: 400 })
+      }
+      if (typeof subscriptionEnd !== 'string' && subscriptionEnd !== null) {
+        return json({ error: 'subscriptionEnd must be string or null' }, { status: 400 })
+      }
+      if (typeof isActive !== 'boolean') {
+        return json({ error: 'isActive must be boolean' }, { status: 400 })
+      }
+      if (typeof subscriptionStart === 'string' && typeof subscriptionEnd === 'string' && subscriptionEnd < subscriptionStart) {
+        return json({ error: 'subscription_end must be after subscription_start' }, { status: 400 })
+      }
+
       const { error } = await adminClient
         .from('stores')
         .update({

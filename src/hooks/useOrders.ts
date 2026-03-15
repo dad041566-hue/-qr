@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { getOrders, updateOrderStatus as apiUpdateOrderStatus } from '@/lib/api/admin'
+import { deleteOrder as apiDeleteOrder, getOrders, updateOrderStatus as apiUpdateOrderStatus } from '@/lib/api/admin'
 import type { OrderRow, OrderItemRow, OrderStatus } from '@/types/database'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { notifyNewOrder, notifyOrderStatusChanged } from '@/hooks/useOrderNotification'
 
 export interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[]
@@ -13,7 +15,11 @@ export function useOrders(storeId: string | null) {
   const [loading, setLoading] = useState(true)
 
   const fetchOrders = useCallback(async () => {
-    if (!storeId) return
+    if (!storeId) {
+      setOrders([])
+      setLoading(false)
+      return
+    }
     try {
       const data = await getOrders(storeId)
       setOrders((data as OrderWithItems[]) ?? [])
@@ -26,36 +32,73 @@ export function useOrders(storeId: string | null) {
 
   useEffect(() => {
     if (!storeId) return
+    setOrders([])
+    setLoading(true)
     fetchOrders()
+
+    async function handleInsert(payload: RealtimePostgresChangesPayload<OrderRow>) {
+      const orderId = payload.new?.id
+      if (!orderId) return
+
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('id', orderId)
+          .single()
+
+        if (error) throw error
+        if (!data) return
+
+        const order = data as OrderWithItems
+        setOrders((prev) => {
+          if (prev.some((item) => item.id === order.id)) return prev
+          return [order, ...prev]
+        })
+
+        const tableLabel = `테이블 ${order.table_id ?? '-'}`
+        toast.success(`새 주문이 들어왔습니다! (${tableLabel})`)
+        notifyNewOrder(tableLabel, order.id)
+      } catch (err) {
+        console.error('useOrders INSERT handler:', err)
+      }
+    }
+
+    function handleUpdate(payload: RealtimePostgresChangesPayload<OrderRow>) {
+      try {
+        const updated = payload.new as OrderRow
+        if (!updated?.id) return
+
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === updated.id ? { ...o, ...updated } : o
+          )
+        )
+        const tableLabel = `테이블 ${updated.table_id ?? '-'}`
+        notifyOrderStatusChanged(tableLabel, updated.id, updated.status)
+      } catch (err) {
+        console.error('useOrders UPDATE handler:', err)
+      }
+    }
 
     const channel = supabase
       .channel(`orders:${storeId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` },
-        async (payload) => {
-          // Fetch full order with items
-          const { data } = await supabase
-            .from('orders')
-            .select('*, order_items(*)')
-            .eq('id', payload.new.id)
-            .single()
-
-          if (data) {
-            setOrders((prev) => [data as OrderWithItems, ...prev])
-            toast.success(`새 주문이 들어왔습니다! (테이블 ${(data as any).table_id ?? '-'})`)
-          }
+        (payload) => {
+          void handleInsert(payload as RealtimePostgresChangesPayload<OrderRow>)
         }
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` },
         (payload) => {
-          setOrders((prev) =>
-            prev.map((o) =>
-              o.id === payload.new.id ? { ...o, ...(payload.new as OrderRow) } : o
-            )
-          )
+          try {
+            handleUpdate(payload as RealtimePostgresChangesPayload<OrderRow>)
+          } catch (err) {
+            console.error('useOrders UPDATE callback:', err)
+          }
         }
       )
       .subscribe()
@@ -77,8 +120,14 @@ export function useOrders(storeId: string | null) {
     }
   }, [])
 
-  const deleteOrder = useCallback((orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+  const deleteOrder = useCallback(async (orderId: string) => {
+    try {
+      await apiDeleteOrder(orderId)
+      setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    } catch (err) {
+      console.error('useOrders deleteOrder:', err)
+      throw err
+    }
   }, [])
 
   return { orders, loading, updateOrderStatus, deleteOrder, refetch: fetchOrders }

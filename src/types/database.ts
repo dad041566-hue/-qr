@@ -165,6 +165,7 @@ export interface StoreMemberRow {
   store_id: string
   user_id: string
   role: MemberRole
+  is_first_login: boolean
   created_at: string
 }
 
@@ -173,6 +174,7 @@ export interface StoreMemberInsert {
   store_id: string
   user_id: string
   role?: MemberRole
+  is_first_login?: boolean
   created_at?: string
 }
 

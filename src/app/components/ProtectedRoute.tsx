@@ -4,6 +4,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { checkStoreActive } from '@/lib/api/subscription'
 import type { UserRole } from '@/types/auth'
 
+const SUBSCRIPTION_TTL_MS = 5 * 60 * 1000
+const subscriptionCheckCache = new Map<string, { active: boolean; checkedAt: number }>()
+
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   owner: 3,
   manager: 2,
@@ -18,15 +21,29 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, loading, isFirstLogin, signOut } = useAuth()
   const location = useLocation()
-  const [subscriptionChecking, setSubscriptionChecking] = useState(false)
-  const [storeActive, setStoreActive] = useState<boolean | null>(null)
+  const [subscriptionChecking, setSubscriptionChecking] = useState(true)
+  const [storeActive, setStoreActive] = useState<boolean>(true)
 
   useEffect(() => {
-    if (!user?.storeId) return
+    if (!user?.storeId) {
+      setStoreActive(true)
+      setSubscriptionChecking(false)
+      return
+    }
+
+    const cached = subscriptionCheckCache.get(user.storeId)
+    if (cached && Date.now() - cached.checkedAt < SUBSCRIPTION_TTL_MS) {
+      setStoreActive(cached.active)
+      setSubscriptionChecking(false)
+      return
+    }
 
     setSubscriptionChecking(true)
     checkStoreActive(user.storeId)
-      .then((active) => setStoreActive(active))
+      .then((active) => {
+        subscriptionCheckCache.set(user.storeId, { active, checkedAt: Date.now() })
+        setStoreActive(active)
+      })
       .catch(() => setStoreActive(false))
       .finally(() => setSubscriptionChecking(false))
   }, [user?.storeId])

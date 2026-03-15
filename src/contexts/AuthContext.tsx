@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { StoreUser } from '@/types/auth'
 
@@ -8,6 +8,7 @@ interface AuthContextValue {
   isFirstLogin: boolean
   signInWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  refreshStoreUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -17,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
 
-  async function fetchStoreUser(supabaseUserId: string, email: string): Promise<StoreUser | null> {
+  const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string): Promise<StoreUser | null> => {
     const { data, error } = await supabase
       .from('store_members')
       .select('role, store_id, is_first_login, stores(name)')
@@ -33,18 +34,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       role: data.role,
       storeId: data.store_id,
-      storeName: (data.stores as any)?.name ?? '',
+      storeName:
+        typeof data.stores === 'object' &&
+        data.stores !== null &&
+        !Array.isArray(data.stores) &&
+        'name' in data.stores
+          ? (data.stores as { name?: string }).name ?? ''
+          : '',
     }
-  }
+  }, [])
+
+  const refreshStoreUser = useCallback(async () => {
+    setLoading(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
+      setUser(storeUser)
+      setLoading(false)
+      return
+    }
+    setUser(null)
+    setIsFirstLogin(false)
+    setLoading(false)
+  }, [fetchStoreUser])
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
-        setUser(storeUser)
-      }
-      setLoading(false)
-    })
+    refreshStoreUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
@@ -71,7 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isFirstLogin, signInWithEmail, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, isFirstLogin, signInWithEmail, signOut, refreshStoreUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

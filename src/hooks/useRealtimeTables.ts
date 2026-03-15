@@ -9,7 +9,11 @@ export function useRealtimeTables(storeId: string | null) {
   const [loading, setLoading] = useState(true)
 
   const fetchTables = useCallback(async () => {
-    if (!storeId) return
+    if (!storeId) {
+      setTables([])
+      setLoading(false)
+      return
+    }
     try {
       const data = await getTables(storeId)
       setTables(data ?? [])
@@ -21,7 +25,11 @@ export function useRealtimeTables(storeId: string | null) {
   }, [storeId])
 
   useEffect(() => {
-    if (!storeId) return
+    if (!storeId) {
+      setTables([])
+      setLoading(false)
+      return
+    }
     fetchTables()
 
     const channel = supabase

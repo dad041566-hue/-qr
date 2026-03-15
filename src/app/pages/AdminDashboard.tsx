@@ -5,10 +5,13 @@ import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
+import { requestNotificationPermission } from '@/hooks/useOrderNotification';
 import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
 import { useRealtimeTables } from '@/hooks/useRealtimeTables';
 import { useMenuAdmin } from '@/hooks/useMenuAdmin';
 import { getDailyRevenue, type DailyRevenueRow } from '@/lib/api/admin';
+import { createOrder } from '@/lib/api/order';
+import type { OrderStatus } from '@/types/database';
 
 // ============================================================
 // Adapter helpers — map Supabase row shapes to the UI-local shapes
@@ -114,6 +117,14 @@ const TOP_MENUS = [
   { name: '크로플', sales: 31 },
 ];
 
+const ORDER_STATUS_MAP: Record<string, OrderStatus> = {
+  pending: 'confirmed',
+  preparing: 'preparing',
+  completed: 'ready',
+  served: 'served',
+  cancelled: 'cancelled',
+};
+
 const MOCK_WAITING = [
   { id: 12, phone: '010-****-1234', pax: 2, time: '5분 전', status: 'waiting' },
   { id: 13, phone: '010-****-5678', pax: 4, time: '2분 전', status: 'waiting' },
@@ -124,6 +135,15 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const storeId = user?.storeId ?? '';
+
+  // 브라우저 알림 권한 요청 (최초 1회)
+  useEffect(() => {
+    requestNotificationPermission().then((permission) => {
+      if (permission === 'denied') {
+        toast.info('알림이 차단되어 있어 주문 알림이 표시되지 않습니다.');
+      }
+    });
+  }, [])
 
   // --- Supabase hooks ---
   const { orders: rawOrders, loading: ordersLoading, updateOrderStatus: apiUpdateOrderStatus, deleteOrder: apiDeleteOrder } = useOrders(storeId || null);
@@ -316,7 +336,7 @@ export function AdminDashboard() {
     const price = Number(formData.get('price'));
     const desc = formData.get('desc') as string || '';
     const badgeVal = formData.get('badge') as string;
-    const badge = badgeVal === '없음' ? null : (badgeVal?.toLowerCase() as any) || null;
+    const badge = badgeVal === '없음' ? null : (badgeVal?.toLowerCase() || null);
 
     // Find category_id from name
     const cat = rawCategories.find(c => c.name === categoryName);
@@ -365,6 +385,7 @@ export function AdminDashboard() {
   const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
   const [orderTableId, setOrderTableId] = useState<number | null>(null);
   const [cart, setCart] = useState<any[]>([]);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [posCategory, setPosCategory] = useState('전체');
 
   const POS_CATEGORIES = ['전체', ...Array.from(new Set(menus.map(m => m.category)))];
@@ -384,32 +405,62 @@ export function AdminDashboard() {
     setCart(prev => prev.map(item => item.id === id ? { ...item, qty: Math.max(0, item.qty + delta) } : item).filter(item => item.qty > 0));
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cart.length === 0) return toast.error('메뉴를 선택해주세요.');
-    
+
+    if (!storeId) return toast.error('매장 정보를 찾을 수 없습니다.');
+    if (!orderTableId) return toast.error('테이블을 선택해주세요.');
+
+    const tableRealId = findRealTableId(orderTableId);
+    if (!tableRealId) return toast.error('테이블 정보를 불러오지 못했습니다.');
+
+    const orderItems = cart.map((item) => ({
+      menuItemId: item.id,
+      menuItemName: item.name,
+      unitPrice: item.price,
+      quantity: item.qty,
+      totalPrice: item.price * item.qty,
+      selectedOptions: [],
+    }));
+
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    
-    // Update KDS
-    setOrders(prev => [
-      { 
-        id: `o${Date.now()}`, 
-        table: orderTableId as number, 
-        items: cart.map(c => ({ name: c.name, qty: c.qty })), 
-        status: 'pending', 
-        time: 0, 
-        total: totalAmount,
-        type: 'Dine-in',
-        pax: 0
-      },
-      ...prev
-    ]);
 
-    // Update Table
-    setTables(prev => prev.map(t => t.id === orderTableId ? { ...t, amount: t.amount + totalAmount } : t));
+    setIsPlacingOrder(true);
+    try {
+      await createOrder({
+        storeId,
+        tableId: tableRealId,
+        items: orderItems,
+      });
 
-    toast.success(`${orderTableId}번 테이블 주문이 주방으로 전달되었습니다.`, { icon: <ChefHat className="w-5 h-5 text-orange-500" /> });
-    setIsAddOrderModalOpen(false);
-    setCart([]);
+      await apiUpdateTableStatus(tableRealId, 'occupied');
+      setTables(prev => prev.map(t => t.id === orderTableId ? {
+        ...t,
+        status: 'occupied',
+        amount: t.amount + totalAmount,
+        time: t.time || '방금 전',
+        pax: t.pax || 2,
+      } : t));
+      if (selectedTable && selectedTable.id === orderTableId) {
+        setSelectedTable((prev: any) => ({
+          ...prev,
+          status: 'occupied',
+          amount: (prev.amount || 0) + totalAmount,
+          time: prev.time || '방금 전',
+          pax: prev.pax || 2,
+        }));
+      }
+
+      toast.success(`${orderTableId}번 테이블 주문이 주방으로 전달되었습니다.`, {
+        icon: <ChefHat className="w-5 h-5 text-orange-500" />
+      });
+      setIsAddOrderModalOpen(false);
+      setCart([]);
+    } catch {
+      toast.error('주문 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   const handleCheckoutTable = (id: number) => {
@@ -450,7 +501,7 @@ export function AdminDashboard() {
           return { ...o, items: updatedItems, total: newTotal };
         }
         return o;
-      }).filter(Boolean) as any[];
+      }).filter((entry): entry is UIOrder => entry !== null);
     });
 
     // Update table amount
@@ -493,24 +544,34 @@ export function AdminDashboard() {
     setIsTableModalOpen(false);
   };
 
-  const updateOrderStatus = (id: string, newStatus: string) => {
+  const updateOrderStatus = async (id: string, newStatus: string) => {
     // Map UI status to DB OrderStatus
-    const dbStatus = newStatus === 'pending' ? 'confirmed' : newStatus === 'completed' ? 'ready' : newStatus as any;
-    apiUpdateOrderStatus(id, dbStatus);
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
-    if (newStatus === 'preparing') toast.success(`주방으로 전달되었습니다.`, { icon: <ChefHat className="w-5 h-5 text-orange-500"/> });
-    if (newStatus === 'completed') toast.success(`서빙을 준비해주세요.`, { icon: <CheckCircle2 className="w-5 h-5 text-green-500"/> });
-    if (newStatus === 'served') toast.success(`서빙이 완료되었습니다.`);
+    const dbStatus = ORDER_STATUS_MAP[newStatus]
+    if (!dbStatus) {
+      toast.error('잘못된 주문 상태입니다.')
+      return
+    }
+    try {
+      await apiUpdateOrderStatus(id, dbStatus)
+      if (newStatus === 'preparing') toast.success(`주방으로 전달되었습니다.`, { icon: <ChefHat className="w-5 h-5 text-orange-500"/> })
+      if (newStatus === 'completed') toast.success(`서빙을 준비해주세요.`, { icon: <CheckCircle2 className="w-5 h-5 text-green-500"/> })
+      if (newStatus === 'served') toast.success(`서빙이 완료되었습니다.`)
+    } catch {
+      toast.error('주문 상태 변경에 실패했습니다.')
+    }
   };
 
   const updateOrderPax = (id: string, pax: number) => {
     setOrders(prev => prev.map(o => o.id === id ? { ...o, pax } : o));
   };
 
-  const deleteOrder = (id: string) => {
-    apiDeleteOrder(id);
-    setOrders(prev => prev.filter(o => o.id !== id));
-    toast.success(`주문이 삭제되었습니다.`);
+  const deleteOrder = async (id: string) => {
+    try {
+      await apiDeleteOrder(id)
+      toast.success(`주문이 삭제되었습니다.`)
+    } catch {
+      toast.error('주문 삭제에 실패했습니다.')
+    }
   };
 
   // Helper to find real table UUID from table_number
@@ -2371,14 +2432,18 @@ export function AdminDashboard() {
                     </div>
                     <button 
                       onClick={handlePlaceOrder}
-                      disabled={cart.length === 0}
+                      disabled={cart.length === 0 || isPlacingOrder}
                       className={`w-full py-4 rounded-xl font-bold text-base md:text-lg transition-all ${
-                        cart.length > 0 
+                        cart.length > 0 && !isPlacingOrder
                           ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-500/20' 
                           : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
                       }`}
                     >
-                      {cart.length > 0 ? `${cart.reduce((sum, item) => sum + item.qty, 0)}개 주문 넣기` : '메뉴를 선택해주세요'}
+                      {isPlacingOrder
+                        ? '주문 전송 중...'
+                        : cart.length > 0
+                          ? `${cart.reduce((sum, item) => sum + item.qty, 0)}개 주문 넣기`
+                          : '메뉴를 선택해주세요'}
                     </button>
                   </div>
                 </div>
