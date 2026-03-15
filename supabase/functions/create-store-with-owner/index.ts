@@ -189,6 +189,19 @@ serve(async (req) => {
       throw new Error(`Membership creation failed: ${memberError.message}`)
     }
 
+    const defaultTables = Array.from({ length: 5 }, (_, i) => ({
+      store_id: store.id,
+      table_number: i + 1,
+      name: `${i + 1}번 테이블`,
+      status: 'available',
+      qr_token: crypto.randomUUID(),
+    }))
+
+    const { error: tableError } = await adminClient.from('tables').insert(defaultTables)
+    if (tableError) {
+      throw new Error(`Table creation failed: ${tableError.message}`)
+    }
+
     return json({ store })
   } catch (err) {
     if (ownerUserId) {
