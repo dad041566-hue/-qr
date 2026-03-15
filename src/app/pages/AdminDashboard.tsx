@@ -9,8 +9,10 @@ import { requestNotificationPermission } from '@/hooks/useOrderNotification';
 import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
 import { useRealtimeTables } from '@/hooks/useRealtimeTables';
 import { useMenuAdmin } from '@/hooks/useMenuAdmin';
-import { getDailyRevenue, type DailyRevenueRow } from '@/lib/api/admin';
+import { getDailyRevenue, addTable, type DailyRevenueRow } from '@/lib/api/admin';
 import { createOrder } from '@/lib/api/order';
+import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting';
+import { useWaitingQueue } from '@/hooks/useWaitingQueue';
 import type { OrderStatus } from '@/types/database';
 
 // ============================================================
@@ -81,16 +83,7 @@ interface UIMenu {
   options: any[];
 }
 
-// Revenue / analytics chart data (static placeholders — will be replaced by getDailyRevenue)
-const REVENUE_DATA = [
-  { time: '10시', amount: 12, prev: 8 },
-  { time: '11시', amount: 25, prev: 18 },
-  { time: '12시', amount: 58, prev: 42 },
-  { time: '13시', amount: 42, prev: 35 },
-  { time: '14시', amount: 28, prev: 22 },
-  { time: '15시', amount: 19, prev: 15 },
-  { time: '16시', amount: 31, prev: 28 },
-];
+// Revenue chart data is loaded dynamically via getDailyRevenue in useEffect
 
 const WEEKLY_REVENUE = [
   { day: '월', amount: 120, prev: 110 },
@@ -125,11 +118,6 @@ const ORDER_STATUS_MAP: Record<string, OrderStatus> = {
   cancelled: 'cancelled',
 };
 
-const MOCK_WAITING = [
-  { id: 12, phone: '010-****-1234', pax: 2, time: '5분 전', status: 'waiting' },
-  { id: 13, phone: '010-****-5678', pax: 4, time: '2분 전', status: 'waiting' },
-  { id: 14, phone: '010-****-9012', pax: 2, time: '방금 전', status: 'waiting' },
-];
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -199,11 +187,42 @@ export function AdminDashboard() {
     [rawMenuItems, categoryNameMap],
   );
 
+  // Revenue chart data from Supabase
+  const [revenueData, setRevenueData] = useState<{ time: string; amount: number }[]>([]);
+  useEffect(() => {
+    if (!storeId) return;
+    getDailyRevenue(storeId, 7).then((rows) => {
+      setRevenueData(
+        rows.map((r) => ({
+          time: r.date.slice(5), // "MM-DD"
+          amount: Math.round(r.amount / 10000),
+        })),
+      );
+    }).catch(() => {});
+  }, [storeId]);
+
+  // Waiting queue from Supabase (realtime)
+  const { waitings: rawWaitings } = useWaitingQueue(storeId);
+
+  // Recent activity feed derived from latest orders
+  const recentActivities = useMemo(() => {
+    return rawOrders.slice(0, 5).map((o) => {
+      const tableNum = tableNumberMap.get(o.table_id ?? '') ?? 0;
+      return {
+        time: `${minutesAgo(o.created_at)}분 전`,
+        text: `${tableNum}번 테이블 주문 (${o.total_price.toLocaleString()}원)`,
+        type: 'order' as const,
+        icon: Receipt,
+        color: 'text-blue-500',
+        bg: 'bg-blue-50',
+      };
+    });
+  }, [rawOrders, tableNumberMap]);
+
   // Local UI state backed by adapted data
   const [orders, setOrders] = useState<UIOrder[]>([]);
   const [tables, setTables] = useState<UITable[]>([]);
   const [menus, setMenus] = useState<UIMenu[]>([]);
-  const [waitings, setWaitings] = useState(MOCK_WAITING);
 
   // Sync adapted data into local state when hooks update
   useEffect(() => { setOrders(adaptedOrders); }, [adaptedOrders]);
@@ -586,13 +605,22 @@ export function AdminDashboard() {
     toast.info(`${id}번 테이블 정리가 완료되었습니다.`);
   };
 
-  const callWaiting = (id: number) => {
-    toast.success(`대기 ${id}번 고객님을 호출했습니다.`, { icon: <Volume2 className="w-5 h-5 text-blue-500" /> });
+  const callWaiting = async (waitingId: string, queueNumber: number) => {
+    try {
+      await apiCallWaiting(waitingId);
+      toast.success(`대기 ${queueNumber}번 고객님을 호출했습니다.`, { icon: <Volume2 className="w-5 h-5 text-blue-500" /> });
+    } catch {
+      toast.error('호출에 실패했습니다.');
+    }
   };
 
-  const completeWaiting = (id: number) => {
-    setWaitings(prev => prev.filter(w => w.id !== id));
-    toast.success(`대기 ${id}번 고객님 입장이 완료되었습니다.`);
+  const completeWaiting = async (waitingId: string, queueNumber: number) => {
+    try {
+      await apiCompleteWaiting(waitingId);
+      toast.success(`대기 ${queueNumber}번 고객님 입장이 완료되었습니다.`);
+    } catch {
+      toast.error('입장 처리에 실패했습니다.');
+    }
   };
 
   const toggleMenuStock = (id: string) => {
@@ -676,7 +704,7 @@ export function AdminDashboard() {
           </div>
           <div className="h-[250px] md:h-[320px] w-full min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={10} minHeight={10}>
-              <AreaChart id="revenue-chart" key="areachart" data={REVENUE_DATA} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
+              <AreaChart id="revenue-chart" key="areachart" data={revenueData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
                 <defs key="defs">
                   <linearGradient id="colorRevenueChart1" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f97316" stopOpacity={0.4}/>
@@ -707,13 +735,9 @@ export function AdminDashboard() {
             </span>
           </div>
           <div className="flex-1 overflow-y-auto pr-2 space-y-5 scrollbar-hide relative z-10">
-            {[
-              { time: '방금 전', text: '5번 테이블 추가 주문', type: 'order', icon: Receipt, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { time: '2분 전', text: '1번 테이블 포장 완료', type: 'cook', icon: ChefHat, color: 'text-orange-500', bg: 'bg-orange-50' },
-              { time: '5분 전', text: '4번 테이블 정산 (49,000원)', type: 'pay', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
-              { time: '12분 전', text: '직원 호출 (물티슈)', type: 'call', icon: Bell, color: 'text-red-500', bg: 'bg-red-50' },
-              { time: '15분 전', text: '대기 3번 고객 입장', type: 'waiting', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
-            ].map((feed, i) => (
+            {recentActivities.length === 0 ? (
+              <p className="text-sm text-zinc-400 font-bold text-center py-8">최근 활동이 없습니다.</p>
+            ) : recentActivities.map((feed, i) => (
               <div key={i} className="flex gap-4 items-center group cursor-pointer">
                 <div className={`p-3 rounded-2xl shrink-0 ${feed.bg} transition-transform group-hover:scale-110`}>
                   <feed.icon className={`w-4 h-4 md:w-5 md:h-5 ${feed.color}`} />
@@ -1077,36 +1101,36 @@ export function AdminDashboard() {
 
       <div className="bg-white rounded-2xl md:rounded-3xl border border-zinc-200 overflow-hidden shadow-sm">
         <div className="bg-zinc-50 border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
-          <span className="font-extrabold text-zinc-800">현재 대기 <span className="text-orange-500">{waitings.length}</span>팀</span>
+          <span className="font-extrabold text-zinc-800">현재 대기 <span className="text-orange-500">{rawWaitings.length}</span>팀</span>
         </div>
-        
-        {waitings.length === 0 ? (
+
+        {rawWaitings.length === 0 ? (
           <div className="p-12 text-center text-zinc-500 font-medium">
             현재 대기중인 고객이 없습니다.
           </div>
         ) : (
           <div className="divide-y divide-zinc-100">
             <AnimatePresence>
-              {waitings.map((w) => (
+              {rawWaitings.map((w) => (
                 <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -50 }} key={w.id} className="p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-zinc-50/50 transition-colors">
                   <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center font-black text-xl md:text-2xl shrink-0">
-                      {w.id}
+                      {w.queue_number}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
                         <h4 className="font-black text-lg md:text-xl text-zinc-900">{w.phone}</h4>
-                        <span className="bg-zinc-100 text-zinc-600 text-xs font-bold px-2 py-1 rounded-md">{w.time} 등록</span>
+                        <span className="bg-zinc-100 text-zinc-600 text-xs font-bold px-2 py-1 rounded-md">{minutesAgo(w.created_at)}분 전 등록</span>
                       </div>
-                      <p className="text-sm font-bold text-zinc-500 flex items-center gap-1"><Users className="w-4 h-4"/> 인원: {w.pax}명</p>
+                      <p className="text-sm font-bold text-zinc-500 flex items-center gap-1"><Users className="w-4 h-4"/> 인원: {w.party_size}명</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
-                    <button onClick={() => callWaiting(w.id)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors">
+                    <button onClick={() => callWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors">
                       <Volume2 className="w-4 h-4" /> 호출하기
                     </button>
-                    <button onClick={() => completeWaiting(w.id)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-md">
+                    <button onClick={() => completeWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-md">
                       <Check className="w-4 h-4" /> 입장 완료
                     </button>
                   </div>
@@ -1324,7 +1348,15 @@ export function AdminDashboard() {
           <button onClick={() => toast.success('전체 QR 코드가 인쇄 대기열에 추가되었습니다.')} className="flex-1 md:flex-none bg-white border border-zinc-200 text-zinc-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors shadow-sm flex items-center justify-center gap-2">
             <Printer className="w-4 h-4" /> 전체 인쇄
           </button>
-          <button onClick={() => toast.success('새 테이블이 추가되었습니다.')} className="flex-1 md:flex-none bg-zinc-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center gap-2">
+          <button onClick={async () => {
+            try {
+              const nextNumber = tables.length > 0 ? Math.max(...tables.map(t => t.id)) + 1 : 1;
+              await addTable(storeId, nextNumber);
+              toast.success('새 테이블이 추가되었습니다.');
+            } catch {
+              toast.error('테이블 추가에 실패했습니다.');
+            }
+          }} className="flex-1 md:flex-none bg-zinc-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" /> 테이블 추가
           </button>
         </div>
@@ -1594,7 +1626,7 @@ export function AdminDashboard() {
         <div className="flex items-center h-full w-full justify-around px-2">
           {(appMode === 'pos' ? [
             { id: 'orders', icon: ChefHat, label: 'KDS', badge: pendingOrders.length + preparingOrders.length },
-            { id: 'waiting', icon: Users, label: '웨이팅', badge: waitings.length },
+            { id: 'waiting', icon: Users, label: '웨이팅', badge: rawWaitings.length },
             { id: 'tables', icon: LayoutGrid, label: '홀현황' },
           ] : [
             { id: 'analytics', icon: LayoutDashboard, label: '대시보드' },
@@ -1660,7 +1692,7 @@ export function AdminDashboard() {
         <nav className="flex-1 py-6 px-4 space-y-1">
           {(appMode === 'pos' ? [
             { id: 'orders', icon: ChefHat, label: '주방 디스플레이', badge: pendingOrders.length },
-            { id: 'waiting', icon: Users, label: '웨이팅 관리', badge: waitings.length },
+            { id: 'waiting', icon: Users, label: '웨이팅 관리', badge: rawWaitings.length },
             { id: 'tables', icon: LayoutDashboard, label: '홀 테이블 현황' },
           ] : [
             { id: 'analytics', icon: BarChart4, label: '매출 분석' },

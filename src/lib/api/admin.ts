@@ -72,6 +72,21 @@ export async function updateTableStatus(tableId: string, status: TableStatus) {
   return data
 }
 
+export async function addTable(storeId: string, tableNumber: number) {
+  const { data, error } = await supabase
+    .from('tables')
+    .insert({
+      store_id: storeId,
+      table_number: tableNumber,
+      qr_token: crypto.randomUUID(),
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 // ============================================================
 // Revenue (daily aggregation)
 // ============================================================
