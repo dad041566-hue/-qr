@@ -29,3 +29,8 @@ npm-debug.log*
 
 # Vite 캐시
 .vite/
+
+# Claude Code 자동 생성 파일 (충돌 방지)
+.claude/context/
+.claude/settings.json
+.claude/settings.local.json
