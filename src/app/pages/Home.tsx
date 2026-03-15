@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { Smartphone, MonitorPlay, ArrowRight, Utensils, BarChart3, Clock, Menu, X, Users, CheckCircle2, ChevronRight, Star, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -277,6 +277,18 @@ export function Home() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-zinc-200 py-6 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+          <span>© 2026 TableFlow. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-zinc-900 transition-colors">개인정보처리방침</Link>
+            <span className="text-zinc-300">|</span>
+            <Link to="/terms" className="hover:text-zinc-900 transition-colors">이용약관</Link>
+          </div>
+        </div>
+      </footer>
 
       {/* Mobile Sticky Bottom CTA */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-zinc-200 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">

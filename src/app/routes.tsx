@@ -8,9 +8,13 @@ import { ChangePassword } from "./pages/ChangePassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SuperAdmin } from "./pages/SuperAdmin";
 import { SuperAdminRoute } from "./components/SuperAdminRoute";
+import { Privacy } from "./pages/Privacy";
+import { Terms } from "./pages/Terms";
 
 export const router = createBrowserRouter([
   { path: "/", Component: Home },
+  { path: "/privacy", Component: Privacy },
+  { path: "/terms", Component: Terms },
   { path: "/table/:id", Component: CustomerMenu },
   { path: "/m/:storeSlug/:tableId", Component: CustomerMenu },
   { path: "/waiting", Component: Waiting },
