@@ -1,0 +1,2 @@
+[functions.create-store-with-owner]
+verify_jwt = false

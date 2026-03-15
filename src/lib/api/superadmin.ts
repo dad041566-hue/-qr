@@ -27,8 +27,13 @@ async function callSuperadmin<T>(action: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   })
 
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.error ?? '요청 실패')
+  let json: any
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`서버 응답 오류 (HTTP ${res.status})`)
+  }
+  if (!res.ok) throw new Error(json.error ?? json.message ?? `요청 실패 (${res.status})`)
   return json as T
 }
 
@@ -58,8 +63,13 @@ async function callCreateStoreWithOwner<T>(body: unknown): Promise<T> {
     body: JSON.stringify(body),
   })
 
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.error ?? '요청 실패')
+  let json: any
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`서버 응답 오류 (HTTP ${res.status})`)
+  }
+  if (!res.ok) throw new Error(json.error ?? json.message ?? `요청 실패 (${res.status})`)
   return json as T
 }
 

@@ -1,0 +1,2 @@
+[functions.check-superadmin]
+verify_jwt = false
