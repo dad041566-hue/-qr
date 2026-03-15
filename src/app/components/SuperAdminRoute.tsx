@@ -1,39 +1,36 @@
 import React from 'react'
 import { Navigate } from 'react-router'
-import { checkSuperAdmin } from '@/lib/api/superadmin'
-import { useAuthContext } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 interface SuperAdminRouteProps {
   children: React.ReactNode
 }
 
 export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
-  const { user, loading } = useAuthContext()
   const [authorized, setAuthorized] = React.useState<boolean | null>(null)
+  const [sessionChecked, setSessionChecked] = React.useState(false)
+  const [hasSession, setHasSession] = React.useState(false)
 
   React.useEffect(() => {
-    if (!user) {
-      setAuthorized(null)
-      return
-    }
-
     let active = true
-    checkSuperAdmin()
-      .then((allowed) => {
-        if (!active) return
-        setAuthorized(allowed)
-      })
-      .catch(() => {
-        if (!active) return
-        setAuthorized(false)
-      })
 
-    return () => {
-      active = false
-    }
-  }, [user])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return
+      if (!session) {
+        setHasSession(false)
+        setSessionChecked(true)
+        return
+      }
+      setHasSession(true)
+      const allowed = session.user.app_metadata?.role === 'super_admin'
+      setAuthorized(allowed)
+      setSessionChecked(true)
+    })
 
-  if (loading) {
+    return () => { active = false }
+  }, [])
+
+  if (!sessionChecked) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-zinc-50">
         <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -41,7 +38,7 @@ export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
     )
   }
 
-  if (!user) {
+  if (!hasSession) {
     return <Navigate to="/login" replace />
   }
 

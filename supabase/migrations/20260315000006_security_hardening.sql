@@ -43,6 +43,7 @@ $$;
 -- ============================================================
 
 DROP POLICY IF EXISTS "stores_member" ON stores;
+DROP POLICY IF EXISTS "tables_member" ON tables;
 DROP POLICY IF EXISTS "tables_anon_select" ON tables;
 DROP POLICY IF EXISTS "menu_categories_member" ON menu_categories;
 DROP POLICY IF EXISTS "menu_categories_anon" ON menu_categories;

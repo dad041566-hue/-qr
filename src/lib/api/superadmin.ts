@@ -35,20 +35,7 @@ async function callSuperadmin<T>(action: string, body?: unknown): Promise<T> {
 export async function checkSuperAdmin(): Promise<boolean> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return false
-  assertAuthConfig()
-
-  const url = `${EDGE_FUNCTION_URL}/check-superadmin`
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-      'apikey': ANON_KEY,
-    },
-  })
-
-  if (!res.ok) return false
-  const json = await res.json()
-  return json.allowed === true
+  return session.user.app_metadata?.role === 'super_admin'
 }
 
 interface CreateStoreWithOwnerResponse {
