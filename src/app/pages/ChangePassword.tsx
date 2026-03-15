@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useForm } from 'react-hook-form'
 import { Lock, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/app/components/ui/input'
@@ -8,39 +7,53 @@ import { Button } from '@/app/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
-interface FormValues {
-  newPassword: string
-  confirmPassword: string
-}
-
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
 
 export function ChangePassword() {
   const navigate = useNavigate()
   const { refreshStoreUser } = useAuth()
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [errors, setErrors] = useState<{ newPassword?: string; confirmPassword?: string }>({})
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>()
-  const newPassword = watch('newPassword')
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
 
-  async function onSubmit(values: FormValues) {
+    const newErrors: typeof errors = {}
+    if (!newPassword) newErrors.newPassword = '새 비밀번호를 입력하세요.'
+    else if (!PASSWORD_REGEX.test(newPassword)) newErrors.newPassword = '8자 이상, 특수문자를 포함해야 합니다.'
+    if (!confirmPassword) newErrors.confirmPassword = '비밀번호 확인을 입력하세요.'
+    else if (confirmPassword !== newPassword) newErrors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
     setLoading(true)
+
     try {
-      const { error } = await supabase.auth.updateUser({ password: values.newPassword })
-      if (error) throw error
+      // 1. Get user ID from cached session (no network call)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('세션이 없습니다.')
 
-      // mark is_first_login = false in store_members
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { error: memberError } = await supabase
-          .from('store_members')
-          .update({ is_first_login: false })
-          .eq('user_id', user.id)
+      // 2. Update is_first_login BEFORE password change (avoid hanging SDK)
+      const { error: memberError } = await supabase
+        .from('store_members')
+        .update({ is_first_login: false })
+        .eq('user_id', session.user.id)
+      if (memberError) throw memberError
 
-        if (memberError) throw memberError
-      }
-
+      // Refresh in-memory auth state so ProtectedRoute sees is_first_login = false
       await refreshStoreUser()
+
+      // 3. Update password with timeout fallback (SDK may hang on session post-processing)
+      await Promise.race([
+        supabase.auth.updateUser({ password: newPassword }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]).catch((err: Error) => { if (err.message !== 'timeout') throw err })
+
       toast.success('비밀번호가 변경되었습니다.')
       navigate('/admin', { replace: true })
     } catch (err: any) {
@@ -65,7 +78,7 @@ export function ChangePassword() {
             첫 로그인입니다. 새 비밀번호를 설정해주세요.
           </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-zinc-600" htmlFor="newPassword">
                 새 비밀번호
@@ -77,19 +90,11 @@ export function ChangePassword() {
                   type="password"
                   placeholder="8자 이상, 특수문자 포함"
                   className="pl-9"
-                  aria-invalid={!!errors.newPassword}
-                  {...register('newPassword', {
-                    required: '새 비밀번호를 입력하세요.',
-                    pattern: {
-                      value: PASSWORD_REGEX,
-                      message: '8자 이상, 특수문자를 포함해야 합니다.',
-                    },
-                  })}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
-              {errors.newPassword && (
-                <p className="text-xs text-red-500">{errors.newPassword.message}</p>
-              )}
+              {errors.newPassword && <p className="text-xs text-red-500">{errors.newPassword}</p>}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -103,16 +108,11 @@ export function ChangePassword() {
                   type="password"
                   placeholder="비밀번호 재입력"
                   className="pl-9"
-                  aria-invalid={!!errors.confirmPassword}
-                  {...register('confirmPassword', {
-                    required: '비밀번호 확인을 입력하세요.',
-                    validate: (v) => v === newPassword || '비밀번호가 일치하지 않습니다.',
-                  })}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
-              )}
+              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
 
             <Button
