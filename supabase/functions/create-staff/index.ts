@@ -98,7 +98,7 @@ serve(async (req) => {
     return json({ error: 'email, password, name, role, storeId are required' }, { status: 400 })
   }
 
-  if (!['owner', 'manager'].includes(role)) {
+  if (!['manager', 'staff'].includes(role)) {
     return json({ error: 'Invalid role for staff account creation' }, { status: 400 })
   }
 

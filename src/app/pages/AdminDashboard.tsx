@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
+import { StaffManagement } from '@/app/components/admin/StaffManagement';
 import { requestNotificationPermission } from '@/hooks/useOrderNotification';
 import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
 import { useRealtimeTables } from '@/hooks/useRealtimeTables';
@@ -1602,6 +1603,7 @@ export function AdminDashboard() {
             { id: 'customers', icon: Users, label: '고객' },
             { id: 'qr', icon: QrCode, label: 'QR' },
             { id: 'settings', icon: Settings, label: '설정' },
+            ...(user?.role === 'owner' ? [{ id: 'staff', icon: Users, label: '직원' }] : []),
           ]).map(item => (
             <button
               key={item.id}
@@ -1669,6 +1671,7 @@ export function AdminDashboard() {
             { id: 'qr', icon: QrCode, label: 'QR 코드 관리' },
             { id: 'event', icon: Gift, label: '이벤트 관리' },
             { id: 'settings', icon: Settings, label: '매장 설정' },
+            ...(user?.role === 'owner' ? [{ id: 'staff', icon: Users, label: '직원 관리' }] : []),
           ]).map(item => (
             <button
               key={item.id}
@@ -1784,6 +1787,11 @@ export function AdminDashboard() {
             {activeTab === 'event' && <motion.div key="event" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{renderEventManagement()}</motion.div>}
             {activeTab === 'customers' && <motion.div key="customers" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{renderCustomers()}</motion.div>}
             {activeTab === 'settings' && <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{renderSettings()}</motion.div>}
+            {activeTab === 'staff' && user?.role === 'owner' && (
+              <motion.div key="staff" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <StaffManagement storeId={storeId} currentUserId={user.id} />
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </main>
