@@ -1,0 +1,3008 @@
+{
+  "config": {
+    "configFile": "D:\\Project\\-qr\\playwright.config.ts",
+    "rootDir": "D:/Project/-qr/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 6
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Project/-qr/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 6
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/Project/-qr/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 6,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "edge-cases.spec.ts",
+      "file": "edge-cases.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "SC-031: /privacy 페이지 정상 렌더링",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3537,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:20.089Z",
+                  "annotations": [],
+                  "attachments": []
+                },
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 917,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-03-16T15:47:08.598Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Project\\-qr\\test-results\\edge-cases-SC-031-privacy-페이지-정상-렌더링-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "db200a91ff2226597e25-366a6db1cde004978e3f",
+          "file": "edge-cases.spec.ts",
+          "line": 27,
+          "column": 1
+        },
+        {
+          "title": "SC-031: /terms 페이지 정상 렌더링",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1708,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:24.003Z",
+                  "annotations": [],
+                  "attachments": []
+                },
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1015,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-03-16T15:47:09.854Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Project\\-qr\\test-results\\edge-cases-SC-031-terms-페이지-정상-렌더링-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "db200a91ff2226597e25-f5f3e36fa1fa98e23129",
+          "file": "edge-cases.spec.ts",
+          "line": 32,
+          "column": 1
+        },
+        {
+          "title": "SC-035: 존재하지 않는 tableId 접근 시 에러/빈 상태",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2438,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:25.742Z",
+                  "annotations": [],
+                  "attachments": []
+                },
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1650,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-03-16T15:47:10.932Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Project\\-qr\\test-results\\edge-cases-SC-035-존재하지-않는-tableId-접근-시-에러-빈-상태-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "db200a91ff2226597e25-68f06c039d33fd903f71",
+          "file": "edge-cases.spec.ts",
+          "line": 40,
+          "column": 1
+        },
+        {
+          "title": "SC-030: 세션 만료 후 자동 리다이렉트",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2915,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:28.201Z",
+                  "annotations": [],
+                  "attachments": []
+                },
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2313,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-03-16T15:47:12.639Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Project\\-qr\\test-results\\edge-cases-SC-030-세션-만료-후-자동-리다이렉트-retry1\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "db200a91ff2226597e25-42bb05ceec94bbc8ff2c",
+          "file": "edge-cases.spec.ts",
+          "line": 62,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "엣지 케이스 E2E (SC-033, SC-038)",
+          "file": "edge-cases.spec.ts",
+          "line": 103,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 — 매장 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8377,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: edge-test-1773675980072\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:31.136Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4056,
+                      "error": {
+                        "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-7\\traces\\db200a91ff2226597e25-f70b467363ccfd1b71fa-retry1-recording4.trace'",
+                        "stack": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-7\\traces\\db200a91ff2226597e25-f70b467363ccfd1b71fa-retry1-recording4.trace'"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-7\\traces\\db200a91ff2226597e25-f70b467363ccfd1b71fa-retry1-recording4.trace'"
+                        },
+                        {
+                          "message": "Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-7\\traces\\db200a91ff2226597e25-f70b467363ccfd1b71fa-retry1-recording4.trace'"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: edge-test-1773676028582\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: edge-test-1773676028582\n"
+                        }
+                      ],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:15.092Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-033-SC-038-1-슈퍼어드민-—-매장-생성-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-033-SC-038-1-슈퍼어드민-—-매장-생성-retry1\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-033-SC-038-1-슈퍼어드민-—-매장-생성-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "db200a91ff2226597e25-f70b467363ccfd1b71fa",
+              "file": "edge-cases.spec.ts",
+              "line": 104,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비번 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3565,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:39.551Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db200a91ff2226597e25-3eb1f3024664eb362b19",
+              "file": "edge-cases.spec.ts",
+              "line": 122,
+              "column": 3
+            },
+            {
+              "title": "3. 매장/테이블 정보 추출",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2840,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:43.146Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db200a91ff2226597e25-b5c9e1ca06267059e52d",
+              "file": "edge-cases.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "SC-007: 만료된 매장 접근 차단",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "SUPABASE_SERVICE_ROLE_KEY 미설정 — CI에서 이 테스트를 활성화하려면 환경변수 추가 필요",
+                      "location": {
+                        "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                        "line": 149,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 755,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:46.006Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "SUPABASE_SERVICE_ROLE_KEY 미설정 — CI에서 이 테스트를 활성화하려면 환경변수 추가 필요",
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                            "line": 149,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "db200a91ff2226597e25-72b913ad004a124ab905",
+              "file": "edge-cases.spec.ts",
+              "line": 147,
+              "column": 3
+            },
+            {
+              "title": "SC-034: 약한 비밀번호로 매장 생성 시도 — 실패 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2336,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:46.785Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db200a91ff2226597e25-d575e8ab7ef18a24da1a",
+              "file": "edge-cases.spec.ts",
+              "line": 214,
+              "column": 3
+            },
+            {
+              "title": "SC-036: 동시 주문 race condition — 두 주문 모두 정상 INSERT",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6499,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:49.144Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "db200a91ff2226597e25-85c9cf52fa319e64b719",
+              "file": "edge-cases.spec.ts",
+              "line": 252,
+              "column": 3
+            },
+            {
+              "title": "SC-037: 대기번호 race condition — 동시 호출 시 순차 번호 반환",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "window.__supabaseHeaders 미노출 환경 — next_queue_number RPC 검증 불가",
+                      "location": {
+                        "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                        "line": 369,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2094,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:55.664Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "window.__supabaseHeaders 미노출 환경 — next_queue_number RPC 검증 불가",
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                            "line": 369,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "db200a91ff2226597e25-63db69600a8675c944a0",
+              "file": "edge-cases.spec.ts",
+              "line": 338,
+              "column": 3
+            },
+            {
+              "title": "SC-038: XSS — 메뉴명 특수문자 이스케이프 확인",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 8497,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- <script>alert(1)</script>\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       로딩 중...\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    9 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      로딩 중...\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- <script>alert(1)</script>\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       로딩 중...\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    9 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      로딩 중...\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\n    at D:\\Project\\-qr\\e2e\\edge-cases.spec.ts:434:40",
+                        "location": {
+                          "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                          "column": 40,
+                          "line": 434
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 432 |\u001b[39m\n \u001b[90m 433 |\u001b[39m     \u001b[90m// Verify the XSS payload is rendered as visible escaped text (not just absent from DOM)\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 434 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m))\u001b[33m.\u001b[39mtoContainText(\u001b[32m'<script>alert(1)</script>'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\n \u001b[90m     |\u001b[39m                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 435 |\u001b[39m   })\n \u001b[90m 436 |\u001b[39m\n \u001b[90m 437 |\u001b[39m   test(\u001b[32m'SC-033: 중복 slug 매장 생성 시 오류 표시'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                            "column": 40,
+                            "line": 434
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- <script>alert(1)</script>\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       로딩 중...\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    9 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      로딩 중...\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\n\n  432 |\n  433 |     // Verify the XSS payload is rendered as visible escaped text (not just absent from DOM)\n> 434 |     await expect(page.locator('body')).toContainText('<script>alert(1)</script>', { timeout: 5000 })\n      |                                        ^\n  435 |   })\n  436 |\n  437 |   test('SC-033: 중복 slug 매장 생성 시 오류 표시', async ({ page }) => {\n    at D:\\Project\\-qr\\e2e\\edge-cases.spec.ts:434:40"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: edge-test-1773675980072\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:57.778Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-0-10ee1-038-XSS-—-메뉴명-특수문자-이스케이프-확인\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-0-10ee1-038-XSS-—-메뉴명-특수문자-이스케이프-확인\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\edge-cases-엣지-케이스-E2E-SC-0-10ee1-038-XSS-—-메뉴명-특수문자-이스케이프-확인\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Project\\-qr\\e2e\\edge-cases.spec.ts",
+                        "column": 40,
+                        "line": 434
+                      }
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "db200a91ff2226597e25-a380a1106dae544b4196",
+              "file": "edge-cases.spec.ts",
+              "line": 386,
+              "column": 3
+            },
+            {
+              "title": "SC-033: 중복 slug 매장 생성 시 오류 표시",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:06.485Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:19.488Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "db200a91ff2226597e25-e9cff64bb0e4591878de",
+              "file": "edge-cases.spec.ts",
+              "line": 437,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "login.spec.ts",
+      "file": "login.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "슈퍼어드민 로그인 후 /superadmin 이동",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5404,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:19.953Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "41d3fd2474a19feb00a1-25afb98c301a31633195",
+          "file": "login.spec.ts",
+          "line": 10,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "menu.spec.ts",
+      "file": "menu.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "메뉴 CRUD E2E (SC-014~SC-019)",
+          "file": "menu.spec.ts",
+          "line": 44,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 — 매장 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7527,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: menu-test-1773675979970\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:20.005Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-f62d0c397754d1add0c6",
+              "file": "menu.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비번 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3737,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:27.986Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-63293d84bbb1274fcc72",
+              "file": "menu.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "3. 매장/테이블 정보 추출 + 메뉴 데이터 seed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 5003,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:31.752Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-94f4efabaaf5505f389e",
+              "file": "menu.spec.ts",
+              "line": 68,
+              "column": 3
+            },
+            {
+              "title": "SC-014: 메뉴 관리 탭 진입 — 등록된 메뉴 표시",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:36.824Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-5ba26e2f6f10155da790",
+              "file": "menu.spec.ts",
+              "line": 121,
+              "column": 3
+            },
+            {
+              "title": "SC-015: 메뉴 아이템 UI 등록",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4010,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:41.118Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-fd1af36d77ad4a8d4283",
+              "file": "menu.spec.ts",
+              "line": 137,
+              "column": 3
+            },
+            {
+              "title": "SC-016: 메뉴 수정 — 이름·가격 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3645,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:45.150Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-5028d747aaa93f3f10e4",
+              "file": "menu.spec.ts",
+              "line": 160,
+              "column": 3
+            },
+            {
+              "title": "SC-017: 메뉴 비활성화 — 품절 처리",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3178,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:48.817Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-6456d4bf518b67591df3",
+              "file": "menu.spec.ts",
+              "line": 196,
+              "column": 3
+            },
+            {
+              "title": "SC-017-2: 고객 화면에서 품절 메뉴 미노출 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2009,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:52.015Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-21690b55fa1c7cfb39de",
+              "file": "menu.spec.ts",
+              "line": 218,
+              "column": 3
+            },
+            {
+              "title": "SC-018: 테이블 추가",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 3557,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:54.047Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-8735ddab8792db01deb8",
+              "file": "menu.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "SC-019: QR URL 유효성 — 고객 메뉴 정상 로딩",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1451,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:57.630Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-d3f784d46ebb79d1a9ff",
+              "file": "menu.spec.ts",
+              "line": 253,
+              "column": 3
+            },
+            {
+              "title": "SC-021: 점주 매출 분석 탭",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 2734,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: menu-test-1773675979970\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:59.108Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "73ebff718611fd089a03-5a9db74b58a506f7240a",
+              "file": "menu.spec.ts",
+              "line": 268,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "order-detail.spec.ts",
+      "file": "order-detail.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "고객 장바구니 E2E (SC-022, SC-023)",
+          "file": "order-detail.spec.ts",
+          "line": 40,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 — 매장 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7647,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: cart-test-1773675980068\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:20.089Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48897fda6cdd49b9018f-2daa9a0e7ab06f43813d",
+              "file": "order-detail.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비번 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4044,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:28.405Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48897fda6cdd49b9018f-20c4dae1e116a69e9309",
+              "file": "order-detail.spec.ts",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "3. 매장/테이블 정보 추출 + 메뉴 데이터 seed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 4412,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:32.481Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48897fda6cdd49b9018f-43b2c2b28411f02df842",
+              "file": "order-detail.spec.ts",
+              "line": 64,
+              "column": 3
+            },
+            {
+              "title": "SC-022: 장바구니 수량 변경 — +/- 버튼으로 수량 업데이트",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7321,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:36.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48897fda6cdd49b9018f-15108911bf586e3ed3ce",
+              "file": "order-detail.spec.ts",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "SC-023: 빈 장바구니 주문 시도 — 주문 버튼 비활성 또는 미노출",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5384,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: cart-test-1773675980068\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:44.301Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "48897fda6cdd49b9018f-6dc9c799131b95eb97d2",
+              "file": "order-detail.spec.ts",
+              "line": 146,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "order-flow.spec.ts",
+      "file": "order-flow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "TableFlow 사용자 시나리오 E2E",
+          "file": "order-flow.spec.ts",
+          "line": 247,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 매장 생성 + 테이블 자동 생성 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 7847,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: order-test-1773675979971\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:20.016Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4640,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: order-test-1773676033376\n"
+                        }
+                      ],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:13.421Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시나리오-E2E-1-슈퍼어드민-매장-생성-테이블-자동-생성-확인-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-3eb539d8e42ccd41d601",
+              "file": "order-flow.spec.ts",
+              "line": 248,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비번 변경 → 어드민 진입",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 3916,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:28.383Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 2117,
+                      "error": {
+                        "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-8\\traces\\b33061f5483ab26aabfe-12e0133368987a618177-retry1-recording1.network'",
+                        "stack": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-8\\traces\\b33061f5483ab26aabfe-12e0133368987a618177-retry1-recording1.network'"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-8\\traces\\b33061f5483ab26aabfe-12e0133368987a618177-retry1-recording1.network'"
+                        },
+                        {
+                          "message": "Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-8\\traces\\b33061f5483ab26aabfe-12e0133368987a618177-retry1-recording1.network'"
+                        },
+                        {
+                          "message": "Error: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-8\\c5b2311e5d6a6707784dd9fb076d56f6.zip'"
+                        },
+                        {
+                          "message": "\u001b[31mTest timeout of 90000ms exceeded.\u001b[39m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: order-test-1773676033376\n"
+                        }
+                      ],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:18.403Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-fc3a8-2-점주-첫-로그인-→-비번-변경-→-어드민-진입-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-fc3a8-2-점주-첫-로그인-→-비번-변경-→-어드민-진입-retry1\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-12e0133368987a618177",
+              "file": "order-flow.spec.ts",
+              "line": 266,
+              "column": 3
+            },
+            {
+              "title": "3. 점주 어드민 — 메뉴 관리 탭 접근",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 4513,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:32.340Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-ac7767ba15756b35d1e7",
+              "file": "order-flow.spec.ts",
+              "line": 271,
+              "column": 3
+            },
+            {
+              "title": "4. 점주 어드민 — 테이블 확인 후 tableId 추출",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 3934,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:36.872Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-9e1ace090fb46d654c0f",
+              "file": "order-flow.spec.ts",
+              "line": 280,
+              "column": 3
+            },
+            {
+              "title": "4.5. 점주 — 메뉴 seed (카테고리 + 아이템)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 9133,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:40.833Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-bca898ff86c1868a26a3",
+              "file": "order-flow.spec.ts",
+              "line": 299,
+              "column": 3
+            },
+            {
+              "title": "5. 고객 — 메뉴 화면 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 893,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:50.093Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-363bad61d84c08c4c2c9",
+              "file": "order-flow.spec.ts",
+              "line": 327,
+              "column": 3
+            },
+            {
+              "title": "6. 고객 주문 → 어드민 실시간 수신 (1초 이내)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 19627,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 10000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- 주문이 성공적으로 접수되었습니다\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    2 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    6 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 10000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- 주문이 성공적으로 접수되었습니다\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    2 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    6 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\n    at placeOneOrderFromCustomer (D:\\Project\\-qr\\e2e\\order-flow.spec.ts:158:38)\n    at D:\\Project\\-qr\\e2e\\order-flow.spec.ts:354:5",
+                        "location": {
+                          "file": "D:\\Project\\-qr\\e2e\\order-flow.spec.ts",
+                          "column": 38,
+                          "line": 158
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 156 |\u001b[39m   \u001b[36mawait\u001b[39m submitButton\u001b[33m.\u001b[39mclick()\n \u001b[90m 157 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 158 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'body'\u001b[39m))\u001b[33m.\u001b[39mtoContainText(\u001b[32m'주문이 성공적으로 접수되었습니다'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m     |\u001b[39m                                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 159 |\u001b[39m }\n \u001b[90m 160 |\u001b[39m\n \u001b[90m 161 |\u001b[39m \u001b[36masync\u001b[39m \u001b[36mfunction\u001b[39m installNotificationProbe(page\u001b[33m:\u001b[39m \u001b[33mPage\u001b[39m) {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\order-flow.spec.ts",
+                            "column": 38,
+                            "line": 158
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 10000ms\n\u001b[32m- Expected substring  - 1\u001b[39m\n\u001b[31m+ Received string     + 6\u001b[39m\n\n\u001b[32m- 주문이 성공적으로 접수되었습니다\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+       뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[39m\n\u001b[31m+ \u001b[43m      \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m    \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m  \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    2 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.장바구니에 담겼습니다.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기주문에 실패했습니다. 다시 시도해주세요.\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\u001b[2m    6 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m      뒤로 로그인호출내역환영합니다! 지금 계신 곳은테이블 1 입니다네이버 영수증 리뷰 이벤트 🎉참여하고 아메리카노 1잔 무료로 받기!전체테스트메뉴테스트메뉴1₩10,000장바구니선택하신 메뉴를 확인해주세요.테스트메뉴1₩10,0001총 주문금액₩10,000 주문하기\u001b[22m\n\u001b[2m      \u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  \"\u001b[22m\n\n\n  156 |   await submitButton.click()\n  157 |\n> 158 |   await expect(page.locator('body')).toContainText('주문이 성공적으로 접수되었습니다', { timeout: 10000 })\n      |                                      ^\n  159 | }\n  160 |\n  161 | async function installNotificationProbe(page: Page) {\n    at placeOneOrderFromCustomer (D:\\Project\\-qr\\e2e\\order-flow.spec.ts:158:38)\n    at D:\\Project\\-qr\\e2e\\order-flow.spec.ts:354:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: order-test-1773675979971\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:51.004Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내-\\test-failed-2.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내-\\test-failed-3.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내-\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내-\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Project\\-qr\\e2e\\order-flow.spec.ts",
+                        "column": 38,
+                        "line": 158
+                      }
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-daa4afdb5c2439d21ee6",
+              "file": "order-flow.spec.ts",
+              "line": 338,
+              "column": 3
+            },
+            {
+              "title": "10. 알림/진동 동기화: 포그라운드 숨김 상태에서 주문 접수/상태 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:10.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-0972985ea6d945add958",
+              "file": "order-flow.spec.ts",
+              "line": 383,
+              "column": 3
+            },
+            {
+              "title": "7. 점주 어드민 — 직원 계정 생성 (UI 확인)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:10.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-30d6934bda4a766c208c",
+              "file": "order-flow.spec.ts",
+              "line": 441,
+              "column": 3
+            },
+            {
+              "title": "8. 점주+직원 실시간 동기화: 주문 접수 및 조리 상태 반영",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:10.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-322cd5e755cc87a88900",
+              "file": "order-flow.spec.ts",
+              "line": 464,
+              "column": 3
+            },
+            {
+              "title": "9. role 권한 제한 확인",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:10.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-a04088a6ead5148d3435",
+              "file": "order-flow.spec.ts",
+              "line": 505,
+              "column": 3
+            },
+            {
+              "title": "SC-041. 실시간 채널 장애 복원성: 오프라인→온라인 전환 후 어드민 정상 동작",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:10.945Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:48:50.807Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b33061f5483ab26aabfe-9362c7279b29fc730ae4",
+              "file": "order-flow.spec.ts",
+              "line": 516,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "staff.spec.ts",
+      "file": "staff.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "직원 관리 E2E (SC-011~SC-013, SC-020)",
+          "file": "staff.spec.ts",
+          "line": 36,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 — 매장 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 7552,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: staff-test-1773675980090\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:20.121Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-cfa487f633acea4fa6fe",
+              "file": "staff.spec.ts",
+              "line": 37,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비번 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3891,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:28.039Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-ed15753841c0ce5f9bff",
+              "file": "staff.spec.ts",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "SC-011: 직원 계정 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 6022,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:31.963Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-02e31fb0cc50062b116b",
+              "file": "staff.spec.ts",
+              "line": 62,
+              "column": 3
+            },
+            {
+              "title": "SC-012: 직원 — 메뉴 관리 탭 접근 불가",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3515,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:38.031Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-fff2771efe67bb2b4beb",
+              "file": "staff.spec.ts",
+              "line": 83,
+              "column": 3
+            },
+            {
+              "title": "SC-013: 직원 — 매장 설정 접근 불가",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 12680,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:41.578Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-b0c6a99120e45779c474",
+              "file": "staff.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "SC-032: 직원 계정 비활성화 (삭제)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3474,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:54.280Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-dbb5e0efcc9e1a6b3a7b",
+              "file": "staff.spec.ts",
+              "line": 122,
+              "column": 3
+            },
+            {
+              "title": "SC-029: 홈으로 나가기 → 홈 리다이렉트",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2773,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:57.779Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-b8003ae7442154c0a820",
+              "file": "staff.spec.ts",
+              "line": 145,
+              "column": 3
+            },
+            {
+              "title": "SC-002: 점주 — /superadmin 접근 차단",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 2491,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:00.571Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-34680a75e037da19369f",
+              "file": "staff.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "SC-005/006: 비로그인 — 보호 경로 접근 차단",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 895,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:03.077Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-6e02826f4187bf6c4121",
+              "file": "staff.spec.ts",
+              "line": 168,
+              "column": 3
+            },
+            {
+              "title": "SC-028: 매장 설정에서 비밀번호 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3046,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: staff-test-1773675980090\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:47:03.986Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2545a61da953aa54eb88-1a86fe50cb0c15071d8e",
+              "file": "staff.spec.ts",
+              "line": 176,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "superadmin.spec.ts",
+      "file": "superadmin.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "1. 슈퍼어드민 매장 생성",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4532,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: test-1773675985976\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:25.991Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "97432523ba8d52375f7d-f66136e0c9c92c457734",
+          "file": "superadmin.spec.ts",
+          "line": 18,
+          "column": 1
+        },
+        {
+          "title": "2. 점주 첫 로그인 → 비번 변경 → 어드민",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4692,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                    },
+                    {
+                      "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: test-1773675985976\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-03-16T15:46:30.558Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "97432523ba8d52375f7d-ea9d4e585b5ae6df4f9b",
+          "file": "superadmin.spec.ts",
+          "line": 45,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "waiting.spec.ts",
+      "file": "waiting.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "SC-026/SC-027 대기 키오스크 E2E",
+          "file": "waiting.spec.ts",
+          "line": 40,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 슈퍼어드민 — 매장 생성",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4667,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: waiting-test-1773675996383\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:36.409Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4418,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: waiting-test-1773676023337\n"
+                        }
+                      ],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:03.374Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키오스크-E2E-1-슈퍼어드민-—-매장-생성-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d427f85fb545102bec4f-a6bb86719723d6e3d129",
+              "file": "waiting.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "2. 점주 첫 로그인 → 비밀번호 변경",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2735,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:41.110Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2906,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:08.182Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키오스크-E2E-2-점주-첫-로그인-→-비밀번호-변경-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d427f85fb545102bec4f-ee54e385548b87134d8c",
+              "file": "waiting.spec.ts",
+              "line": 58,
+              "column": 3
+            },
+            {
+              "title": "3. storeId 추출",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2816,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:43.863Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1522,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:11.188Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키오스크-E2E-3-storeId-추출-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d427f85fb545102bec4f-9214879598e050bfc426",
+              "file": "waiting.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "SC-026: 대기 키오스크 UI — 전화번호 키패드 + 인원 선택 화면 검증",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 12132,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n\n    at D:\\Project\\-qr\\e2e\\waiting.spec.ts:81:66",
+                        "location": {
+                          "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                          "column": 66,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m\n \u001b[90m 80 |\u001b[39m     \u001b[90m// Step 1: 전화번호 키패드 화면 확인\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/연락처를 입력/\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m8000\u001b[39m })\n \u001b[90m    |\u001b[39m                                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m     \u001b[90m// 숫자 키패드 입력 (010-1234-5678)\u001b[39m\n \u001b[90m 84 |\u001b[39m     \u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m digit \u001b[36mof\u001b[39m [\u001b[32m'1'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'2'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'3'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'4'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'5'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'6'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'7'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'8'\u001b[39m]) {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                            "column": 66,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n\n\n  79 |\n  80 |     // Step 1: 전화번호 키패드 화면 확인\n> 81 |     await expect(page.getByRole('heading', { name: /연락처를 입력/ })).toBeVisible({ timeout: 8000 })\n     |                                                                  ^\n  82 |\n  83 |     // 숫자 키패드 입력 (010-1234-5678)\n  84 |     for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8']) {\n    at D:\\Project\\-qr\\e2e\\waiting.spec.ts:81:66"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: waiting-test-1773675996383\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:46.699Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                        "column": 66,
+                        "line": 81
+                      }
+                    },
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 10381,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n\n    at D:\\Project\\-qr\\e2e\\waiting.spec.ts:81:66",
+                        "location": {
+                          "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                          "column": 66,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m\n \u001b[90m 80 |\u001b[39m     \u001b[90m// Step 1: 전화번호 키패드 화면 확인\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/연락처를 입력/\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m8000\u001b[39m })\n \u001b[90m    |\u001b[39m                                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m     \u001b[90m// 숫자 키패드 입력 (010-1234-5678)\u001b[39m\n \u001b[90m 84 |\u001b[39m     \u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m digit \u001b[36mof\u001b[39m [\u001b[32m'1'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'2'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'3'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'4'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'5'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'6'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'7'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'8'\u001b[39m]) {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                            "column": 66,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: /연락처를 입력/ })\nExpected: visible\nTimeout: 8000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 8000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: /연락처를 입력/ })\u001b[22m\n\n\n  79 |\n  80 |     // Step 1: 전화번호 키패드 화면 확인\n> 81 |     await expect(page.getByRole('heading', { name: /연락처를 입력/ })).toBeVisible({ timeout: 8000 })\n     |                                                                  ^\n  82 |\n  83 |     // 숫자 키패드 입력 (010-1234-5678)\n  84 |     for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8']) {\n    at D:\\Project\\-qr\\e2e\\waiting.spec.ts:81:66"
+                        },
+                        {
+                          "message": "Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-6\\traces\\d427f85fb545102bec4f-8e2f35f1cea1f56721b6-retry1-recording3.trace'"
+                        },
+                        {
+                          "message": "Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\\Project\\-qr\\test-results\\.playwright-artifacts-6\\traces\\d427f85fb545102bec4f-8e2f35f1cea1f56721b6-retry1-recording3.trace'"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.\n"
+                        },
+                        {
+                          "text": "[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: waiting-test-1773676023337\n"
+                        }
+                      ],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:12.768Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증-retry1\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Project\\-qr\\test-results\\waiting-SC-026-SC-027-대기-키-7d01e-크-UI-—-전화번호-키패드-인원-선택-화면-검증-retry1\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Project\\-qr\\e2e\\waiting.spec.ts",
+                        "column": 66,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d427f85fb545102bec4f-8e2f35f1cea1f56721b6",
+              "file": "waiting.spec.ts",
+              "line": 74,
+              "column": 3
+            },
+            {
+              "title": "SC-026/027: 대기 등록 API 검증 — RPC + INSERT + 조회",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-16T15:46:59.219Z",
+                      "annotations": [],
+                      "attachments": []
+                    },
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-16T15:47:23.378Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d427f85fb545102bec4f-83160f9470736b424e5a",
+              "file": "waiting.spec.ts",
+              "line": 105,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-16T15:46:16.207Z",
+    "duration": 154621.28699999998,
+    "expected": 45,
+    "skipped": 9,
+    "unexpected": 3,
+    "flaky": 2
+  }
+}

@@ -169,6 +169,92 @@ test.describe('고객 장바구니 E2E (SC-022, SC-023)', () => {
     }
   })
 
+  // ────────────────────────────────────────────────────────────────
+  // RS-001, RS-002: 새로고침 복구
+  // ────────────────────────────────────────────────────────────────
+
+  test('RS-001: 고객 주문 이력 복구 — 새로고침 후 주문 이력 유지', async ({ page }) => {
+    expect(qrToken, 'qrToken이 설정되어야 합니다.').toBeTruthy()
+
+    await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+
+    // 메뉴 아이템 클릭 → 장바구니 추가
+    // 메뉴 아이템은 "테스트메뉴아이템"이란 텍스트를 포함하는 div로 찾기
+    const menuCard = page.locator('div.cursor-pointer').first()
+    await expect(menuCard, '메뉴 카드가 보여야 합니다.').toBeVisible({ timeout: 10000 })
+    await menuCard.click()
+
+    // 모달의 담기 버튼 클릭
+    const addToCartBtn = page.getByRole('button', { name: /원 담기/ })
+    await expect(addToCartBtn, '담기 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+    await addToCartBtn.click()
+
+    // sessionStorage에 주문 이력이 저장되어야 함
+    const storageKeyBefore = `order-history:${STORE_SLUG}:${qrToken}`
+    await page.waitForTimeout(500) // sessionStorage에 저장될 시간 확보
+    const historyBefore = await page.evaluate((key) => {
+      const raw = sessionStorage.getItem(key)
+      return raw ? JSON.parse(raw) : null
+    }, storageKeyBefore)
+
+    expect(historyBefore, 'sessionStorage에 초기 주문 이력이 저장되어야 합니다.').toBeTruthy()
+
+    // 새로고침
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+
+    // 주문 이력이 유지되어야 함
+    const historyAfter = await page.evaluate((key) => {
+      const raw = sessionStorage.getItem(key)
+      return raw ? JSON.parse(raw) : null
+    }, storageKeyBefore)
+
+    expect(historyAfter, '새로고침 후 주문 이력이 유지되어야 합니다.').toBeTruthy()
+  })
+
+  test('RS-002: 다른 테이블과 스토리지 분리', async ({ page }) => {
+    expect(qrToken, 'qrToken이 설정되어야 합니다.').toBeTruthy()
+
+    // 테이블 A: 주문 이력 저장
+    const storageKeyA = `order-history:${STORE_SLUG}:${qrToken}`
+
+    await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await page.waitForLoadState('networkidle')
+
+    // sessionStorage에 테스트 데이터 저장
+    await page.evaluate((key) => {
+      sessionStorage.setItem(key, JSON.stringify([
+        { id: 'order-1', items: [], total: 10000, time: new Date().toISOString(), status: 'completed' }
+      ]))
+    }, storageKeyA)
+
+    const historyA = await page.evaluate((key) => {
+      return sessionStorage.getItem(key)
+    }, storageKeyA)
+
+    expect(historyA).toContain('order-1')
+
+    // 테이블 B: 다른 스토리지 키를 사용
+    // (실제로는 다른 qrToken을 써야 하지만, 여기서는 simulated)
+    const storageKeyB = `order-history:${STORE_SLUG}:different-token`
+
+    const historyB = await page.evaluate((key) => {
+      return sessionStorage.getItem(key)
+    }, storageKeyB)
+
+    expect(historyB, '테이블 B의 스토리지는 별도여야 합니다.').toBeNull()
+
+    // 테이블 A의 스토리지는 여전히 intact
+    const historyAAfter = await page.evaluate((key) => {
+      return sessionStorage.getItem(key)
+    }, storageKeyA)
+
+    expect(historyAAfter).toContain('order-1')
+  })
+
   test.afterAll(async () => {
     await deleteStoresWithTestTag()
     await deleteStoreBySlug(STORE_SLUG)

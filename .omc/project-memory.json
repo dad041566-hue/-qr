@@ -185,8 +185,8 @@
   "hotPaths": [
     {
       "path": "e2e\\order-flow.spec.ts",
-      "accessCount": 70,
-      "lastAccessed": 1773651704742,
+      "accessCount": 80,
+      "lastAccessed": 1773676648996,
       "type": "file"
     },
     {
@@ -203,8 +203,8 @@
     },
     {
       "path": "e2e\\staff.spec.ts",
-      "accessCount": 11,
-      "lastAccessed": 1773652141099,
+      "accessCount": 17,
+      "lastAccessed": 1773676603174,
       "type": "file"
     },
     {
@@ -227,8 +227,8 @@
     },
     {
       "path": "src\\app\\pages\\CustomerMenu.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1773635420205,
+      "accessCount": 8,
+      "lastAccessed": 1773676161832,
       "type": "file"
     },
     {
@@ -352,16 +352,16 @@
       "type": "file"
     },
     {
+      "path": "src\\hooks\\useMenu.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773676166633,
+      "type": "file"
+    },
+    {
       "path": "src/app/pages",
       "accessCount": 1,
       "lastAccessed": 1773633458162,
       "type": "directory"
-    },
-    {
-      "path": "src\\hooks\\useMenu.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773633556211,
-      "type": "file"
     },
     {
       "path": "src\\lib\\api\\menu.ts",

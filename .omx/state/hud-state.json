@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-16T15:30:50.562Z",
-  "turn_count": 49,
-  "last_agent_output": "Playwright 기준으로 바로 옮길 수 있게 시나리오 형태로 정리합니다.\n\n1. 공개 대기 키오스크\n\n`WK-001 비로그인 대기 등록 성공`\n- Given: 비로그인 브라우저"
+  "last_turn_at": "2026-03-16T15:45:52.016Z",
+  "turn_count": 50,
+  "last_agent_output": "남은 건 두 가지입니다.\n\n1. `59개 중 실패한 테스트`만 추려서 원인 분류\n2. 이번에 정리한 신규 시나리오를 E2E에 반영\n   - `/waiting/:storeSlug`\n"
 }

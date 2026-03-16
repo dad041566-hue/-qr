@@ -72,9 +72,8 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
   })
 
   test('SC-026: 대기 키오스크 UI — 전화번호 키패드 + 인원 선택 화면 검증', async ({ page }) => {
-    // 점주로 로그인 후 /waiting 접근
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
-    await page.goto('/waiting')
+    // /waiting/:storeSlug 접근 (비로그인 공개 페이지)
+    await page.goto(`/waiting/${STORE_SLUG}`)
     await page.waitForLoadState('networkidle')
 
     // Step 1: 전화번호 키패드 화면 확인
@@ -150,6 +149,71 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
     expect(readRows.length).toBeGreaterThan(0)
     expect(readRows[0].phone).toBe('01012345678')
     expect(readRows[0].queue_number).toBeGreaterThan(0)
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // RS-003, RS-004: 새로고침 복구
+  // ────────────────────────────────────────────────────────────────
+
+  test('RS-003: 손상된 sessionStorage 복구', async ({ page }) => {
+    // /waiting/:storeSlug로 접근
+    await page.goto(`/waiting/${STORE_SLUG}`)
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1000) // 페이지 완전 렌더링 확보
+
+    // sessionStorage에 invalid JSON을 저장
+    const storageKey = `waiting:${STORE_SLUG}`
+    await page.evaluate((key) => {
+      sessionStorage.setItem(key, 'INVALID_JSON_{')
+    }, storageKey)
+
+    // 새로고침
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1000)
+
+    // 앱이 크래시하지 않고 초기 상태로 복구되어야 함
+    // 헤딩이 나타나거나, 연락처/인원/등록 중 하나라도 보여야 함
+    const heading = page.getByRole('heading')
+    await expect(heading.first()).toBeVisible({ timeout: 5000 })
+  })
+
+  test('RS-004: 대기 등록 후 새로고침 시 상태 복구', async ({ page }) => {
+    // /waiting/:storeSlug에서 대기 등록 (step 3까지 진행)
+    await page.goto(`/waiting/${STORE_SLUG}`)
+    await page.waitForLoadState('networkidle')
+
+    // step 1: 전화번호 입력
+    for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8']) {
+      await page.getByRole('button', { name: digit, exact: true }).click()
+    }
+    await page.getByRole('button', { name: '다음', exact: true }).click()
+
+    // step 2: 인원 선택
+    await page.getByRole('button', { name: '+', exact: true }).click()
+    await page.getByRole('button', { name: '대기 등록 완료하기' }).click()
+
+    // step 3: 완료 상태 확인
+    const completeBefore = await page.getByRole('heading', { name: /대기 완료|완료|등록 완료/ }).isVisible()
+    expect(completeBefore).toBeTruthy()
+
+    // 새로고침
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    // 완료 화면이 유지되어야 함
+    const completeAfter = await page.getByRole('heading', { name: /대기 완료|완료|등록 완료/ }).isVisible()
+    expect(completeAfter, '새로고침 후 대기 완료 상태가 유지되어야 합니다.').toBeTruthy()
+
+    // sessionStorage에 저장된 대기ID가 존재해야 함
+    const storageKey = `waiting:${STORE_SLUG}`
+    const saved = await page.evaluate((key) => {
+      const raw = sessionStorage.getItem(key)
+      return raw ? JSON.parse(raw) : null
+    }, storageKey)
+
+    expect(saved, 'sessionStorage에 대기 정보가 저장되어야 합니다.').not.toBeNull()
+    expect(saved?.waitingId, '대기ID가 저장되어야 합니다.').toBeTruthy()
   })
 
   test.afterAll(async () => {

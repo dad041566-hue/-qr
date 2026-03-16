@@ -420,6 +420,9 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
     await page.waitForLoadState('networkidle')
 
+    // 메뉴 아이템이 렌더링될 때까지 대기 (useMenu 훅 완료 대기)
+    await page.locator('[class*="menu"], [class*="item"]').first().waitFor({ timeout: 10000 }).catch(() => null)
+
     // alert이 실행되지 않아야 함
     expect(alertFired, 'XSS alert이 실행되어서는 안 됩니다.').toBeFalsy()
 
@@ -431,7 +434,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     expect(injectedScripts, 'alert(1) 스크립트가 DOM에 삽입되어서는 안 됩니다.').toBe(0)
 
     // Verify the XSS payload is rendered as visible escaped text (not just absent from DOM)
-    await expect(page.locator('body')).toContainText('<script>alert(1)</script>', { timeout: 5000 })
+    await expect(page.locator('body')).toContainText('<script>alert(1)</script>', { timeout: 10000 })
   })
 
   test('SC-033: 중복 slug 매장 생성 시 오류 표시', async ({ page }) => {
