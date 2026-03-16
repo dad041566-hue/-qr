@@ -410,20 +410,24 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     })
     expect(itemRows.length).toBeGreaterThan(0)
 
-    // 고객 메뉴 페이지에서 XSS 확인
+    // 고객 메뉴 페이지에서 XSS 확인 — 인증 세션 없는 새 컨텍스트로 접근해야
+    // useMenu의 Supabase 쿼리가 auth WebLock 경합으로 교착되지 않음
+    const anonCtx = await page.context().browser()!.newContext()
+    const anonPage = await anonCtx.newPage()
+
     let alertFired = false
-    page.on('dialog', async (dialog) => {
+    anonPage.on('dialog', async (dialog) => {
       alertFired = true
       await dialog.dismiss()
     })
 
-    await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
-    await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(3000) // Splash screen 및 메뉴 로딩 완료 대기
+    await anonPage.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await anonPage.waitForLoadState('networkidle')
+    await anonPage.waitForTimeout(3000) // Splash screen 및 메뉴 로딩 완료 대기
 
     // 메뉴 아이템이 렌더링될 때까지 대기
     // div.cursor-pointer는 메뉴 카드 요소
-    const menuCard = page.locator('div.cursor-pointer').first()
+    const menuCard = anonPage.locator('div.cursor-pointer').first()
     await expect(menuCard, '메뉴 카드가 나타나야 합니다 (XSS 메뉴명 포함)').toBeVisible({
       timeout: 15000,
     })
@@ -432,17 +436,19 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     expect(alertFired, 'XSS alert이 실행되어서는 안 됩니다.').toBeFalsy()
 
     // XSS payload 텍스트가 문자열로 표시되어야 함 (스크립트로 실행되지 않음)
-    const menuText = await page.locator('body').innerText()
+    const menuText = await anonPage.locator('body').innerText()
     expect(menuText).toContain('<script>alert(1)</script>')
 
     // DOM에 실제 <script> 엘리먼트가 주입되지 않아야 함
-    const injectedScripts = await page.locator('script').evaluateAll((scripts) =>
+    const injectedScripts = await anonPage.locator('script').evaluateAll((scripts) =>
       scripts.filter((s) => s.textContent?.includes('alert(1)')).length,
     )
     expect(injectedScripts, 'alert(1) 스크립트가 DOM에 삽입되어서는 안 됩니다.').toBe(0)
 
     // Verify the XSS payload is rendered as visible escaped text (not just absent from DOM)
-    await expect(page.locator('body')).toContainText('<script>alert(1)</script>', { timeout: 10000 })
+    await expect(anonPage.locator('body')).toContainText('<script>alert(1)</script>', { timeout: 10000 })
+
+    await anonCtx.close()
   })
 
   test('SC-033: 중복 slug 매장 생성 시 오류 표시', async ({ page }) => {

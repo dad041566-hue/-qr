@@ -13,26 +13,16 @@ export function Waiting() {
   const [storeLoading, setStoreLoading] = useState(true);
   const [storeError, setStoreError] = useState<string | null>(null);
 
-  const [step, setStep] = useState(1); // 1: Phone, 2: Pax, 3: Complete
-  const [phone, setPhone] = useState('010');
-  const [pax, setPax] = useState(2);
-  const [queueNumber, setQueueNumber] = useState(0);
-  const [waitingId, setWaitingId] = useState('');
-  const [waitingCount, setWaitingCount] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const { status: waitingStatus, myPosition } = useMyWaiting(storeId, waitingId, queueNumber);
   const storageKey = storeSlug ? `waiting:${storeSlug}` : null;
 
-  React.useEffect(() => {
-    if (!storageKey) return;
-
+  // Read initial state from sessionStorage synchronously to avoid
+  // save-effect overwriting restored values before the restore-effect runs.
+  const readSaved = () => {
+    if (!storageKey) return null;
     const raw = sessionStorage.getItem(storageKey);
-    if (!raw) return;
-
+    if (!raw) return null;
     try {
-      const saved = JSON.parse(raw) as {
+      return JSON.parse(raw) as {
         phone?: string;
         pax?: number;
         queueNumber?: number;
@@ -40,17 +30,23 @@ export function Waiting() {
         waitingCount?: number;
         step?: number;
       };
-
-      if (typeof saved.phone === 'string') setPhone(saved.phone);
-      if (typeof saved.pax === 'number') setPax(saved.pax);
-      if (typeof saved.queueNumber === 'number') setQueueNumber(saved.queueNumber);
-      if (typeof saved.waitingId === 'string') setWaitingId(saved.waitingId);
-      if (typeof saved.waitingCount === 'number') setWaitingCount(saved.waitingCount);
-      if (saved.step === 2 || saved.step === 3) setStep(saved.step);
     } catch {
       sessionStorage.removeItem(storageKey);
+      return null;
     }
-  }, [storageKey]);
+  };
+
+  const saved = readSaved();
+  const [step, setStep] = useState(() => (saved?.step === 2 || saved?.step === 3) ? saved.step : 1);
+  const [phone, setPhone] = useState(() => typeof saved?.phone === 'string' ? saved.phone : '010');
+  const [pax, setPax] = useState(() => typeof saved?.pax === 'number' ? saved.pax : 2);
+  const [queueNumber, setQueueNumber] = useState(() => typeof saved?.queueNumber === 'number' ? saved.queueNumber : 0);
+  const [waitingId, setWaitingId] = useState(() => typeof saved?.waitingId === 'string' ? saved.waitingId : '');
+  const [waitingCount, setWaitingCount] = useState(() => typeof saved?.waitingCount === 'number' ? saved.waitingCount : 0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const { status: waitingStatus, myPosition } = useMyWaiting(storeId, waitingId, queueNumber);
 
   React.useEffect(() => {
     if (!storageKey) return;
@@ -128,9 +124,21 @@ export function Waiting() {
     try {
       const rawPhone = phone.replace(/-/g, '');
       const result = await createWaiting({ storeId, phone: rawPhone, partySize: pax });
+      const status = await getWaitingStatus(storeId, result.waitingId);
+      // Persist to sessionStorage synchronously before React batches the state
+      // updates, so a reload immediately after always restores step=3.
+      if (storageKey) {
+        sessionStorage.setItem(storageKey, JSON.stringify({
+          phone,
+          pax,
+          queueNumber: result.queueNumber,
+          waitingId: result.waitingId,
+          waitingCount: status.totalWaiting,
+          step: 3,
+        }));
+      }
       setQueueNumber(result.queueNumber);
       setWaitingId(result.waitingId);
-      const status = await getWaitingStatus(storeId, result.waitingId);
       setWaitingCount(status.totalWaiting);
       setStep(3);
     } catch (e) {
@@ -230,12 +238,12 @@ export function Waiting() {
                   )}
                   <button
                     onClick={handleComplete}
-                    disabled={isSubmitting || !storeId}
+                    disabled={isSubmitting || storeLoading || !storeId}
                     className={`w-full py-5 rounded-2xl text-xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95 ${
-                      isSubmitting ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed' : 'bg-orange-500 text-white hover:bg-orange-600'
+                      isSubmitting || storeLoading ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed' : 'bg-orange-500 text-white hover:bg-orange-600'
                     }`}
                   >
-                    {isSubmitting ? '등록 중...' : '대기 등록 완료하기'}
+                    {isSubmitting ? '등록 중...' : storeLoading ? '로딩 중...' : '대기 등록 완료하기'}
                   </button>
                 </div>
               </motion.div>

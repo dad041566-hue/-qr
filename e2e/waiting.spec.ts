@@ -186,9 +186,10 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
 
     // step 1: 전화번호 입력
     for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8']) {
-      const btn = page.getByRole('button', { name: digit, exact: true })
-      await expect(btn).toBeVisible({ timeout: 5000 })
-      await btn.click()
+      // 숫자 버튼은 아마도 span이나 다른 요소일 수 있음
+      const btnLocator = page.locator('button').filter({ has: page.locator(`text=${digit}`) }).first()
+      await expect(btnLocator, `숫자 ${digit} 버튼이 보여야 합니다`).toBeVisible({ timeout: 8000 })
+      await btnLocator.click()
       await page.waitForTimeout(100) // 각 입력 후 짧은 대기
     }
 
@@ -206,6 +207,7 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
 
     const submitBtn = page.getByRole('button', { name: '대기 등록 완료하기' })
     await expect(submitBtn).toBeVisible({ timeout: 5000 })
+    await expect(submitBtn).toBeEnabled({ timeout: 8000 })
     await submitBtn.click()
 
     // API 응답 대기
@@ -218,6 +220,17 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
 
     const pageText = await page.locator('body').innerText()
     expect(pageText).toMatch(/완료|등록|확인/i)
+
+    // step 3 달성 확인 (새로고침 전)
+    await expect(page.getByRole('heading', { name: /대기 완료|완료|등록 완료/ })).toBeVisible({ timeout: 10000 })
+
+    // sessionStorage 확인 (새로고침 전)
+    const storageKeyPre = `waiting:${STORE_SLUG}`
+    const savedBeforeReload = await page.evaluate((key) => {
+      const raw = sessionStorage.getItem(key)
+      return raw ? JSON.parse(raw) : null
+    }, storageKeyPre)
+    expect(savedBeforeReload?.step, '새로고침 전 step=3이 저장되어야 합니다.').toBe(3)
 
     // 새로고침
     await page.reload()

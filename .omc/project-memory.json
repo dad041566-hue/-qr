@@ -185,26 +185,50 @@
   "hotPaths": [
     {
       "path": "e2e\\order-flow.spec.ts",
-      "accessCount": 83,
-      "lastAccessed": 1773677177575,
+      "accessCount": 94,
+      "lastAccessed": 1773682307792,
       "type": "file"
     },
     {
       "path": "src\\app\\pages\\AdminDashboard.tsx",
-      "accessCount": 32,
-      "lastAccessed": 1773643594782,
+      "accessCount": 59,
+      "lastAccessed": 1773682612261,
       "type": "directory"
     },
     {
       "path": "e2e\\staff.spec.ts",
-      "accessCount": 19,
-      "lastAccessed": 1773677120845,
+      "accessCount": 35,
+      "lastAccessed": 1773681223390,
       "type": "file"
     },
     {
       "path": "e2e\\e2e-helpers.ts",
-      "accessCount": 18,
-      "lastAccessed": 1773651989061,
+      "accessCount": 22,
+      "lastAccessed": 1773682103178,
+      "type": "directory"
+    },
+    {
+      "path": "src\\app\\pages\\CustomerMenu.tsx",
+      "accessCount": 20,
+      "lastAccessed": 1773682489037,
+      "type": "file"
+    },
+    {
+      "path": "src\\hooks\\useOrders.ts",
+      "accessCount": 12,
+      "lastAccessed": 1773682342541,
+      "type": "file"
+    },
+    {
+      "path": "src\\contexts\\AuthContext.tsx",
+      "accessCount": 11,
+      "lastAccessed": 1773682144125,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 11,
+      "lastAccessed": 1773682335676,
       "type": "directory"
     },
     {
@@ -214,21 +238,9 @@
       "type": "file"
     },
     {
-      "path": "src\\hooks\\useOrders.ts",
-      "accessCount": 9,
-      "lastAccessed": 1773644775352,
-      "type": "file"
-    },
-    {
-      "path": "src\\app\\pages\\CustomerMenu.tsx",
-      "accessCount": 9,
-      "lastAccessed": 1773677096969,
-      "type": "file"
-    },
-    {
-      "path": "src\\contexts\\AuthContext.tsx",
+      "path": "supabase\\migrations\\20260315000006_security_hardening.sql",
       "accessCount": 8,
-      "lastAccessed": 1773646299542,
+      "lastAccessed": 1773682018286,
       "type": "file"
     },
     {
@@ -244,27 +256,63 @@
       "type": "file"
     },
     {
-      "path": "src\\lib\\api\\order.ts",
-      "accessCount": 5,
-      "lastAccessed": 1773634818046,
-      "type": "file"
-    },
-    {
-      "path": "supabase\\migrations\\20260315000006_security_hardening.sql",
-      "accessCount": 4,
-      "lastAccessed": 1773635444657,
-      "type": "file"
-    },
-    {
       "path": "src",
-      "accessCount": 4,
-      "lastAccessed": 1773650937371,
+      "accessCount": 6,
+      "lastAccessed": 1773682362347,
       "type": "directory"
+    },
+    {
+      "path": "src\\lib\\api\\order.ts",
+      "accessCount": 6,
+      "lastAccessed": 1773682385487,
+      "type": "file"
+    },
+    {
+      "path": "src\\hooks\\useMenu.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773682000746,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260315000002_rls_policies.sql",
+      "accessCount": 5,
+      "lastAccessed": 1773682017915,
+      "type": "directory"
+    },
+    {
+      "path": "supabase\\migrations\\20260315000001_initial_schema.sql",
+      "accessCount": 5,
+      "lastAccessed": 1773682069116,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000004_fix_stores_anon_rls_recursion.sql",
+      "accessCount": 5,
+      "lastAccessed": 1773682085450,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\menu.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773682006995,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000006_enable_realtime_orders.sql",
+      "accessCount": 4,
+      "lastAccessed": 1773682419224,
+      "type": "file"
     },
     {
       "path": "src\\app\\components\\ProtectedRoute.tsx",
       "accessCount": 3,
       "lastAccessed": 1773645045120,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\supabase.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773682188319,
       "type": "file"
     },
     {
@@ -280,22 +328,10 @@
       "type": "file"
     },
     {
-      "path": "supabase\\migrations\\20260315000002_rls_policies.sql",
-      "accessCount": 2,
-      "lastAccessed": 1773635214070,
-      "type": "directory"
-    },
-    {
       "path": "supabase\\migrations",
       "accessCount": 2,
       "lastAccessed": 1773635215221,
       "type": "directory"
-    },
-    {
-      "path": "supabase\\migrations\\20260315000001_initial_schema.sql",
-      "accessCount": 2,
-      "lastAccessed": 1773638870374,
-      "type": "file"
     },
     {
       "path": "docs\\schema.sql",
@@ -307,24 +343,6 @@
       "path": "supabase\\migrations\\20260316000003_fix_store_members_policy_v2.sql",
       "accessCount": 2,
       "lastAccessed": 1773642743120,
-      "type": "file"
-    },
-    {
-      "path": "supabase\\migrations\\20260316000004_fix_stores_anon_rls_recursion.sql",
-      "accessCount": 2,
-      "lastAccessed": 1773643776382,
-      "type": "file"
-    },
-    {
-      "path": "supabase\\migrations\\20260316000006_enable_realtime_orders.sql",
-      "accessCount": 2,
-      "lastAccessed": 1773643776957,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\supabase.ts",
-      "accessCount": 2,
-      "lastAccessed": 1773645094993,
       "type": "file"
     },
     {
@@ -340,21 +358,21 @@
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 2,
-      "lastAccessed": 1773651361843,
-      "type": "directory"
-    },
-    {
       "path": "src\\app\\pages\\SuperAdmin.tsx",
       "accessCount": 2,
       "lastAccessed": 1773651373302,
       "type": "file"
     },
     {
-      "path": "src\\hooks\\useMenu.ts",
+      "path": "src\\lib\\api\\subscription.ts",
       "accessCount": 2,
-      "lastAccessed": 1773676166633,
+      "lastAccessed": 1773677439980,
+      "type": "file"
+    },
+    {
+      "path": "playwright.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773682542824,
       "type": "file"
     },
     {
@@ -362,12 +380,6 @@
       "accessCount": 1,
       "lastAccessed": 1773633458162,
       "type": "directory"
-    },
-    {
-      "path": "src\\lib\\api\\menu.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773633573779,
-      "type": "file"
     },
     {
       "path": "docs",
@@ -448,12 +460,6 @@
       "type": "file"
     },
     {
-      "path": "playwright.config.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773637850985,
-      "type": "file"
-    },
-    {
       "path": "vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1773639155759,
@@ -463,12 +469,6 @@
       "path": "src\\lib\\api\\staffAdmin.ts",
       "accessCount": 1,
       "lastAccessed": 1773640422323,
-      "type": "file"
-    },
-    {
-      "path": "src\\lib\\api\\subscription.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773643802777,
       "type": "file"
     },
     {

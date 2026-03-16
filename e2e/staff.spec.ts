@@ -203,56 +203,57 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
   // SB-002~005: 구독 체크 fail-closed
   // ────────────────────────────────────────────────────────────────
 
-  test('SB-002: 만료 매장 관리자 접근 차단', async ({ page }) => {
-    // 스토어 ID 조회 (먼저 수행하여 context 보존)
-    const storeRows = await supabaseGet<StoreRow>(
-      page,
-      `stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`
-    )
-    if (storeRows.length === 0) {
-      throw new Error(`Store with slug ${STORE_SLUG} not found`)
+  test('SB-002: 만료 매장 관리자 접근 차단', async ({ page, browser }) => {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    test.skip(!serviceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY 미설정 — service role로 stores PATCH 불가')
+
+    const { url: supabaseUrl } = getSupabaseConfig()
+    const serviceHeaders = {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey!,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
     }
+
+    // 스토어 ID 조회 (서비스 롤로 직접 조회)
+    const storeRes = await fetch(
+      `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
+      { headers: serviceHeaders }
+    )
+    const storeRows: StoreRow[] = await storeRes.json()
+    if (storeRows.length === 0) throw new Error(`Store with slug ${STORE_SLUG} not found`)
     const currentStoreId = storeRows[0].id
 
-    // 매장을 만료 상태로 변경 (end_date를 과거로)
-    const { url: supabaseUrl } = getSupabaseConfig()
-
-    // 새 페이지 context에서 headers 획득 (fetch 전)
-    const headers = await supabaseHeaders(page)
-
-    const expiredDate = new Date('2020-01-01').toISOString().split('T')[0]
+    // 매장을 만료 상태로 변경 (service role)
+    const expiredDate = '2020-01-01'
     const patchRes = await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
       method: 'PATCH',
-      headers,
-      body: JSON.stringify({ end_date: expiredDate })
+      headers: serviceHeaders,
+      body: JSON.stringify({ subscription_end: expiredDate }),
     })
+    expect(patchRes.ok, `PATCH 실패: ${patchRes.status}`).toBeTruthy()
 
-    if (!patchRes.ok) {
-      console.warn(`Failed to update store expiration: ${patchRes.status}`)
+    try {
+      // SC-028에서 비밀번호가 NewPass1234!@로 변경됨
+      const currentPassword = 'NewPass1234!@'
+      const freshCtx = await browser.newContext()
+      const freshPage = await freshCtx.newPage()
+      await login(freshPage, OWNER_EMAIL, currentPassword)
+      await freshPage.waitForURL('/admin', { timeout: 15000 })
+      await freshPage.waitForLoadState('networkidle')
+
+      // 만료 안내 표시 확인
+      const bodyText = await freshPage.locator('body').innerText()
+      expect(bodyText).toMatch(/만료|이용 기간|기간이 만료/)
+      await freshCtx.close()
+    } finally {
+      // 복구: subscription_end를 미래 날짜로 원복
+      await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
+        method: 'PATCH',
+        headers: serviceHeaders,
+        body: JSON.stringify({ subscription_end: nextYear }),
+      })
     }
-
-    // 로그인 시도
-    await page.goto('/login')
-    await page.getByPlaceholder('이메일').fill(OWNER_EMAIL)
-    await page.getByPlaceholder('비밀번호').fill(OWNER_NEW_PASSWORD)
-    await page.getByRole('button', { name: '로그인' }).click()
-
-    // change-password 페이지로 진입 (첫 로그인이면)
-    // 또는 바로 /admin으로 진입
-    await page.waitForURL(/\/admin|\/change-password/, { timeout: 10000 })
-
-    // /admin 접근 시 만료 안내 표시
-    if (page.url().includes('/change-password')) {
-      await page.getByPlaceholder('새 비밀번호').fill(OWNER_NEW_PASSWORD)
-      await page.getByPlaceholder('비밀번호 확인').fill(OWNER_NEW_PASSWORD)
-      await page.getByRole('button', { name: '비밀번호 변경' }).click()
-    }
-
-    await page.waitForLoadState('networkidle')
-
-    // 만료 안내 표시 확인
-    const bodyText = await page.locator('body').innerText()
-    expect(bodyText).toMatch(/만료|이용 기간|기간이 만료/)
   })
 
   test('SB-003: 강제 정지 매장 관리자 차단', async ({ page }) => {

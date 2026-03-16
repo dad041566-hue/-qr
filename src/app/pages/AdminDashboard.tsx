@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
+import { isStoreSubscriptionActive } from '@/lib/utils/subscription';
 import { StaffManagement } from '@/app/components/admin/StaffManagement';
 import { requestNotificationPermission } from '@/hooks/useOrderNotification';
 import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
@@ -275,7 +276,23 @@ export function AdminDashboard() {
     }
   }, [user?.role, appMode, activeTab])
 
-  // Loading guard
+  // Subscription check
+  const [storeExpired, setStoreExpired] = useState<boolean>(false);
+  useEffect(() => {
+    if (!storeId) return;
+    supabase
+      .from('stores')
+      .select('is_active, subscription_end')
+      .eq('id', storeId)
+      .single()
+      .then(({ data }) => {
+        if (data && !isStoreSubscriptionActive(data)) {
+          setStoreExpired(true);
+        }
+      });
+  }, [storeId]);
+
+  // Loading guard (must come after all hooks)
   if (!user) return <div className="flex items-center justify-center h-screen"><span className="text-zinc-500 font-bold">로딩 중...</span></div>;
   
   
@@ -1707,9 +1724,17 @@ export function AdminDashboard() {
     </motion.div>
   );
 
+  if (storeExpired) return (
+    <div className="flex flex-col items-center justify-center h-screen gap-4 p-8 text-center">
+      <span className="text-4xl">⚠️</span>
+      <h1 className="text-xl font-bold text-zinc-800">이용 기간이 만료되었습니다</h1>
+      <p className="text-zinc-500 text-sm">구독 기간이 만료되어 서비스를 이용할 수 없습니다.<br />관리자에게 문의해 주세요.</p>
+    </div>
+  );
+
   return (
     <div className="min-h-[100dvh] bg-zinc-50 flex font-sans">
-      
+
       {/* Mobile Bottom Navigation - Sticky at bottom */}
       <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-zinc-200 h-[70px] pb-safe z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] overflow-x-auto no-scrollbar">
         <div className="flex items-center h-full w-full justify-around px-2">
