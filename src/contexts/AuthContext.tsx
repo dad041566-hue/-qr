@@ -8,17 +8,20 @@ interface AuthContextValue {
   isFirstLogin: boolean
   signInWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  refreshStoreUser: () => Promise<void>
+  refreshStoreUser: () => Promise<(StoreUser & { isFirstLogin: boolean }) | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+interface StoreUserWithFirstLogin extends StoreUser {
+  isFirstLogin: boolean
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<StoreUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
 
-  const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string): Promise<StoreUser | null> => {
+  const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string): Promise<StoreUserWithFirstLogin | null> => {
     const { data, error } = await supabase
       .from('store_members')
       .select('role, store_id, is_first_login, stores(name)')
@@ -27,11 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error || !data) return null
 
-    setIsFirstLogin(data.is_first_login ?? false)
+    const storeUserFirstLogin = data.is_first_login ?? false
+    setIsFirstLogin(storeUserFirstLogin)
 
     return {
       id: supabaseUserId,
       email,
+      isFirstLogin: storeUserFirstLogin,
       role: data.role,
       storeId: data.store_id,
       storeName:
@@ -51,17 +56,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
       setUser(storeUser)
       setLoading(false)
-      return
+      return storeUser
     }
     setUser(null)
     setIsFirstLogin(false)
     setLoading(false)
+    return null
   }, [fetchStoreUser])
 
   useEffect(() => {
     refreshStoreUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // USER_UPDATED and TOKEN_REFRESHED fire while the auth WebLock is held.
+      // Calling supabase.from() here deadlocks (getSession → _acquireLock → pendingInLock).
+      // store_members data doesn't change for these events, so skip the DB refetch.
+      if (_event === 'USER_UPDATED' || _event === 'TOKEN_REFRESHED') {
+        setLoading(false)
+        return
+      }
       if (session?.user) {
         const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
         setUser(storeUser)

@@ -25,6 +25,12 @@ export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
       const allowed = session.user.app_metadata?.role === 'super_admin'
       setAuthorized(allowed)
       setSessionChecked(true)
+    }).catch(() => {
+      // getSession() can time out if the auth WebLock is contended.
+      // Treat as unauthenticated to avoid an infinite spinner.
+      if (!active) return
+      setHasSession(false)
+      setSessionChecked(true)
     })
 
     return () => { active = false }

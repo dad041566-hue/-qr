@@ -44,7 +44,16 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         subscriptionCheckCache.set(user.storeId, { active, checkedAt: Date.now() })
         setStoreActive(active)
       })
-      .catch(() => setStoreActive(false))
+      .catch((error) => {
+        if (cached) {
+          console.warn(`[ProtectedRoute] subscription check failed; fallback to cache for store=${user.storeId}`, error)
+          setStoreActive(cached.active)
+          return
+        }
+
+        console.warn(`[ProtectedRoute] subscription check failed and no cache available for store=${user.storeId}`, error)
+        setStoreActive(true)
+      })
       .finally(() => setSubscriptionChecking(false))
   }, [user?.storeId])
 
@@ -80,13 +89,18 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     )
   }
 
-  if (requiredRole && ROLE_HIERARCHY[user.role] < ROLE_HIERARCHY[requiredRole]) {
-    return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-zinc-50 gap-3">
-        <p className="text-zinc-700 font-semibold text-lg">접근 권한이 없습니다.</p>
-        <p className="text-zinc-400 text-sm">이 페이지는 {requiredRole} 이상 권한이 필요합니다.</p>
-      </div>
-    )
+  if (requiredRole) {
+    const userRole = ROLE_HIERARCHY[user.role]
+    const requiredRoleLevel = ROLE_HIERARCHY[requiredRole]
+
+    if (!userRole || !requiredRoleLevel || userRole < requiredRoleLevel) {
+      return (
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-zinc-50 gap-3">
+          <p className="text-zinc-700 font-semibold text-lg">접근 권한이 없습니다.</p>
+          <p className="text-zinc-400 text-sm">이 페이지는 {requiredRole} 이상 권한이 필요합니다.</p>
+        </div>
+      )
+    }
   }
 
   return <>{children}</>

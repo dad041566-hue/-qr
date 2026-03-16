@@ -34,25 +34,24 @@ export function ChangePassword() {
     setLoading(true)
 
     try {
-      // 1. Get user ID from cached session (no network call)
+      // 1) 현재 사용자 ID 확보
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) throw new Error('세션이 없습니다.')
 
-      // 2. Update is_first_login BEFORE password change (avoid hanging SDK)
+      // 2) 비밀번호 업데이트
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+      if (updateError) throw updateError
+
+      // 3) 비밀번호 변경 성공 후에만 is_first_login 해제
       const { error: memberError } = await supabase
         .from('store_members')
         .update({ is_first_login: false })
         .eq('user_id', session.user.id)
+        .eq('is_first_login', true)
       if (memberError) throw memberError
 
-      // Refresh in-memory auth state so ProtectedRoute sees is_first_login = false
+      // 4) in-memory auth state 갱신
       await refreshStoreUser()
-
-      // 3. Update password with timeout fallback (SDK may hang on session post-processing)
-      await Promise.race([
-        supabase.auth.updateUser({ password: newPassword }),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
-      ]).catch((err: Error) => { if (err.message !== 'timeout') throw err })
 
       toast.success('비밀번호가 변경되었습니다.')
       navigate('/admin', { replace: true })

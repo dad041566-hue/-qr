@@ -19,10 +19,12 @@ export async function createOrder(params: {
   paymentMethod?: PaymentMethod
 }): Promise<{ orderId: string }> {
   const subtotal = params.items.reduce((sum, item) => sum + item.totalPrice, 0)
+  const orderId = crypto.randomUUID()
 
-  const { data: order, error: orderError } = await supabase
+  const { error: orderError } = await supabase
     .from('orders')
     .insert({
+      id: orderId,
       store_id: params.storeId,
       table_id: params.tableId,
       subtotal_price: subtotal,
@@ -31,14 +33,12 @@ export async function createOrder(params: {
       special_requests: params.specialRequests ?? null,
       payment_method: params.paymentMethod ?? null,
     })
-    .select('id')
-    .single()
 
   if (orderError) throw new Error(`주문 생성 실패: ${orderError.message}`)
 
   const orderItems = params.items.map((item) => ({
     store_id: params.storeId,
-    order_id: order.id,
+    order_id: orderId,
     menu_item_id: item.menuItemId,
     menu_item_name: item.menuItemName,
     unit_price: item.unitPrice,
@@ -55,11 +55,11 @@ export async function createOrder(params: {
     await supabase
       .from('orders')
       .delete()
-      .eq('id', order.id)
+      .eq('id', orderId)
     throw new Error(`주문 아이템 저장 실패: ${itemsError.message}`)
   }
 
-  return { orderId: order.id }
+  return { orderId }
 }
 
 export async function getOrderStatus(orderId: string): Promise<OrderRow> {

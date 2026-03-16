@@ -48,15 +48,9 @@ serve(async (req) => {
     return json({ allowed: false }, { status: 401 })
   }
 
-  const superAdmins = (Deno.env.get('SUPABASE_SUPERADMIN_EMAILS') ?? '')
-    .split(',')
-    .map((v) => v.trim().toLowerCase())
-    .filter(Boolean)
-
-  const allowlistOk = superAdmins.includes((user.email ?? '').toLowerCase())
   const roleOk = user.app_metadata?.role === 'super_admin'
 
-  if (!allowlistOk && !roleOk) {
+  if (!roleOk) {
     return json({ allowed: false }, { status: 403 })
   }
 

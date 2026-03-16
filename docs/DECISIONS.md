@@ -30,10 +30,7 @@
 ### 5. 슈퍼어드민
 - [x] `/superadmin` 라우트 — 개발사 전용 패널
 - [x] 기능: 매장 CRUD, 점주 계정 생성, 이용기간 설정, 강제 정지
-- [x] 슈퍼어드민 식별: 환경변수 화이트리스트 방식 (단순, 별도 role 불필요)
-  ```
-  VITE_SUPERADMIN_EMAILS=admin@tableflow.com,ops@tableflow.com
-  ```
+- [x] 슈퍼어드민 식별: `app_metadata.role = 'super_admin'` (RBAC)
 
 ### 6. 배포 인프라
 - [x] 프론트: **Vercel** (React SPA)

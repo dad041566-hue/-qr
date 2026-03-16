@@ -12,7 +12,7 @@
 |------|------|------------|
 | **P0** | 서비스 핵심 플로우 — 실패 시 서비스 불능 | 13 |
 | **P1** | 주요 기능 — 실패 시 기능 저하 | 19 |
-| **P2** | 엣지 케이스 / 보안 / 성능 | 6 |
+| **P2** | 엣지 케이스 / 보안 / 성능 | 9 |
 
 ---
 
@@ -48,7 +48,7 @@
 ### SC-007: 만료된 매장 접근 차단
 - **조건**: `subscription_end < today` 또는 `is_active = false`
 - **검증**: 점주 로그인 시 `/admin` 접근 불가 (403 메시지 또는 리다이렉트)
-- **구현 상태**: `ProtectedRoute`에서 만료 체크 필요 *(미구현)*
+- **구현 상태**: `ProtectedRoute` + `checkStoreActive`로 적용
 
 ### SC-008: 고객 QR 메뉴 조회
 - **경로**: `/m/:storeSlug/:tableId`
@@ -57,8 +57,8 @@
 
 ### SC-009: 고객 주문 생성
 - **흐름**: 메뉴 선택 → 장바구니 → 주문 제출
-- **검증**: `orders` 테이블 INSERT 확인, `order_items` 연결
-- **E2E 파일**: `e2e/order-flow.spec.ts` (test 6 일부)
+- **검증**: `orders` 테이블 INSERT 확인, `order_items` 연결, 주문 알림 트리거
+- **E2E 파일**: `e2e/order-flow.spec.ts` (test 6, 8, 10)
 
 ### SC-010: 어드민 실시간 주문 수신
 - **검증**: 고객 주문 제출 후 5초 이내 어드민 화면에 신규 주문 노출
@@ -73,7 +73,7 @@
 ### SC-012: 직원 role — 메뉴 수정 불가
 - **흐름**: staff 계정 로그인 → 어드민 → 메뉴 탭 숨김 확인
 - **검증**: "메뉴 관리" 탭 미노출
-- **E2E 파일**: `e2e/order-flow.spec.ts` (test 8 간접 검증)
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-013/SC-020 파생)
 
 ### SC-013: 직원 role — 매장 관리 접근 불가
 - **검증**: staff는 "매장 관리" 모드 버튼 없음 또는 클릭 시 차단
@@ -113,10 +113,28 @@
 - 장바구니 비우고 주문 버튼 → 에러 메시지 또는 버튼 비활성
 
 ### SC-024: 주문 상태 변경 (신규 → 완료)
-- 어드민에서 신규 주문 → 수락/완료 버튼 클릭 → `orders.status` UPDATE
+- 어드민에서 `조리 시작`/`조리 완료`/`서빙 완료` 동작으로 상태 전환
+- **E2E 파일**: `e2e/order-flow.spec.ts` (test 6, 8, 10)
 
 ### SC-025: 어드민 실시간 주문 상태 변경
 - 상태 변경 후 화면 실시간 반영 (Realtime subscription)
+- **알림 검증 범위(현재)**: 상태 전환 직후 화면 반영 + 각 화면의 toast 메시지 노출
+- **확장 완료(제안 반영)**: Playwright init-script 기반 Notification/Vibration probe로 백그라운드(visibilityState=hidden) 수신 흐름까지 E2E 검증
+- **E2E 파일**: `e2e/order-flow.spec.ts` (test 6, 8)
+
+### SC-039: 다중 스태프 실시간 주문 접수 동기화 (웹소켓)
+- 점주/직원 2개 관리자 세션 동시 로그인
+- 고객 주문 제출 후 5초 이내 양쪽 화면에서 동일 주문 노출
+- **E2E 파일**: `e2e/order-flow.spec.ts` (test 8)
+
+### SC-040: 다중 스태프 상태 변경 알림 동기화
+- 점주가 주문 상태를 `confirmed → preparing → ready → served`로 변경
+- 직원 세션에서 즉시 상태 반영 + 상태별 알림/진동 일치
+- **E2E 파일**: `e2e/order-flow.spec.ts` (test 8)
+
+### SC-041: 실시간 채널 장애 복원성
+- 네트워크 오프라인 후 재연결 시 Supabase Realtime 채널 재구독 확인
+- 미도달 이벤트 보완/재조회 정책 확인
 
 ### SC-026: 대기 접수 키오스크
 - `/waiting` → 인원 선택 → 접수 → `waiting_queue` INSERT
@@ -189,13 +207,13 @@
 | 파일 | 커버 시나리오 | 상태 |
 |------|------------|------|
 | `e2e/superadmin.spec.ts` | SC-001, SC-003, SC-004 | ✅ 통과 |
-| `e2e/order-flow.spec.ts` | SC-001~SC-010, SC-012(간접) | ✅ 통과 |
+| `e2e/order-flow.spec.ts` | SC-006, SC-008~SC-010, SC-024, SC-025(백그라운드 알림/진동 포함), SC-039, SC-040, 점주/직원 다중 세션 실시간 동기화 | ✅ 작성완료 |
 | `e2e/login.spec.ts` | SC-005, SC-006 (예정) | 미작성 |
 | `e2e/staff.spec.ts` | SC-011~SC-013, SC-020, SC-032 | 미작성 |
 | `e2e/menu.spec.ts` | SC-014~SC-019 | 미작성 |
 | `e2e/order-detail.spec.ts` | SC-022~SC-025 | 미작성 |
 | `e2e/waiting.spec.ts` | SC-026~SC-027 | 미작성 |
-| `e2e/edge-cases.spec.ts` | SC-033~SC-038 | 미작성 |
+| `e2e/edge-cases.spec.ts` | SC-033~SC-038, SC-041 | 미작성 |
 
 ---
 
@@ -207,4 +225,5 @@
 4. **단기**: SC-007 만료 매장 차단 구현 + 테스트
 5. **단기**: SEC-005, SEC-006 staffAdmin.ts 수정
 6. **중기**: 전체 P1 E2E 작성
-7. **중기**: P2 엣지 케이스 테스트 작성
+7. **완료(2026-03-16)**: SC-039/SC-040 다중 스태프 실시간 동기화 E2E 작성
+8. **중기**: P2 엣지 케이스 테스트 작성

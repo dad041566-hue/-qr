@@ -111,6 +111,8 @@ const TOP_MENUS = [
   { name: '크로플', sales: 31 },
 ];
 
+const STAFF_ALLOWED_TABS = new Set(['orders', 'tables', 'waiting']);
+
 const ORDER_STATUS_MAP: Record<string, OrderStatus> = {
   pending: 'confirmed',
   preparing: 'preparing',
@@ -244,6 +246,17 @@ export function AdminDashboard() {
 
   const [appMode, setAppMode] = useState<'pos' | 'admin'>('pos'); // pos, admin
   const [activeTab, setActiveTab] = useState('orders'); // pos: orders, tables, waiting / admin: analytics, menu, customers, qr, event, settings
+
+  // staff role은 pos 모드만 허용
+  useEffect(() => {
+    if (user?.role === 'staff' && appMode === 'admin') {
+      setAppMode('pos')
+    }
+
+    if (user?.role === 'staff' && !STAFF_ALLOWED_TABS.has(activeTab)) {
+      setActiveTab('orders')
+    }
+  }, [user?.role, appMode, activeTab])
 
   // Loading guard
   if (!user) return <div className="flex items-center justify-center h-screen"><span className="text-zinc-500 font-bold">로딩 중...</span></div>;
@@ -776,7 +789,7 @@ export function AdminDashboard() {
           <div className="flex-1 md:overflow-y-auto space-y-4 pr-1 scrollbar-hide">
             <AnimatePresence>
               {pendingOrders.map(order => (
-                <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-red-100 overflow-hidden flex flex-col relative">
+                <motion.div data-testid="kds-order-card" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-red-100 overflow-hidden flex flex-col relative">
                   <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500" />
                   <div className="p-5 border-b-2 border-dashed border-zinc-100">
                     <div className="flex justify-between items-start mb-4">
@@ -856,7 +869,7 @@ export function AdminDashboard() {
               {preparingOrders.map(order => {
                 const isUrgent = order.time > 10;
                 return (
-                  <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-orange-100 overflow-hidden flex flex-col relative">
+                  <motion.div data-testid="kds-order-card" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-orange-100 overflow-hidden flex flex-col relative">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500" />
                     <div className="p-5 border-b-2 border-dashed border-zinc-100">
                       <div className="flex justify-between items-start mb-4">
@@ -937,7 +950,7 @@ export function AdminDashboard() {
           <div className="flex-1 md:overflow-y-auto space-y-4 pr-1 scrollbar-hide">
             <AnimatePresence>
               {completedOrders.map(order => (
-                <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-green-100 overflow-hidden flex flex-col relative">
+                <motion.div data-testid="kds-order-card" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-green-100 overflow-hidden flex flex-col relative">
                   <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500" />
                   <div className="p-5 border-b-2 border-dashed border-zinc-100">
                     <div className="flex justify-between items-start mb-4">
@@ -1682,12 +1695,14 @@ export function AdminDashboard() {
             >
               👨‍🍳 현장 POS
             </button>
-            <button 
-              onClick={() => { setAppMode('admin'); setActiveTab('analytics'); }} 
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${appMode === 'admin' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              ⚙️ 매장 관리
-            </button>
+            {user?.role !== 'staff' && (
+              <button
+                onClick={() => { setAppMode('admin'); setActiveTab('analytics'); }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${appMode === 'admin' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                ⚙️ 매장 관리
+              </button>
+            )}
           </div>
         </div>
         
@@ -1771,12 +1786,14 @@ export function AdminDashboard() {
               >
                 👨‍🍳 현장 POS
               </button>
-              <button 
-                onClick={() => { setAppMode('admin'); setActiveTab('analytics'); }}
-                className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${appMode === 'admin' ? 'bg-white text-orange-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-zinc-500'}`}
-              >
-                ⚙️ 매장 관리
-              </button>
+              {user?.role !== 'staff' && (
+                <button
+                  onClick={() => { setAppMode('admin'); setActiveTab('analytics'); }}
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${appMode === 'admin' ? 'bg-white text-orange-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-zinc-500'}`}
+                >
+                  ⚙️ 매장 관리
+                </button>
+              )}
             </div>
 
             {/* PC Search */}

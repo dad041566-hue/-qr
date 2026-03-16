@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { deleteOrder as apiDeleteOrder, getOrders, updateOrderStatus as apiUpdateOrderStatus } from '@/lib/api/admin'
@@ -13,6 +13,15 @@ export interface OrderWithItems extends OrderRow {
 export function useOrders(storeId: string | null) {
   const [orders, setOrders] = useState<OrderWithItems[]>([])
   const [loading, setLoading] = useState(true)
+  const knownIdsRef = useRef<Set<string>>(new Set())
+
+  const notifyIfNew = useCallback((order: OrderWithItems | OrderRow) => {
+    if (knownIdsRef.current.has(order.id)) return
+    knownIdsRef.current.add(order.id)
+    const tableLabel = `테이블 ${order.table_id ?? '-'}`
+    toast.success(`새 주문이 들어왔습니다! (${tableLabel})`)
+    notifyNewOrder(tableLabel, order.id)
+  }, [])
 
   const fetchOrders = useCallback(async () => {
     if (!storeId) {
@@ -22,7 +31,10 @@ export function useOrders(storeId: string | null) {
     }
     try {
       const data = await getOrders(storeId)
-      setOrders((data as OrderWithItems[]) ?? [])
+      const rows = (data as OrderWithItems[]) ?? []
+      setOrders(rows)
+      // Mark all initially loaded orders as known (no toast for them)
+      for (const o of rows) knownIdsRef.current.add(o.id)
     } catch (err) {
       console.error('useOrders fetchOrders:', err)
     } finally {
@@ -33,12 +45,17 @@ export function useOrders(storeId: string | null) {
   useEffect(() => {
     if (!storeId) return
     setOrders([])
+    knownIdsRef.current = new Set()
     setLoading(true)
     fetchOrders()
 
     async function handleInsert(payload: RealtimePostgresChangesPayload<OrderRow>) {
-      const orderId = payload.new?.id
+      const incoming = payload.new as OrderRow
+      const orderId = incoming?.id
       if (!orderId) return
+
+      // Fire toast immediately from realtime payload — do not wait for SELECT
+      notifyIfNew(incoming)
 
       try {
         const { data, error } = await supabase
@@ -55,10 +72,6 @@ export function useOrders(storeId: string | null) {
           if (prev.some((item) => item.id === order.id)) return prev
           return [order, ...prev]
         })
-
-        const tableLabel = `테이블 ${order.table_id ?? '-'}`
-        toast.success(`새 주문이 들어왔습니다! (${tableLabel})`)
-        notifyNewOrder(tableLabel, order.id)
       } catch (err) {
         console.error('useOrders INSERT handler:', err)
       }
@@ -103,10 +116,27 @@ export function useOrders(storeId: string | null) {
       )
       .subscribe()
 
+    // Polling fallback — always syncs state and notifies for new orders
+    const pollTimer = setInterval(async () => {
+      try {
+        const data = await getOrders(storeId)
+        const fresh = (data as OrderWithItems[]) ?? []
+        // Always sync state so the UI reflects DB truth even if realtime SELECT was slow/failed
+        setOrders(fresh)
+        // Notify only for orders not yet seen (knownIdsRef deduplicates toasts)
+        for (const order of fresh) {
+          notifyIfNew(order)
+        }
+      } catch (err) {
+        console.error('useOrders poll:', err)
+      }
+    }, 1500)
+
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(pollTimer)
     }
-  }, [storeId, fetchOrders])
+  }, [storeId, fetchOrders, notifyIfNew])
 
   const updateOrderStatus = useCallback(async (orderId: string, status: OrderStatus) => {
     try {

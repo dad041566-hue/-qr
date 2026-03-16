@@ -46,15 +46,7 @@ async function verifySuperAdmin(req: Request) {
     return { user: null as any, status: 401 }
   }
 
-  const superAdmins = (Deno.env.get('SUPABASE_SUPERADMIN_EMAILS') ?? '')
-    .split(',')
-    .map((v) => v.trim().toLowerCase())
-    .filter(Boolean)
-
-  const isAllowed =
-    user.app_metadata?.role === 'super_admin' ||
-    superAdmins.includes((user.email ?? '').toLowerCase())
-
+  const isAllowed = user.app_metadata?.role === 'super_admin'
   if (!isAllowed) {
     return { user: null as any, status: 403 }
   }

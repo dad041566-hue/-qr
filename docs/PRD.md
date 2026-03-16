@@ -119,8 +119,7 @@ is_active           boolean       -- 강제 정지 플래그 (default true)
 ```
 
 슈퍼어드민 식별:
-- `store_members`에 `role = 'super_admin'` 추가 또는
-- 별도 환경변수로 슈퍼어드민 이메일 화이트리스트 관리 (단순한 쪽 선택)
+- `store_members` 및 Auth 사용자 메타데이터에서 `role = 'super_admin'`를 사용한 RBAC 방식
 
 ---
 

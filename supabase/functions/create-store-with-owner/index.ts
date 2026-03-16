@@ -45,14 +45,8 @@ async function verifySuperAdmin(authHeader: string | null) {
     return { status: 401 as const, user: null, adminClient: null as ReturnType<typeof createClient> | null }
   }
 
-  const superAdmins = (Deno.env.get('SUPABASE_SUPERADMIN_EMAILS') ?? '')
-    .split(',')
-    .map((v) => v.trim().toLowerCase())
-    .filter(Boolean)
-
-  const hasEmailAllowlist = superAdmins.includes((user.email ?? '').toLowerCase())
   const hasRole = user.app_metadata?.role === SUPERADMIN_ROLE
-  if (!hasEmailAllowlist && !hasRole) {
+  if (!hasRole) {
     return { status: 403 as const, user: null, adminClient: null as ReturnType<typeof createClient> | null }
   }
 

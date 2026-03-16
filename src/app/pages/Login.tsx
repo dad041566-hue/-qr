@@ -9,7 +9,7 @@ import { checkSuperAdmin } from '@/lib/api/superadmin'
 
 export function Login() {
   const navigate = useNavigate()
-  const { signInWithEmail, isFirstLogin } = useAuth()
+  const { signInWithEmail, refreshStoreUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
@@ -30,7 +30,9 @@ export function Login() {
 
     try {
       await signInWithEmail(email.trim(), password)
-      if (isFirstLogin) {
+      const refreshedUser = await refreshStoreUser()
+
+      if (refreshedUser?.isFirstLogin) {
         navigate('/change-password', { replace: true })
         return
       }
