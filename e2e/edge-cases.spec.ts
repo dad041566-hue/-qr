@@ -419,14 +419,22 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
 
     await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000) // Splash screen 및 메뉴 로딩 완료 대기
 
-    // 메뉴 아이템이 렌더링될 때까지 대기 (useMenu 훅 완료 대기)
-    await page.locator('[class*="menu"], [class*="item"]').first().waitFor({ timeout: 10000 }).catch(() => null)
+    // 메뉴 아이템이 렌더링될 때까지 대기
+    // div.cursor-pointer는 메뉴 카드 요소
+    const menuCard = page.locator('div.cursor-pointer').first()
+    await expect(menuCard, '메뉴 카드가 나타나야 합니다 (XSS 메뉴명 포함)').toBeVisible({
+      timeout: 15000,
+    })
 
     // alert이 실행되지 않아야 함
     expect(alertFired, 'XSS alert이 실행되어서는 안 됩니다.').toBeFalsy()
 
-    // script 태그가 텍스트로 이스케이프되어 표시되어야 함 (또는 페이지가 정상 렌더링)
+    // XSS payload 텍스트가 문자열로 표시되어야 함 (스크립트로 실행되지 않음)
+    const menuText = await page.locator('body').innerText()
+    expect(menuText).toContain('<script>alert(1)</script>')
+
     // DOM에 실제 <script> 엘리먼트가 주입되지 않아야 함
     const injectedScripts = await page.locator('script').evaluateAll((scripts) =>
       scripts.filter((s) => s.textContent?.includes('alert(1)')).length,

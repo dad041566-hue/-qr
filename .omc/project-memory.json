@@ -185,8 +185,8 @@
   "hotPaths": [
     {
       "path": "e2e\\order-flow.spec.ts",
-      "accessCount": 80,
-      "lastAccessed": 1773676648996,
+      "accessCount": 83,
+      "lastAccessed": 1773677177575,
       "type": "file"
     },
     {
@@ -196,16 +196,16 @@
       "type": "directory"
     },
     {
+      "path": "e2e\\staff.spec.ts",
+      "accessCount": 19,
+      "lastAccessed": 1773677120845,
+      "type": "file"
+    },
+    {
       "path": "e2e\\e2e-helpers.ts",
       "accessCount": 18,
       "lastAccessed": 1773651989061,
       "type": "directory"
-    },
-    {
-      "path": "e2e\\staff.spec.ts",
-      "accessCount": 17,
-      "lastAccessed": 1773676603174,
-      "type": "file"
     },
     {
       "path": "src\\app\\pages\\ChangePassword.tsx",
@@ -220,15 +220,15 @@
       "type": "file"
     },
     {
-      "path": "src\\contexts\\AuthContext.tsx",
-      "accessCount": 8,
-      "lastAccessed": 1773646299542,
+      "path": "src\\app\\pages\\CustomerMenu.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1773677096969,
       "type": "file"
     },
     {
-      "path": "src\\app\\pages\\CustomerMenu.tsx",
+      "path": "src\\contexts\\AuthContext.tsx",
       "accessCount": 8,
-      "lastAccessed": 1773676161832,
+      "lastAccessed": 1773646299542,
       "type": "file"
     },
     {

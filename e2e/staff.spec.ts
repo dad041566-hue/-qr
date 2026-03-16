@@ -204,11 +204,7 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
   // ────────────────────────────────────────────────────────────────
 
   test('SB-002: 만료 매장 관리자 접근 차단', async ({ page }) => {
-    // 매장을 만료 상태로 변경 (end_date를 과거로)
-    const { url: supabaseUrl } = getSupabaseConfig()
-    const headers = await supabaseHeaders(page)
-
-    // 스토어 ID 조회
+    // 스토어 ID 조회 (먼저 수행하여 context 보존)
     const storeRows = await supabaseGet<StoreRow>(
       page,
       `stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`
@@ -218,12 +214,22 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     }
     const currentStoreId = storeRows[0].id
 
+    // 매장을 만료 상태로 변경 (end_date를 과거로)
+    const { url: supabaseUrl } = getSupabaseConfig()
+
+    // 새 페이지 context에서 headers 획득 (fetch 전)
+    const headers = await supabaseHeaders(page)
+
     const expiredDate = new Date('2020-01-01').toISOString().split('T')[0]
-    await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
+    const patchRes = await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ end_date: expiredDate })
     })
+
+    if (!patchRes.ok) {
+      console.warn(`Failed to update store expiration: ${patchRes.status}`)
+    }
 
     // 로그인 시도
     await page.goto('/login')

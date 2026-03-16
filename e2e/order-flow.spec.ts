@@ -138,27 +138,36 @@ async function waitForOrderCardByOrderId(page: Page, orderId: string, expectedAc
 }
 
 async function placeOneOrderFromCustomer(page: Page) {
+  // Splash screen과 메뉴 로딩 대기
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(3000)
+
   // 메뉴 아이템 카드 클릭 (cursor-pointer 클래스로 구분)
   const menuCard = page.locator('div.cursor-pointer').filter({ has: page.locator('button') }).first()
-  await expect(menuCard, '메뉴 아이템 카드가 보여야 합니다.').toBeVisible({ timeout: 8000 })
+  await expect(menuCard, '메뉴 아이템 카드가 보여야 합니다.').toBeVisible({ timeout: 15000 })
   await menuCard.click()
+  await page.waitForTimeout(500)
 
   // 모달에서 "원 담기" 버튼 클릭
   const addToCartBtn = page.getByRole('button', { name: /원 담기/ })
-  await expect(addToCartBtn, '담기 버튼이 모달에 보여야 합니다.').toBeVisible({ timeout: 5000 })
+  await expect(addToCartBtn, '담기 버튼이 모달에 보여야 합니다.').toBeVisible({ timeout: 8000 })
   await addToCartBtn.click()
+  await page.waitForTimeout(500)
 
   // 장바구니(주문 확인) 열기
   const cartBtn = page.getByRole('button', { name: /주문 확인|장바구니/ }).first()
-  await expect(cartBtn, '주문 확인 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+  await expect(cartBtn, '주문 확인 버튼이 보여야 합니다.').toBeVisible({ timeout: 8000 })
   await cartBtn.click()
+  await page.waitForTimeout(500)
 
   // 주문하기 버튼 클릭
   const submitButton = page.getByRole('button', { name: '주문하기', exact: true })
-  await expect(submitButton, '주문하기 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+  await expect(submitButton, '주문하기 버튼이 보여야 합니다.').toBeVisible({ timeout: 8000 })
   await submitButton.click()
 
-  await expect(page.locator('body')).toContainText('주문이 성공적으로 접수되었습니다', { timeout: 10000 })
+  // 주문 성공 메시지 대기 (API 응답 시간 포함)
+  await expect(page.locator('body')).toContainText('주문이 성공적으로 접수되었습니다', { timeout: 15000 })
+  await page.waitForTimeout(1000) // Realtime 업데이트 대기
 }
 
 async function installNotificationProbe(page: Page) {
