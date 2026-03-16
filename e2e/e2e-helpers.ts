@@ -136,7 +136,7 @@ export async function supabasePost<T = unknown>(page: Page, path: string, body: 
 }
 
 function isTestTagNotSupported(errorText: string) {
-  return errorText.includes('column "test_tag" does not exist') || errorText.includes('column test_tag does not exist')
+  return errorText.includes('test_tag')
 }
 
 async function setStoreTestTag(

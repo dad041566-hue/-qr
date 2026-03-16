@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, Bell, Clock, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid, UtensilsCrossed, Settings, BarChart4, TrendingUp, Users, Receipt, Search, Home, ChefHat, Check, AlertCircle, Menu, Volume2, UserX, ToggleLeft, ToggleRight, PenSquare, Plus, QrCode, Printer, Download, Link2, X, Image as ImageIcon, Minus, Gift, ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronLeft, Bell, Clock, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid, UtensilsCrossed, Settings, BarChart4, TrendingUp, Users, Receipt, Search, Home, ChefHat, Check, AlertCircle, Menu, Volume2, UserX, ToggleLeft, ToggleRight, PenSquare, Plus, QrCode, Printer, Download, Link2, X, Image as ImageIcon, Minus, Gift, ChevronRight, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,6 +13,7 @@ import { useMenuAdmin } from '@/hooks/useMenuAdmin';
 import { getDailyRevenue, addTable, type DailyRevenueRow } from '@/lib/api/admin';
 import { createOrder } from '@/lib/api/order';
 import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting';
+import { supabase } from '@/lib/supabase';
 import { useWaitingQueue } from '@/hooks/useWaitingQueue';
 import type { OrderStatus } from '@/types/database';
 
@@ -286,6 +287,29 @@ export function AdminDashboard() {
     setStaffCallOptions(prev => [...prev, { id: Date.now(), name: newName }]);
     e.currentTarget.reset();
     toast.success('직원 호출 옵션이 추가되었습니다.');
+  };
+
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pwNew || !pwConfirm) { toast.error('모든 항목을 입력하세요.'); return; }
+    if (!/^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/.test(pwNew)) { toast.error('8자 이상, 특수문자를 포함해야 합니다.'); return; }
+    if (pwNew !== pwConfirm) { toast.error('새 비밀번호가 일치하지 않습니다.'); return; }
+    setPwLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwNew });
+      if (error) throw error;
+      toast.success('비밀번호가 변경되었습니다.');
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+    } catch (err: any) {
+      toast.error(err?.message ?? '비밀번호 변경에 실패했습니다.');
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   const handleRemoveCallOption = (id: number) => {
@@ -1614,18 +1638,53 @@ export function AdminDashboard() {
         </div>
 
         <form onSubmit={handleAddCallOption} className="flex gap-2">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="name"
-            placeholder="예: 물티슈 주세요, 앞치마 주세요" 
+            placeholder="예: 물티슈 주세요, 앞치마 주세요"
             required
             className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-medium text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
           />
-          <button 
+          <button
             type="submit"
             className="bg-zinc-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-sm flex items-center gap-1.5 shrink-0"
           >
             <Plus className="w-4 h-4" /> 추가
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-2xl md:rounded-3xl border border-zinc-200 p-6 md:p-8 shadow-sm max-w-2xl">
+        <h3 className="font-extrabold text-lg text-zinc-900 mb-6 flex items-center gap-2">
+          <Lock className="w-5 h-5 text-zinc-400" /> 비밀번호 변경
+        </h3>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">새 비밀번호</label>
+            <input
+              type="password"
+              value={pwNew}
+              onChange={e => setPwNew(e.target.value)}
+              placeholder="8자 이상, 특수문자 포함"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-medium text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-zinc-700 mb-2">비밀번호 확인</label>
+            <input
+              type="password"
+              value={pwConfirm}
+              onChange={e => setPwConfirm(e.target.value)}
+              placeholder="비밀번호 재입력"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-medium text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={pwLoading}
+            className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pwLoading ? '변경 중...' : '비밀번호 변경'}
           </button>
         </form>
       </div>

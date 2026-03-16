@@ -1,13 +1,26 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('origin') ?? ''
+  const allowed = [
+    'https://tableflow.com',
+    'https://www.tableflow.com',
+  ]
+  // Allow localhost in development
+  if (origin.startsWith('http://localhost:')) allowed.push(origin)
+  return allowed.includes(origin) ? origin : allowed[0]
 }
 
-function json(data: unknown, status = 200) {
+function corsHeaders(req: Request) {
+  return {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
+}
+
+function json(data: unknown, status = 200, req?: Request) {
   const response = typeof status === 'number'
     ? { status }
     : { ...status }
@@ -17,7 +30,7 @@ function json(data: unknown, status = 200) {
     headers: {
       'Content-Type': 'application/json',
       ...((response as ResponseInit).headers ?? {}),
-      ...corsHeaders,
+      ...(req ? corsHeaders(req) : {}),
     },
   })
 }
@@ -56,7 +69,7 @@ async function verifySuperAdmin(req: Request) {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders(req) })
   }
 
   const url = new URL(req.url)
@@ -65,13 +78,13 @@ serve(async (req) => {
   // check-super-admin은 403 여부만 반환 (redirect용이므로 에러 대신 {allowed: false})
   if (action === 'check-super-admin') {
     const verified = await verifySuperAdmin(req)
-    return json({ allowed: verified.status === 200 })
+    return json({ allowed: verified.status === 200 }, 200, req)
   }
 
   const verified = await verifySuperAdmin(req)
-  if (verified.status === 500) return json({ error: verified.error }, 500)
-  if (verified.status === 401) return json({ error: 'Unauthorized' }, 401)
-  if (verified.status === 403) return json({ error: 'Forbidden' }, 403)
+  if (verified.status === 500) return json({ error: verified.error }, 500, req)
+  if (verified.status === 401) return json({ error: 'Unauthorized' }, 401, req)
+  if (verified.status === 403) return json({ error: 'Forbidden' }, 403, req)
 
   const { adminClient } = verified
 
@@ -82,37 +95,37 @@ serve(async (req) => {
         .select('*')
         .order('created_at', { ascending: false })
       if (error) throw error
-      return json(data)
+      return json(data, 200, req)
     }
 
     if (action === 'update-subscription') {
       if (req.method !== 'POST') {
-        return json({ error: 'Method not allowed' }, { status: 405 })
+        return json({ error: 'Method not allowed' }, { status: 405 }, req)
       }
 
       let body: { storeId?: unknown; subscriptionStart?: unknown; subscriptionEnd?: unknown; isActive?: unknown }
       try {
         body = await req.json()
       } catch {
-        return json({ error: 'Invalid JSON body' }, { status: 400 })
+        return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
       }
 
       const { storeId, subscriptionStart, subscriptionEnd, isActive } = body
       if (typeof storeId !== 'string' || storeId.trim() === '') {
-        return json({ error: 'storeId is required' }, { status: 400 })
+        return json({ error: 'storeId is required' }, { status: 400 }, req)
       }
 
       if (typeof subscriptionStart !== 'string' && subscriptionStart !== null) {
-        return json({ error: 'subscriptionStart must be string or null' }, { status: 400 })
+        return json({ error: 'subscriptionStart must be string or null' }, { status: 400 }, req)
       }
       if (typeof subscriptionEnd !== 'string' && subscriptionEnd !== null) {
-        return json({ error: 'subscriptionEnd must be string or null' }, { status: 400 })
+        return json({ error: 'subscriptionEnd must be string or null' }, { status: 400 }, req)
       }
       if (typeof isActive !== 'boolean') {
-        return json({ error: 'isActive must be boolean' }, { status: 400 })
+        return json({ error: 'isActive must be boolean' }, { status: 400 }, req)
       }
       if (typeof subscriptionStart === 'string' && typeof subscriptionEnd === 'string' && subscriptionEnd < subscriptionStart) {
-        return json({ error: 'subscription_end must be after subscription_start' }, { status: 400 })
+        return json({ error: 'subscription_end must be after subscription_start' }, { status: 400 }, req)
       }
 
       const { error } = await adminClient
@@ -125,12 +138,12 @@ serve(async (req) => {
         .eq('id', storeId)
 
       if (error) throw error
-      return json({ success: true })
+      return json({ success: true }, 200, req)
     }
 
-    return json({ error: 'Unknown action' }, 400)
+    return json({ error: 'Unknown action' }, 400, req)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '알 수 없는 오류'
-    return json({ error: message }, 500)
+    return json({ error: message }, 500, req)
   }
 })

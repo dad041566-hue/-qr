@@ -119,6 +119,42 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     await expect(page.locator('body')).toContainText('직원', { ignoreCase: true })
   })
 
+  test('SC-032: 직원 계정 비활성화 (삭제)', async ({ page }) => {
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    await clickSidebarButton(page, /매장 관리/)
+    await clickSidebarButton(page, /직원/)
+
+    // 직원 관리 화면 로딩 대기
+    await expect(page.locator('body')).toContainText('직원 관리', { timeout: 10000 })
+    await expect(page.locator('body')).toContainText('활성', { timeout: 8000 })
+
+    // Trash2 삭제 버튼은 <td> 안에 있음 — 테이블 셀 내의 버튼만 찾기
+    const deleteBtn = page.locator('td button').first()
+    await expect(deleteBtn).toBeVisible({ timeout: 5000 })
+
+    // confirm 다이얼로그 자동 수락
+    page.once('dialog', (dialog) => dialog.accept())
+    await deleteBtn.click()
+
+    // 삭제 성공 toast 확인
+    await expect(page.locator('body')).toContainText('직원이 삭제됐습니다', { timeout: 8000 })
+  })
+
+  test('SC-029: 홈으로 나가기 → 홈 리다이렉트', async ({ page }) => {
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    // 사이드바 하단 "홈으로 나가기" 버튼 클릭 (AdminDashboard 사이드바 최하단)
+    const homeBtn = page.locator('button').filter({ hasText: /홈으로 나가기/ }).first()
+    await expect(homeBtn).toBeVisible({ timeout: 5000 })
+    await homeBtn.click()
+
+    // 홈(/)으로 이동 확인
+    await expect(page).toHaveURL('/', { timeout: 10000 })
+  })
+
   test('SC-002: 점주 — /superadmin 접근 차단', async ({ page }) => {
     await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await page.goto('/superadmin')
@@ -135,6 +171,27 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
 
     await page.goto('/change-password')
     await expect(page).toHaveURL('/login', { timeout: 5000 })
+  })
+
+  test('SC-028: 매장 설정에서 비밀번호 변경', async ({ page }) => {
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    await clickSidebarButton(page, /매장 관리/)
+    await clickSidebarButton(page, /매장 설정/)
+
+    // 비밀번호 변경 카드 확인
+    await expect(page.locator('body')).toContainText('비밀번호 변경', { timeout: 8000 })
+
+    // 새 비밀번호 입력
+    await page.locator('input[type="password"]').nth(0).fill('NewPass1234!@')
+    await page.locator('input[type="password"]').nth(1).fill('NewPass1234!@')
+
+    // 변경 버튼 클릭
+    await page.locator('button[type="submit"]').filter({ hasText: '비밀번호 변경' }).click()
+
+    // 성공 toast 확인
+    await expect(page.locator('body')).toContainText('비밀번호가 변경되었습니다', { timeout: 8000 })
   })
 
   test.afterAll(async () => {

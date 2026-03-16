@@ -1,22 +1,35 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('origin') ?? ''
+  const allowed = [
+    'https://tableflow.com',
+    'https://www.tableflow.com',
+  ]
+  // Allow localhost in development
+  if (origin.startsWith('http://localhost:')) allowed.push(origin)
+  return allowed.includes(origin) ? origin : allowed[0]
+}
+
+function corsHeaders(req: Request) {
+  return {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
 }
 
 const SUPERADMIN_ROLE = 'super_admin'
 const SLUG_PATTERN = /^[a-z0-9-]+$/
 const PASSWORD_PATTERN = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,}$/
 
-function json(data: unknown, init: ResponseInit = {}) {
+function json(data: unknown, init: ResponseInit = {}, req?: Request) {
   return new Response(JSON.stringify(data), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders,
+      ...(req ? corsHeaders(req) : {}),
       ...(init.headers ?? {}),
     },
   })
@@ -69,35 +82,35 @@ interface Payload {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return json({ ok: true })
+    return json({ ok: true }, {}, req)
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, { status: 405 })
+    return json({ error: 'Method not allowed' }, { status: 405 }, req)
   }
 
   const authHeader = req.headers.get('Authorization')
   const verified = await verifySuperAdmin(authHeader)
   if (verified.status === 500) {
-    return json({ error: verified.message }, { status: 500 })
+    return json({ error: verified.message }, { status: 500 }, req)
   }
   if (verified.status === 401) {
-    return json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 }, req)
   }
   if (verified.status === 403) {
-    return json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 }, req)
   }
 
   const { adminClient } = verified
   if (!adminClient) {
-    return json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 }, req)
   }
 
   let body: Payload
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Invalid JSON body' }, { status: 400 })
+    return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
   }
 
   const {
@@ -118,19 +131,19 @@ serve(async (req) => {
   const slug = rawSlug ?? storeSlug
 
   if (!name || !slug || !ownerEmail || !ownerPassword) {
-    return json({ error: 'name, slug, ownerEmail, ownerPassword are required' }, { status: 400 })
+    return json({ error: 'name, slug, ownerEmail, ownerPassword are required' }, { status: 400 }, req)
   }
 
   if (subscriptionStart && subscriptionEnd && subscriptionEnd < subscriptionStart) {
-    return json({ error: 'subscription_end must be after subscription_start' }, { status: 400 })
+    return json({ error: 'subscription_end must be after subscription_start' }, { status: 400 }, req)
   }
 
   if (!SLUG_PATTERN.test(slug)) {
-    return json({ error: 'Invalid slug format' }, { status: 400 })
+    return json({ error: 'Invalid slug format' }, { status: 400 }, req)
   }
 
   if (!PASSWORD_PATTERN.test(ownerPassword)) {
-    return json({ error: 'Password policy violation' }, { status: 400 })
+    return json({ error: 'Password policy violation' }, { status: 400 }, req)
   }
 
   let ownerUserId: string | null = null
@@ -196,7 +209,7 @@ serve(async (req) => {
       throw new Error(`Table creation failed: ${tableError.message}`)
     }
 
-    return json({ store })
+    return json({ store }, {}, req)
   } catch (err) {
     if (ownerUserId) {
       await adminClient.auth.admin.deleteUser(ownerUserId)
@@ -205,6 +218,6 @@ serve(async (req) => {
       await adminClient.from('stores').delete().eq('id', storeId)
     }
     const message = err instanceof Error ? err.message : 'Unknown error'
-    return json({ error: message }, { status: 500 })
+    return json({ error: message }, { status: 500 }, req)
   }
 })

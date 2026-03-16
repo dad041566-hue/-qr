@@ -44,6 +44,10 @@ export function Waiting() {
 
   const handleComplete = async () => {
     if (isSubmitting) return;
+    if (!storeId) {
+      setSubmitError('매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -143,7 +147,7 @@ export function Waiting() {
                   )}
                   <button
                     onClick={handleComplete}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !storeId}
                     className={`w-full py-5 rounded-2xl text-xl font-black shadow-lg shadow-orange-500/30 transition-all active:scale-95 ${
                       isSubmitting ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed' : 'bg-orange-500 text-white hover:bg-orange-600'
                     }`}

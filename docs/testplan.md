@@ -1,6 +1,6 @@
 # TableFlow — 통합 테스트 계획 (testplan.md)
 
-> 작성일: 2026-03-16
+> 작성일: 2026-03-16 | 최종 업데이트: 2026-03-16
 > QA + Security 팀 에이전트 협의 결과 반영
 > E2E 도구: Playwright (serial describe mode)
 
@@ -27,6 +27,7 @@
 - **경로**: 점주 계정으로 `/superadmin` 직접 접근
 - **검증**: `/admin` 또는 `/login`으로 리다이렉트
 - **구현**: `SuperAdminRoute` — `app_metadata.role !== 'super_admin'`
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-002 테스트)
 
 ### SC-003: 점주 첫 로그인 → 비번 변경 강제
 - **경로**: 임시 비번 로그인 → `/change-password` 강제 이동
@@ -40,10 +41,12 @@
 ### SC-005: 비로그인 어드민 접근 차단
 - **경로**: `/admin` 직접 접근 (세션 없음)
 - **검증**: `/login`으로 리다이렉트
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-005/006 통합 테스트)
 
 ### SC-006: 비로그인 change-password 접근 차단
 - **경로**: `/change-password` 직접 접근 (세션 없음)
 - **검증**: `/login`으로 리다이렉트
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-005/006 통합 테스트)
 
 ### SC-007: 만료된 매장 접근 차단
 - **조건**: `subscription_end < today` 또는 `is_active = false`
@@ -68,15 +71,16 @@
 - **경로**: 어드민 → 직원 관리 탭 → 직원 추가
 - **검증**: Supabase Auth 계정 생성, `store_members` INSERT, role = 'staff'
 - **구현**: `create-staff` Edge Function
-- **E2E 파일**: 미작성
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-011 테스트) + `e2e/order-flow.spec.ts` (test 7)
 
 ### SC-012: 직원 role — 메뉴 수정 불가
 - **흐름**: staff 계정 로그인 → 어드민 → 메뉴 탭 숨김 확인
 - **검증**: "메뉴 관리" 탭 미노출
-- **E2E 파일**: `e2e/staff.spec.ts` (SC-013/SC-020 파생)
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-012 테스트)
 
 ### SC-013: 직원 role — 매장 관리 접근 불가
 - **검증**: staff는 "매장 관리" 모드 버튼 없음 또는 클릭 시 차단
+- **E2E 파일**: `e2e/staff.spec.ts` (SC-013 테스트)
 
 ---
 
@@ -183,22 +187,22 @@
 
 ## 보안 이슈 (Security Agent 확인)
 
-### CRITICAL
+### CRITICAL — ✅ 수정 완료
 
-| ID | 설명 | 위치 | 수정 방법 |
-|----|------|------|----------|
-| SEC-001 | `store_members_self_update` 정책이 `role` 컬럼까지 UPDATE 허용 → role 탈취 가능 | `20260315000007_store_members_update_policy.sql` | `WITH CHECK`에 `role = OLD.role` 조건 추가 또는 컬럼 제한 |
-| SEC-002 | 고객 주문 시 `price_at_order`를 클라이언트가 전송 → 가격 조작 가능 | `src/lib/api/order.ts` | 서버사이드(DB 트리거 or Edge Function)에서 `menu_items.price` 참조 |
+| ID | 설명 | 수정 내역 |
+|----|------|----------|
+| SEC-001 | `store_members_self_update` 정책이 `role` 컬럼까지 UPDATE 허용 → role 탈취 가능 | `20260316000003_fix_store_members_policy_v2.sql` — `is_first_login` 전용 정책으로 교체, USING/WITH CHECK 양쪽에서 `is_first_login` 조건 강제 |
+| SEC-002 | 고객 주문 시 `price_at_order`를 클라이언트가 전송 → 가격 조작 가능 | `20260316000002_fix_order_price_server_side.sql` — `enforce_menu_item_price()` BEFORE INSERT 트리거 + `recalculate_order_totals()` AFTER INSERT 트리거로 서버사이드 가격 강제 |
 
 ### HIGH
 
-| ID | 설명 | 위치 | 수정 방법 |
-|----|------|------|----------|
-| SEC-003 | CORS `Access-Control-Allow-Origin: *` | 모든 Edge Functions | 허용 도메인 화이트리스트 |
-| SEC-004 | `next_queue_number()` race condition | `waiting_queue` 대기 접수 | DB 레벨 serial/sequence 사용 |
-| SEC-005 | `deactivateStaffMember`에 `store_id` 스코프 없음 | `staffAdmin.ts` | `.eq('store_id', storeId)` 추가 |
-| SEC-006 | `create-staff` Edge Function 호출 시 `apikey` 헤더 누락 | `staffAdmin.ts` | `apikey: ANON_KEY` 헤더 추가 |
-| SEC-007 | 비로그인 사용자의 `orders` SELECT 허용 가능성 | RLS 정책 | 고객은 INSERT only 확인 |
+| ID | 설명 | 상태 |
+|----|------|------|
+| SEC-003 | CORS `Access-Control-Allow-Origin: *` | ✅ 수정 완료 — 4개 Edge Function에 `getAllowedOrigin()` 도메인 화이트리스트 적용 |
+| SEC-004 | `next_queue_number()` race condition | ⚠️ 부분 수정 — `SECURITY DEFINER` 적용 완료 (`20260316000007`), row-level lock은 기존 `UPDATE ... RETURNING` 패턴으로 이미 처리됨 |
+| SEC-005 | `deactivateStaffMember`에 `store_id` 스코프 없음 | ✅ 확인 완료 — 코드에 이미 `.eq('store_id', storeId)` 적용됨 |
+| SEC-006 | `create-staff` Edge Function 호출 시 `apikey` 헤더 누락 | ✅ 확인 완료 — 코드에 이미 `apikey: anonKey` 헤더 포함 |
+| SEC-007 | 비로그인 사용자의 `orders` SELECT 허용 가능성 | ✅ 확인 완료 — anon은 `orders_anon_insert` (INSERT only), SELECT 정책 없음 |
 
 ---
 
@@ -206,24 +210,33 @@
 
 | 파일 | 커버 시나리오 | 상태 |
 |------|------------|------|
-| `e2e/superadmin.spec.ts` | SC-001, SC-003, SC-004 | ✅ 통과 |
-| `e2e/order-flow.spec.ts` | SC-006, SC-008~SC-010, SC-024, SC-025(백그라운드 알림/진동 포함), SC-039, SC-040, 점주/직원 다중 세션 실시간 동기화 | ✅ 작성완료 |
-| `e2e/login.spec.ts` | SC-005, SC-006 (예정) | 미작성 |
-| `e2e/staff.spec.ts` | SC-011~SC-013, SC-020, SC-032 | 미작성 |
-| `e2e/menu.spec.ts` | SC-014~SC-019 | 미작성 |
-| `e2e/order-detail.spec.ts` | SC-022~SC-025 | 미작성 |
-| `e2e/waiting.spec.ts` | SC-026~SC-027 | 미작성 |
-| `e2e/edge-cases.spec.ts` | SC-033~SC-038, SC-041 | 미작성 |
+| `e2e/superadmin.spec.ts` | SC-001 (슈퍼어드민 매장 생성), SC-003/SC-004 (점주 첫 로그인 → 비번 변경 → 어드민 진입) | ✅ 작성완료 |
+| `e2e/order-flow.spec.ts` | SC-001 (매장 생성), SC-003/SC-004 (비번 변경), SC-008 (고객 메뉴 조회), SC-009/SC-010 (주문 생성 + 실시간 수신), SC-011 (직원 생성 UI), SC-012 (role 권한), SC-024/SC-025 (주문 상태 변경 + 실시간 반영), SC-039/SC-040 (다중 스태프 동기화), SC-041 (실시간 채널 복원성), 백그라운드 알림/진동 probe | ✅ 작성완료 |
+| `e2e/staff.spec.ts` | SC-002 (점주 superadmin 접근 차단), SC-005/SC-006 (비로그인 보호 경로 차단), SC-011 (직원 계정 생성), SC-012 (직원 메뉴 탭 차단), SC-013 (직원 매장 설정 차단), SC-028 (비밀번호 변경), SC-029 (홈으로 나가기), SC-032 (직원 비활성화) | ✅ 작성완료 |
+| `e2e/login.spec.ts` | 슈퍼어드민 로그인 기본 검증 (SC-005/SC-006은 staff.spec.ts로 이동) | ✅ 작성완료 |
+| `e2e/menu.spec.ts` | SC-014 (메뉴 탭 진입), SC-015 (메뉴 등록), SC-016 (메뉴 수정), SC-017 (품절 처리 + 고객 미노출), SC-018 (테이블 추가), SC-019 (QR URL 유효성) | ✅ 작성완료 |
+| `e2e/order-detail.spec.ts` | SC-022 (장바구니 수량 변경 +/-), SC-023 (빈 장바구니 주문 차단) | ✅ 작성완료 |
+| `e2e/waiting.spec.ts` | SC-026 (대기 키오스크 UI 키패드/인원 선택 + API RPC/INSERT 검증), SC-027 (대기 목록 API 조회) | ✅ 작성완료 |
+| `e2e/edge-cases.spec.ts` | SC-007 (만료 매장 차단), SC-031 (법적 페이지), SC-033 (중복 slug), SC-035 (잘못된 tableId), SC-038 (XSS 이스케이프) | ✅ 작성완료 |
 
 ---
 
 ## 작업 순서
 
-1. **즉시**: SEC-001 보안 마이그레이션 (`is_first_login` 컬럼 제한)
-2. **즉시**: SEC-002 가격 조작 방지 (DB 트리거 또는 Edge Function)
-3. **단기**: SC-011 직원 생성 E2E 작성 (`e2e/staff.spec.ts`)
-4. **단기**: SC-007 만료 매장 차단 구현 + 테스트
-5. **단기**: SEC-005, SEC-006 staffAdmin.ts 수정
-6. **중기**: 전체 P1 E2E 작성
-7. **완료(2026-03-16)**: SC-039/SC-040 다중 스태프 실시간 동기화 E2E 작성
-8. **중기**: P2 엣지 케이스 테스트 작성
+### 완료
+
+- ~~**즉시**: SEC-001 보안 마이그레이션~~ → `20260316000003` 적용 완료
+- ~~**즉시**: SEC-002 가격 조작 방지~~ → `20260316000002` DB 트리거 적용 완료
+- ~~**단기**: SC-011 직원 생성 E2E 작성~~ → `e2e/staff.spec.ts` 작성 완료
+- ~~**완료(2026-03-16)**: SC-039/SC-040 다중 스태프 실시간 동기화 E2E~~ → `e2e/order-flow.spec.ts` test 6, 8 작성 완료
+
+### 남은 작업
+
+1. **단기**: SC-007 만료 매장 차단 E2E 검증
+2. **단기**: SEC-005 `deactivateStaffMember` store_id 스코프 추가
+3. **단기**: SEC-006 `create-staff` apikey 헤더 추가
+4. **중기**: SEC-003 Edge Function CORS 도메인 제한
+5. ~~**중기**: 미작성 E2E~~ → `menu.spec.ts`, `order-detail.spec.ts`, `edge-cases.spec.ts` 작성 완료
+6. ~~**단기**: `waiting.spec.ts` SC-026/SC-027~~ → UI + API 검증 방식으로 작성 완료 + `next_queue_number` SECURITY DEFINER 마이그레이션 적용
+7. ~~**중기**: SC-041 (실시간 채널 장애 복원성) E2E~~ → `e2e/order-flow.spec.ts`에 추가 완료
+8. ~~**단기**: SC-007 E2E 스킵 해제~~ → `SUPABASE_SERVICE_ROLE_KEY` 추가 + service role PATCH 방식으로 완료

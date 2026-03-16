@@ -1,18 +1,31 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('origin') ?? ''
+  const allowed = [
+    'https://tableflow.com',
+    'https://www.tableflow.com',
+  ]
+  // Allow localhost in development
+  if (origin.startsWith('http://localhost:')) allowed.push(origin)
+  return allowed.includes(origin) ? origin : allowed[0]
 }
 
-function json(data: unknown, init: ResponseInit = {}) {
+function corsHeaders(req: Request) {
+  return {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
+}
+
+function json(data: unknown, init: ResponseInit = {}, req?: Request) {
   return new Response(JSON.stringify(data), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders,
+      ...(req ? corsHeaders(req) : {}),
       ...(init.headers ?? {}),
     },
   })
@@ -66,44 +79,44 @@ interface Payload {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return json({ ok: true })
+    return json({ ok: true }, {}, req)
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, { status: 405 })
+    return json({ error: 'Method not allowed' }, { status: 405 }, req)
   }
 
   const verified = await verifyCaller(req.headers.get('Authorization'))
   if (verified.status === 500) {
-    return json({ error: verified.message }, { status: 500 })
+    return json({ error: verified.message }, { status: 500 }, req)
   }
   if (verified.status === 401) {
-    return json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 }, req)
   }
 
   const { adminClient, user } = verified
   if (!adminClient || !user) {
-    return json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 }, req)
   }
 
   let body: Payload
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Invalid JSON body' }, { status: 400 })
+    return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
   }
 
   const { email, password, name, role, storeId } = body
   if (!email || !password || !name || !storeId || !role) {
-    return json({ error: 'email, password, name, role, storeId are required' }, { status: 400 })
+    return json({ error: 'email, password, name, role, storeId are required' }, { status: 400 }, req)
   }
 
   if (!['manager', 'staff'].includes(role)) {
-    return json({ error: 'Invalid role for staff account creation' }, { status: 400 })
+    return json({ error: 'Invalid role for staff account creation' }, { status: 400 }, req)
   }
 
   if (!PASSWORD_PATTERN.test(password)) {
-    return json({ error: 'Password policy violation' }, { status: 400 })
+    return json({ error: 'Password policy violation' }, { status: 400 }, req)
   }
 
   const { data: requesterMember, error: requesterError } = await adminClient
@@ -114,11 +127,11 @@ serve(async (req) => {
     .maybeSingle()
 
   if (requesterError) {
-    return json({ error: requesterError.message }, { status: 500 })
+    return json({ error: requesterError.message }, { status: 500 }, req)
   }
 
   if (!requesterMember || !STAFF_CREATOR_ROLES.includes(requesterMember.role as StoreRole)) {
-    return json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 }, req)
   }
 
   let createdUserId: string | null = null
@@ -156,12 +169,12 @@ serve(async (req) => {
       role,
       name,
       email,
-    })
+    }, {}, req)
   } catch (err) {
     if (createdUserId) {
       await adminClient.auth.admin.deleteUser(createdUserId)
     }
     const message = err instanceof Error ? err.message : 'Unknown error'
-    return json({ error: message }, { status: 500 })
+    return json({ error: message }, { status: 500 }, req)
   }
 })

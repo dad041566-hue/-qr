@@ -513,6 +513,27 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     expect(roleText, 'owner 또는 최고관리자 role 텍스트가 노출되어야 합니다.').toMatch(/owner|최고관리자|점주/)
   })
 
+  test('SC-041. 실시간 채널 장애 복원성: 오프라인→온라인 전환 후 어드민 정상 동작', async ({ page }) => {
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    // 어드민 UI가 정상 로드되었는지 초기 확인
+    const bodyText = await page.locator('body').innerText()
+    expect(bodyText, '어드민 페이지가 로드되어야 합니다.').toMatch(/주방 KDS|대시보드|주문/)
+
+    // 오프라인 시뮬레이션
+    await page.context().setOffline(true)
+    await page.waitForTimeout(2000)
+
+    // 온라인 복구 시뮬레이션
+    await page.context().setOffline(false)
+    await page.waitForTimeout(3000)
+
+    // 재연결 후 어드민 페이지가 여전히 정상 상태인지 확인
+    await expect(page.locator('body'), '재연결 후 어드민 페이지가 크래시 없이 표시되어야 합니다.').not.toContainText('오류가 발생했습니다')
+    await expect(page.locator('body'), '재연결 후 어드민 UI 요소가 보여야 합니다.').toContainText(/주방 KDS|대시보드|주문/, { timeout: 5000 })
+  })
+
   test.afterAll(async () => {
     await deleteStoresWithTestTag()
     await deleteStoreBySlug(STORE_SLUG)
