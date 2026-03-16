@@ -611,6 +611,17 @@ export interface Database {
     }
     Views: Record<string, never>
     Functions: {
+      create_order_atomic: {
+        Args: {
+          p_store_id: string
+          p_table_id: string
+          p_items: unknown
+          p_guest_name?: string | null
+          p_special_requests?: string | null
+          p_payment_method?: PaymentMethod | null
+        }
+        Returns: string
+      }
       next_queue_number: {
         Args: { p_store_id: string }
         Returns: number

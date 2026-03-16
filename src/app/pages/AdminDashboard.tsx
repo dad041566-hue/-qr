@@ -128,13 +128,29 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const storeId = user?.storeId ?? '';
 
-  // 브라우저 알림 권한 요청 (최초 1회)
+  // 브라우저 알림 권한 요청은 사용자 제스처 이후 1회만 수행
   useEffect(() => {
-    requestNotificationPermission().then((permission) => {
-      if (permission === 'denied') {
-        toast.info('알림이 차단되어 있어 주문 알림이 표시되지 않습니다.');
-      }
-    });
+    let active = true;
+
+    const requestOnce = () => {
+      window.removeEventListener('pointerdown', requestOnce);
+      window.removeEventListener('keydown', requestOnce);
+      requestNotificationPermission().then((permission) => {
+        if (!active) return;
+        if (permission === 'denied') {
+          toast.info('알림이 차단되어 있어 주문 알림이 표시되지 않습니다.');
+        }
+      });
+    };
+
+    window.addEventListener('pointerdown', requestOnce, { once: true });
+    window.addEventListener('keydown', requestOnce, { once: true });
+
+    return () => {
+      active = false;
+      window.removeEventListener('pointerdown', requestOnce);
+      window.removeEventListener('keydown', requestOnce);
+    };
   }, [])
 
   // --- Supabase hooks ---

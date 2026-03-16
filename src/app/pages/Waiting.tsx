@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { ChevronLeft, Users, Phone, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createWaiting, getWaitingStatus } from '@/lib/api/waiting';
 import { useMyWaiting } from '@/hooks/useMyWaiting';
-import { useAuth } from '@/hooks/useAuth';
+import { getStoreBySlug } from '@/lib/api/menu';
 
 export function Waiting() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const storeId = user?.storeId ?? '';
+  const { storeSlug } = useParams();
+  const [storeId, setStoreId] = useState('');
+  const [storeLoading, setStoreLoading] = useState(true);
+  const [storeError, setStoreError] = useState<string | null>(null);
 
   const [step, setStep] = useState(1); // 1: Phone, 2: Pax, 3: Complete
   const [phone, setPhone] = useState('010');
@@ -21,6 +23,79 @@ export function Waiting() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { status: waitingStatus, myPosition } = useMyWaiting(storeId, waitingId, queueNumber);
+  const storageKey = storeSlug ? `waiting:${storeSlug}` : null;
+
+  React.useEffect(() => {
+    if (!storageKey) return;
+
+    const raw = sessionStorage.getItem(storageKey);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw) as {
+        phone?: string;
+        pax?: number;
+        queueNumber?: number;
+        waitingId?: string;
+        waitingCount?: number;
+        step?: number;
+      };
+
+      if (typeof saved.phone === 'string') setPhone(saved.phone);
+      if (typeof saved.pax === 'number') setPax(saved.pax);
+      if (typeof saved.queueNumber === 'number') setQueueNumber(saved.queueNumber);
+      if (typeof saved.waitingId === 'string') setWaitingId(saved.waitingId);
+      if (typeof saved.waitingCount === 'number') setWaitingCount(saved.waitingCount);
+      if (saved.step === 2 || saved.step === 3) setStep(saved.step);
+    } catch {
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [storageKey]);
+
+  React.useEffect(() => {
+    if (!storageKey) return;
+
+    sessionStorage.setItem(storageKey, JSON.stringify({
+      phone,
+      pax,
+      queueNumber,
+      waitingId,
+      waitingCount,
+      step,
+    }));
+  }, [storageKey, phone, pax, queueNumber, waitingId, waitingCount, step]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (!storeSlug) {
+      setStoreId('');
+      setStoreError('매장 정보가 없습니다.');
+      setStoreLoading(false);
+      return;
+    }
+
+    setStoreLoading(true);
+    setStoreError(null);
+
+    getStoreBySlug(storeSlug)
+      .then((store) => {
+        if (cancelled) return;
+        setStoreId(store.id);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setStoreId('');
+        setStoreError(error instanceof Error ? error.message : '매장 정보를 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (!cancelled) setStoreLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storeSlug]);
 
   const handleKeypad = (num: string) => {
     if (phone.length < 13) {
@@ -45,7 +120,7 @@ export function Waiting() {
   const handleComplete = async () => {
     if (isSubmitting) return;
     if (!storeId) {
-      setSubmitError('매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      setSubmitError(storeError ?? '매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
     setIsSubmitting(true);
@@ -64,6 +139,14 @@ export function Waiting() {
       setIsSubmitting(false);
     }
   };
+
+  if (storeLoading) {
+    return <div className="flex items-center justify-center h-screen">로딩 중...</div>;
+  }
+
+  if (storeError) {
+    return <div className="flex items-center justify-center h-screen text-red-500">{storeError}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-900 flex items-center justify-center font-sans p-4 select-none">
@@ -186,6 +269,21 @@ export function Waiting() {
                     입장 순서가 되면 카카오톡으로 알려드립니다.
                   </p>
                 )}
+                <button
+                  onClick={() => {
+                    if (storageKey) sessionStorage.removeItem(storageKey);
+                    setPhone('010');
+                    setPax(2);
+                    setQueueNumber(0);
+                    setWaitingId('');
+                    setWaitingCount(0);
+                    setSubmitError(null);
+                    setStep(1);
+                  }}
+                  className="mt-8 text-sm font-bold text-zinc-500 hover:text-zinc-800"
+                >
+                  새 대기 등록 시작
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

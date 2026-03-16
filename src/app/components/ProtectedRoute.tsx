@@ -52,7 +52,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         }
 
         console.warn(`[ProtectedRoute] subscription check failed and no cache available for store=${user.storeId}`, error)
-        setStoreActive(true)
+        setStoreActive(false)
       })
       .finally(() => setSubscriptionChecking(false))
   }, [user?.storeId])

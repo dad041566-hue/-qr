@@ -50,6 +50,42 @@ export function CustomerMenu() {
     time: Date;
     status: string;
   }>>([]);
+  const orderHistoryKey = storeSlug && tableId ? `order-history:${storeSlug}:${tableId}` : null;
+
+  React.useEffect(() => {
+    if (!orderHistoryKey) return;
+
+    const raw = sessionStorage.getItem(orderHistoryKey);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw) as Array<{
+        id: string;
+        items: Array<{name: string, qty: number, price: number, options: string[]}>;
+        total: number;
+        time: string;
+        status: string;
+      }>;
+
+      setOrderHistory(saved.map((entry) => ({
+        ...entry,
+        time: new Date(entry.time),
+      })));
+    } catch {
+      sessionStorage.removeItem(orderHistoryKey);
+    }
+  }, [orderHistoryKey]);
+
+  React.useEffect(() => {
+    if (!orderHistoryKey) return;
+
+    sessionStorage.setItem(orderHistoryKey, JSON.stringify(
+      orderHistory.map((entry) => ({
+        ...entry,
+        time: entry.time.toISOString(),
+      }))
+    ));
+  }, [orderHistoryKey, orderHistory]);
 
   const categoryTabs = [
     { id: '전체', icon: LayoutGrid },

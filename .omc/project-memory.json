@@ -1,0 +1,488 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1773633373069,
+  "projectRoot": "D:\\Project\\-qr",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "@playwright/test",
+        "version": "1.58.2",
+        "category": "testing"
+      },
+      {
+        "name": "vite",
+        "version": "6.3.5",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "build": "vite build",
+      "dev": "vite"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 1,
+      "lastAccessed": 1773633373009,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 8,
+      "lastAccessed": 1773633373020,
+      "keyFiles": [
+        "CHECKLIST.md",
+        "DECISIONS.md",
+        "PRD.md",
+        "SCHEMA.md",
+        "schema.sql"
+      ]
+    },
+    "e2e": {
+      "path": "e2e",
+      "purpose": null,
+      "fileCount": 6,
+      "lastAccessed": 1773633373021,
+      "keyFiles": [
+        "debug-admin.spec.ts",
+        "e2e-helpers.ts",
+        "login.spec.ts",
+        "order-flow.spec.ts",
+        "staff.spec.ts"
+      ]
+    },
+    "guidelines": {
+      "path": "guidelines",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773633373022,
+      "keyFiles": [
+        "Guidelines.md"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1773633373022,
+      "keyFiles": [
+        "main.tsx"
+      ]
+    },
+    "supabase": {
+      "path": "supabase",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773633373023,
+      "keyFiles": [
+        "seed.sql"
+      ]
+    },
+    "test-results": {
+      "path": "test-results",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1773633373024,
+      "keyFiles": [
+        "after-submit.png",
+        "before-submit.png",
+        "owner-admin.png"
+      ]
+    },
+    "dist\\assets": {
+      "path": "dist\\assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1773633373026,
+      "keyFiles": [
+        "index-C4Rj_Qgk.css",
+        "index-Deu1_qn0.js"
+      ]
+    },
+    "src\\app": {
+      "path": "src\\app",
+      "purpose": "Application code",
+      "fileCount": 2,
+      "lastAccessed": 1773633373027,
+      "keyFiles": [
+        "App.tsx",
+        "routes.tsx"
+      ]
+    },
+    "src\\lib": {
+      "path": "src\\lib",
+      "purpose": "Library code",
+      "fileCount": 1,
+      "lastAccessed": 1773633373027,
+      "keyFiles": [
+        "supabase.ts"
+      ]
+    },
+    "src\\types": {
+      "path": "src\\types",
+      "purpose": "Type definitions",
+      "fileCount": 2,
+      "lastAccessed": 1773633373028,
+      "keyFiles": [
+        "auth.ts",
+        "database.ts"
+      ]
+    },
+    "supabase\\migrations": {
+      "path": "supabase\\migrations",
+      "purpose": "Database migrations",
+      "fileCount": 10,
+      "lastAccessed": 1773633373028,
+      "keyFiles": [
+        "20260315000001_initial_schema.sql",
+        "20260315000002_rls_policies.sql",
+        "20260315000003_indexes.sql"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "e2e\\order-flow.spec.ts",
+      "accessCount": 70,
+      "lastAccessed": 1773651704742,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\pages\\AdminDashboard.tsx",
+      "accessCount": 32,
+      "lastAccessed": 1773643594782,
+      "type": "directory"
+    },
+    {
+      "path": "e2e\\e2e-helpers.ts",
+      "accessCount": 18,
+      "lastAccessed": 1773651989061,
+      "type": "directory"
+    },
+    {
+      "path": "e2e\\staff.spec.ts",
+      "accessCount": 11,
+      "lastAccessed": 1773652141099,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\pages\\ChangePassword.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1773651704277,
+      "type": "file"
+    },
+    {
+      "path": "src\\hooks\\useOrders.ts",
+      "accessCount": 9,
+      "lastAccessed": 1773644775352,
+      "type": "file"
+    },
+    {
+      "path": "src\\contexts\\AuthContext.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1773646299542,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\pages\\CustomerMenu.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1773635420205,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\admin.ts",
+      "accessCount": 6,
+      "lastAccessed": 1773644931793,
+      "type": "directory"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 6,
+      "lastAccessed": 1773675134092,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\order.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773634818046,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260315000006_security_hardening.sql",
+      "accessCount": 4,
+      "lastAccessed": 1773635444657,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 4,
+      "lastAccessed": 1773650937371,
+      "type": "directory"
+    },
+    {
+      "path": "src\\app\\components\\ProtectedRoute.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773645045120,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\functions\\create-store-with-owner\\index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773633927377,
+      "type": "file"
+    },
+    {
+      "path": "test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내--retry1\\test-failed-3.png",
+      "accessCount": 2,
+      "lastAccessed": 1773634370909,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260315000002_rls_policies.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773635214070,
+      "type": "directory"
+    },
+    {
+      "path": "supabase\\migrations",
+      "accessCount": 2,
+      "lastAccessed": 1773635215221,
+      "type": "directory"
+    },
+    {
+      "path": "supabase\\migrations\\20260315000001_initial_schema.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773638870374,
+      "type": "file"
+    },
+    {
+      "path": "docs\\schema.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773642469372,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000003_fix_store_members_policy_v2.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773642743120,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000004_fix_stores_anon_rls_recursion.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773643776382,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000006_enable_realtime_orders.sql",
+      "accessCount": 2,
+      "lastAccessed": 1773643776957,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\supabase.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773645094993,
+      "type": "file"
+    },
+    {
+      "path": "e2e\\superadmin.spec.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773650753947,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\components\\SuperAdminRoute.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773651141596,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1773651361843,
+      "type": "directory"
+    },
+    {
+      "path": "src\\app\\pages\\SuperAdmin.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773651373302,
+      "type": "file"
+    },
+    {
+      "path": "src/app/pages",
+      "accessCount": 1,
+      "lastAccessed": 1773633458162,
+      "type": "directory"
+    },
+    {
+      "path": "src\\hooks\\useMenu.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773633556211,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\menu.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773633573779,
+      "type": "file"
+    },
+    {
+      "path": "docs",
+      "accessCount": 1,
+      "lastAccessed": 1773633608581,
+      "type": "directory"
+    },
+    {
+      "path": "test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내--retry1\\test-failed-1.png",
+      "accessCount": 1,
+      "lastAccessed": 1773633783300,
+      "type": "file"
+    },
+    {
+      "path": "test-results\\order-flow-TableFlow-사용자-시-df848-6-고객-주문-→-어드민-실시간-수신-1초-이내--retry1\\test-failed-2.png",
+      "accessCount": 1,
+      "lastAccessed": 1773633784338,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\functions\\superadmin\\index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773633843543,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\superadmin.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773633882240,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000002_fix_order_price_server_side.sql",
+      "accessCount": 1,
+      "lastAccessed": 1773634554335,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000005_fix_order_items_anon_rls.sql",
+      "accessCount": 1,
+      "lastAccessed": 1773634874933,
+      "type": "file"
+    },
+    {
+      "path": "supabase",
+      "accessCount": 1,
+      "lastAccessed": 1773635392349,
+      "type": "directory"
+    },
+    {
+      "path": "src\\hooks\\useOrderNotification.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773635568805,
+      "type": "file"
+    },
+    {
+      "path": "e2e\\debug-admin.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773635661181,
+      "type": "file"
+    },
+    {
+      "path": "e2e",
+      "accessCount": 1,
+      "lastAccessed": 1773636309410,
+      "type": "directory"
+    },
+    {
+      "path": "src\\hooks\\useRealtimeTables.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773636430652,
+      "type": "file"
+    },
+    {
+      "path": "supabase\\migrations\\20260316000001_fix_store_members_policy.sql",
+      "accessCount": 1,
+      "lastAccessed": 1773636521961,
+      "type": "file"
+    },
+    {
+      "path": "playwright.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773637850985,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773639155759,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\staffAdmin.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773640422323,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\api\\subscription.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773643802777,
+      "type": "file"
+    },
+    {
+      "path": "e2e\\login.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773650537963,
+      "type": "file"
+    },
+    {
+      "path": "docs\\testplan.md",
+      "accessCount": 1,
+      "lastAccessed": 1773675099596,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

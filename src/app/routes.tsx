@@ -17,7 +17,7 @@ export const router = createBrowserRouter([
   { path: "/terms", Component: Terms },
   { path: "/table/:id", Component: CustomerMenu },
   { path: "/m/:storeSlug/:tableId", Component: CustomerMenu },
-  { path: "/waiting", Component: Waiting },
+  { path: "/waiting/:storeSlug", Component: Waiting },
   { path: "/login", Component: Login },
   {
     path: "/change-password",

@@ -19,9 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm i          # 의존성 설치
 npm run dev    # Vite 개발 서버
 npm run build  # 프로덕션 빌드
+npx playwright test  # E2E 테스트 실행 (serial mode)
 ```
-
-테스트·린트 스크립트 없음.
 
 ## Environment Variables
 
@@ -107,3 +106,10 @@ supabase.channel(`{table}:{storeId}`)
 | staff | ✅ | ❌ | ❌ | ❌ |
 
 고객(비로그인)은 주문 INSERT만 허용. Supabase RLS로 `store_id` 기반 멀티테넌트 격리.
+
+### 보안 정책
+
+- **비밀번호**: 8자 이상 + 특수문자 필수
+- **첫 로그인**: 임시 비번 제공 후 `/change-password`에서 강제 변경
+- **구독 상태**: 매장 활성 여부를 `checkStoreActive()` 함수로 매 세션 검증
+- **대기열 번호**: 순차 증가 + 롤오버 보안 (마이그레이션: `20260316000007_fix_queue_number_security.sql`)
