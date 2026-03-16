@@ -185,8 +185,8 @@
   "hotPaths": [
     {
       "path": "e2e\\order-flow.spec.ts",
-      "accessCount": 94,
-      "lastAccessed": 1773682307792,
+      "accessCount": 101,
+      "lastAccessed": 1773683281251,
       "type": "file"
     },
     {
@@ -197,14 +197,14 @@
     },
     {
       "path": "e2e\\staff.spec.ts",
-      "accessCount": 35,
-      "lastAccessed": 1773681223390,
+      "accessCount": 43,
+      "lastAccessed": 1773683120451,
       "type": "file"
     },
     {
       "path": "e2e\\e2e-helpers.ts",
-      "accessCount": 22,
-      "lastAccessed": 1773682103178,
+      "accessCount": 26,
+      "lastAccessed": 1773683110250,
       "type": "directory"
     },
     {

@@ -257,13 +257,34 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
   })
 
   test('SB-003: 강제 정지 매장 관리자 차단', async ({ page }) => {
-    // 매장을 is_active = false로 변경
+    // Service role headers로 매장 조회 및 비활성화
     const { url: supabaseUrl } = getSupabaseConfig()
-    const headers = await supabaseHeaders(page)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+    if (!serviceRoleKey) {
+      console.warn('SUPABASE_SERVICE_ROLE_KEY not set — skipping SB-003')
+      return
+    }
+
+    const serviceHeaders = {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+    }
+
+    // 매장 ID 조회
+    const lookupRes = await fetch(
+      `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
+      { headers: serviceHeaders }
+    )
+    const storeRows = await lookupRes.json() as StoreRow[]
+    expect(storeRows.length).toBeGreaterThan(0)
+    const storeId = storeRows[0].id
+
+    // 매장을 is_active = false로 변경
     await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${storeId}`, {
       method: 'PATCH',
-      headers,
+      headers: serviceHeaders,
       body: JSON.stringify({
         is_active: false,
         end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]

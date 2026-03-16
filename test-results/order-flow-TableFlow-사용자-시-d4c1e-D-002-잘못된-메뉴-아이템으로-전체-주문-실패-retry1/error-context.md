@@ -1,0 +1,165 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e12]:
+          - heading "TableFlow" [level=1] [ref=e13]
+          - text: Pro POS
+      - generic [ref=e15]:
+        - button "👨‍🍳 현장 POS" [ref=e16]
+        - button "⚙️ 매장 관리" [ref=e17]
+      - navigation [ref=e18]:
+        - button "주방 디스플레이" [ref=e19]:
+          - generic [ref=e20]:
+            - img [ref=e21]
+            - generic [ref=e23]: 주방 디스플레이
+        - button "웨이팅 관리" [ref=e24]:
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - generic [ref=e31]: 웨이팅 관리
+        - button "홀 테이블 현황" [ref=e32]:
+          - generic [ref=e33]:
+            - img [ref=e34]
+            - generic [ref=e39]: 홀 테이블 현황
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]: 주문
+          - generic [ref=e43]:
+            - paragraph [ref=e44]: 주문테스트매장1773683365709
+            - paragraph [ref=e45]: 최고관리자
+          - button [ref=e46]:
+            - img [ref=e47]
+        - button "홈으로 나가기" [ref=e50]:
+          - img [ref=e51]
+          - text: 홈으로 나가기
+    - main [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - img [ref=e58]
+          - textbox "검색어 입력..." [ref=e61]
+        - generic [ref=e62]:
+          - generic [ref=e63]: 정상 가동중
+          - button "동기화" [ref=e65]:
+            - img [ref=e66]
+            - text: 동기화
+          - button [ref=e72]:
+            - img [ref=e73]
+      - generic [ref=e79]:
+        - generic [ref=e81]:
+          - heading "주방 KDS" [level=2] [ref=e82]
+          - paragraph [ref=e83]: 주방 작업에 최적화된 큰 글씨와 고대비 UI입니다.
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - heading "신규 주문" [level=3] [ref=e87]: 신규 주문
+              - generic [ref=e89]: 0건
+            - generic [ref=e91]: 신규 주문이 없습니다
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - heading "조리중" [level=3] [ref=e94]: 조리중
+              - generic [ref=e96]: 0건
+            - generic [ref=e98]: 조리중인 메뉴가 없습니다
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - heading "서빙 대기" [level=3] [ref=e101]: 서빙 대기
+              - generic [ref=e103]: 3건
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - generic [ref=e107]:
+                  - generic [ref=e108]:
+                    - generic [ref=e109]:
+                      - generic [ref=e110]: T1
+                      - generic [ref=e111]:
+                        - paragraph [ref=e112]: 주문번호
+                        - paragraph [ref=e113]: e112404b-523d-4e06-a815-1824bfca8948
+                        - generic [ref=e114]:
+                          - img [ref=e115]
+                          - spinbutton [ref=e120]: "0"
+                          - generic [ref=e121]: 명
+                    - generic [ref=e122]:
+                      - paragraph [ref=e123]:
+                        - img [ref=e124]
+                        - text: 서빙 대기
+                      - generic [ref=e127]:
+                        - combobox [ref=e128]:
+                          - option "신규 주문"
+                          - option "조리중"
+                          - option "서빙 대기" [selected]
+                          - option "서빙 완료"
+                        - button "주문 삭제" [ref=e129]:
+                          - img [ref=e130]
+                  - list [ref=e133]:
+                    - listitem [ref=e134]:
+                      - generic [ref=e135]: "1"
+                      - paragraph [ref=e137]: 테스트메뉴1
+                - button "서빙 완료" [ref=e139]:
+                  - img [ref=e140]
+                  - text: 서빙 완료
+              - generic [ref=e142]:
+                - generic [ref=e144]:
+                  - generic [ref=e145]:
+                    - generic [ref=e146]:
+                      - generic [ref=e147]: T1
+                      - generic [ref=e148]:
+                        - paragraph [ref=e149]: 주문번호
+                        - paragraph [ref=e150]: 98343fef-883b-4d61-bf7c-0051e1f2f93c
+                        - generic [ref=e151]:
+                          - img [ref=e152]
+                          - spinbutton [ref=e157]: "0"
+                          - generic [ref=e158]: 명
+                    - generic [ref=e159]:
+                      - paragraph [ref=e160]:
+                        - img [ref=e161]
+                        - text: 서빙 대기
+                      - generic [ref=e164]:
+                        - combobox [ref=e165]:
+                          - option "신규 주문"
+                          - option "조리중"
+                          - option "서빙 대기" [selected]
+                          - option "서빙 완료"
+                        - button "주문 삭제" [ref=e166]:
+                          - img [ref=e167]
+                  - list [ref=e170]:
+                    - listitem [ref=e171]:
+                      - generic [ref=e172]: "1"
+                      - paragraph [ref=e174]: 테스트메뉴1
+                - button "서빙 완료" [ref=e176]:
+                  - img [ref=e177]
+                  - text: 서빙 완료
+              - generic [ref=e179]:
+                - generic [ref=e181]:
+                  - generic [ref=e182]:
+                    - generic [ref=e183]:
+                      - generic [ref=e184]: T1
+                      - generic [ref=e185]:
+                        - paragraph [ref=e186]: 주문번호
+                        - paragraph [ref=e187]: 36a4a5b5-81f7-4c7e-8512-c5d44244d865
+                        - generic [ref=e188]:
+                          - img [ref=e189]
+                          - spinbutton [ref=e194]: "0"
+                          - generic [ref=e195]: 명
+                    - generic [ref=e196]:
+                      - paragraph [ref=e197]:
+                        - img [ref=e198]
+                        - text: 서빙 대기
+                      - generic [ref=e201]:
+                        - combobox [ref=e202]:
+                          - option "신규 주문"
+                          - option "조리중"
+                          - option "서빙 대기" [selected]
+                          - option "서빙 완료"
+                        - button "주문 삭제" [ref=e203]:
+                          - img [ref=e204]
+                  - list [ref=e207]:
+                    - listitem [ref=e208]:
+                      - generic [ref=e209]: "1"
+                      - paragraph [ref=e211]: 테스트메뉴1
+                - button "서빙 완료" [ref=e213]:
+                  - img [ref=e214]
+                  - text: 서빙 완료
+  - region "Notifications alt+T"
+```

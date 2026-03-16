@@ -44,6 +44,7 @@ const STAFF_EMAIL = `order-staff-${ts}@tableflow.com`
 const STAFF_PASSWORD = 'Staff1234!@'
 const STAFF_NEW_PASSWORD = 'Staff5678!@'
 
+let storeId = ''
 let tableId = ''
 let qrToken = ''
 let categoryId = ''
@@ -293,7 +294,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await page.waitForLoadState('networkidle')
 
-    const storeId = await getStoreId(page)
+    storeId = await getStoreId(page)
     const tableRows = await supabaseGet<TableRow>(
       page,
       `tables?select=id,table_number,qr_token&store_id=eq.${storeId}&order=table_number.asc&limit=1`
@@ -553,6 +554,9 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
   test('OD-002: 잘못된 메뉴 아이템으로 전체 주문 실패', async ({ page }) => {
     expect(storeId, 'storeId가 설정되어야 합니다.').toBeTruthy()
     expect(tableId, 'tableId가 설정되어야 합니다.').toBeTruthy()
+
+    // 점주로 로그인하여 헤더 추출
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
 
     // 잘못된 menu_item_id로 주문 요청
     const { url: supabaseUrl } = getSupabaseConfig()

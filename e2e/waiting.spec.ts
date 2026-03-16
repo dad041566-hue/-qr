@@ -186,8 +186,8 @@ test.describe('SC-026/SC-027 대기 키오스크 E2E', () => {
 
     // step 1: 전화번호 입력
     for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8']) {
-      // 숫자 버튼은 아마도 span이나 다른 요소일 수 있음
-      const btnLocator = page.locator('button').filter({ has: page.locator(`text=${digit}`) }).first()
+      // CSS text selector로 숫자 버튼 찾기
+      const btnLocator = page.locator(`button:has-text("${digit}")`).first()
       await expect(btnLocator, `숫자 ${digit} 버튼이 보여야 합니다`).toBeVisible({ timeout: 8000 })
       await btnLocator.click()
       await page.waitForTimeout(100) // 각 입력 후 짧은 대기
