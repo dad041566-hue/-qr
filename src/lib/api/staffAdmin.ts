@@ -12,6 +12,9 @@ export async function createStaffMember(
   name: string,
   role: 'manager' | 'staff',
 ): Promise<void> {
+  // getUser() validates with the Auth server (A07-003). getSession() kept for token.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('인증 세션이 없습니다.')
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('인증 세션이 없습니다.')
 

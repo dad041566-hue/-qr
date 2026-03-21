@@ -51,9 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshStoreUser = useCallback(async () => {
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
+    // getUser() validates against the Supabase Auth server (not local storage),
+    // making it safe for security-sensitive decisions (A07-003).
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const storeUser = await fetchStoreUser(user.id, user.email ?? '')
       setUser(storeUser)
       setLoading(false)
       return storeUser

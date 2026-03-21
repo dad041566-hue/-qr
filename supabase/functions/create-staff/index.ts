@@ -134,6 +134,11 @@ serve(async (req) => {
     return json({ error: 'Forbidden' }, { status: 403 }, req)
   }
 
+  // Managers can only create staff, not other managers
+  if (requesterMember.role === 'manager' && role === 'manager') {
+    return json({ error: 'Forbidden' }, { status: 403 }, req)
+  }
+
   let createdUserId: string | null = null
 
   try {

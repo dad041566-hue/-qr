@@ -19,6 +19,16 @@ function getServiceRoleKey(): string | null {
   return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null
 }
 
+export function getServiceRoleHeaders(): Record<string, string> | null {
+  const serviceRoleKey = getServiceRoleKey()
+  if (!serviceRoleKey) return null
+  return {
+    Authorization: `Bearer ${serviceRoleKey}`,
+    apikey: serviceRoleKey,
+    'Content-Type': 'application/json',
+  }
+}
+
 export async function gotoLogin(page: Page): Promise<void> {
   await page.goto('/login')
 }
@@ -165,16 +175,10 @@ async function setStoreTestTag(
  */
 export async function deleteStoreBySlug(slug: string): Promise<void> {
   const { url } = getSupabaseConfig()
-  const serviceRoleKey = getServiceRoleKey()
-  if (!serviceRoleKey) {
+  const headers = getServiceRoleHeaders()
+  if (!headers) {
     console.warn(`[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping cleanup for store slug: ${slug}`)
     return
-  }
-
-  const headers = {
-    Authorization: `Bearer ${serviceRoleKey}`,
-    apikey: serviceRoleKey,
-    'Content-Type': 'application/json',
   }
 
   const lookupRes = await fetch(
@@ -201,30 +205,20 @@ export async function deleteStoreBySlug(slug: string): Promise<void> {
 
 export async function markStoreTestData(slug: string): Promise<void> {
   const { url } = getSupabaseConfig()
-  const serviceRoleKey = getServiceRoleKey()
-  if (!serviceRoleKey) {
+  const headers = getServiceRoleHeaders()
+  if (!headers) {
     console.warn(`[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: ${slug}`)
     return
-  }
-  const headers = {
-    Authorization: `Bearer ${serviceRoleKey}`,
-    apikey: serviceRoleKey,
-    'Content-Type': 'application/json',
   }
   await setStoreTestTag(headers, url, slug)
 }
 
 export async function deleteStoresWithTestTag(): Promise<void> {
   const { url } = getSupabaseConfig()
-  const serviceRoleKey = getServiceRoleKey()
-  if (!serviceRoleKey) {
+  const headers = getServiceRoleHeaders()
+  if (!headers) {
     console.warn('[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping global test tag cleanup.')
     return
-  }
-  const headers = {
-    Authorization: `Bearer ${serviceRoleKey}`,
-    apikey: serviceRoleKey,
-    'Content-Type': 'application/json',
   }
 
   const delRes = await fetch(`${url}/rest/v1/stores?test_tag=eq.true`, {

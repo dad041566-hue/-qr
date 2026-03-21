@@ -314,9 +314,9 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
 
     await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
 
-    const storeIdForSeed = await getStoreId(page)
+    expect(storeId, 'storeId가 이전 테스트에서 설정되어야 합니다.').toBeTruthy()
     const categoryRows = await supabasePost<MenuSeedRow>(page, 'menu_categories', {
-      store_id: storeIdForSeed,
+      store_id: storeId,
       name: '테스트메뉴',
       sort_order: 1,
     })
@@ -324,7 +324,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     categoryId = categoryRows[0].id
 
     const itemRows = await supabasePost<MenuSeedRow>(page, 'menu_items', {
-      store_id: storeIdForSeed,
+      store_id: storeId,
       category_id: categoryId,
       name: '테스트메뉴1',
       price: 10000,
@@ -617,7 +617,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
       headers,
       body: JSON.stringify({
         p_table_id: 'wrong-table-from-other-store',
-        p_items: menuItemIds.length > 0 ? [{ menu_item_id: menuItemIds[0], quantity: 1 }] : []
+        p_items: menuItemId ? [{ menu_item_id: menuItemId, quantity: 1 }] : []
       })
     })
 

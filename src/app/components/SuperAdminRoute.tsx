@@ -14,19 +14,21 @@ export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
   React.useEffect(() => {
     let active = true
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // getUser() validates against the Supabase Auth server for security-sensitive
+    // role checks (A07-003). getSession() reads from local storage and can be spoofed.
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
       if (!active) return
-      if (!session) {
+      if (error || !user) {
         setHasSession(false)
         setSessionChecked(true)
         return
       }
       setHasSession(true)
-      const allowed = session.user.app_metadata?.role === 'super_admin'
+      const allowed = user.app_metadata?.role === 'super_admin'
       setAuthorized(allowed)
       setSessionChecked(true)
     }).catch(() => {
-      // getSession() can time out if the auth WebLock is contended.
+      // getUser() can time out if the network is unavailable.
       // Treat as unauthenticated to avoid an infinite spinner.
       if (!active) return
       setHasSession(false)

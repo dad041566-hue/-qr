@@ -34,9 +34,9 @@ export function ChangePassword() {
     setLoading(true)
 
     try {
-      // 1) 현재 사용자 ID 확보
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) throw new Error('세션이 없습니다.')
+      // 1) 현재 사용자 ID 확보 — getUser()로 서버 검증 (A07-003)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('세션이 없습니다.')
 
       // 2) 비밀번호 업데이트
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
@@ -46,7 +46,7 @@ export function ChangePassword() {
       const { error: memberError } = await supabase
         .from('store_members')
         .update({ is_first_login: false })
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .eq('is_first_login', true)
       if (memberError) throw memberError
 
@@ -56,7 +56,8 @@ export function ChangePassword() {
       toast.success('비밀번호가 변경되었습니다.')
       navigate('/admin', { replace: true })
     } catch (err: any) {
-      toast.error(err?.message ?? '비밀번호 변경에 실패했습니다.')
+      console.error('Password change failed:', err)
+      toast.error('비밀번호 변경에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }

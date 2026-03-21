@@ -14,8 +14,8 @@ import {
   requireEnv,
   sidebarBtn,
   getSupabaseConfig,
-  supabaseHeaders,
   supabaseGet,
+  getServiceRoleHeaders,
 } from './e2e-helpers'
 
 requireEnv('TEST_SUPERADMIN_EMAIL')
@@ -204,21 +204,16 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
   // ────────────────────────────────────────────────────────────────
 
   test('SB-002: 만료 매장 관리자 접근 차단', async ({ page, browser }) => {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    test.skip(!serviceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY 미설정 — service role로 stores PATCH 불가')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정 — service role로 stores PATCH 불가')
 
     const { url: supabaseUrl } = getSupabaseConfig()
-    const serviceHeaders = {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey!,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    }
+    const headers = { ...serviceHeaders!, Prefer: 'return=representation' }
 
     // 스토어 ID 조회 (서비스 롤로 직접 조회)
     const storeRes = await fetch(
       `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
-      { headers: serviceHeaders }
+      { headers }
     )
     const storeRows: StoreRow[] = await storeRes.json()
     if (storeRows.length === 0) throw new Error(`Store with slug ${STORE_SLUG} not found`)
@@ -228,7 +223,7 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     const expiredDate = '2020-01-01'
     const patchRes = await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
       method: 'PATCH',
-      headers: serviceHeaders,
+      headers,
       body: JSON.stringify({ subscription_end: expiredDate }),
     })
     expect(patchRes.ok, `PATCH 실패: ${patchRes.status}`).toBeTruthy()
@@ -250,32 +245,22 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
       // 복구: subscription_end를 미래 날짜로 원복
       await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${currentStoreId}`, {
         method: 'PATCH',
-        headers: serviceHeaders,
+        headers,
         body: JSON.stringify({ subscription_end: nextYear }),
       })
     }
   })
 
   test('SB-003: 강제 정지 매장 관리자 차단', async ({ page }) => {
-    // Service role headers로 매장 조회 및 비활성화
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정 — service role로 stores PATCH 불가')
+
     const { url: supabaseUrl } = getSupabaseConfig()
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!serviceRoleKey) {
-      console.warn('SUPABASE_SERVICE_ROLE_KEY not set — skipping SB-003')
-      return
-    }
-
-    const serviceHeaders = {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
-      'Content-Type': 'application/json',
-    }
 
     // 매장 ID 조회
     const lookupRes = await fetch(
       `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
-      { headers: serviceHeaders }
+      { headers: serviceHeaders! }
     )
     const storeRows = await lookupRes.json() as StoreRow[]
     expect(storeRows.length).toBeGreaterThan(0)
@@ -284,24 +269,34 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     // 매장을 is_active = false로 변경
     await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${storeId}`, {
       method: 'PATCH',
-      headers: serviceHeaders,
+      headers: serviceHeaders!,
       body: JSON.stringify({
         is_active: false,
         end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       })
     })
 
-    // 로그인 시도
-    await page.goto('/login')
-    await page.getByPlaceholder('이메일').fill(OWNER_EMAIL)
-    await page.getByPlaceholder('비밀번호').fill(OWNER_NEW_PASSWORD)
-    await page.getByRole('button', { name: '로그인' }).click()
+    try {
+      // SC-028에서 비밀번호가 NewPass1234!@로 변경됨
+      const currentPassword = 'NewPass1234!@'
+      await page.goto('/login')
+      await page.getByPlaceholder('이메일').fill(OWNER_EMAIL)
+      await page.getByPlaceholder('비밀번호').fill(currentPassword)
+      await page.getByRole('button', { name: '로그인' }).click()
 
-    await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('networkidle')
 
-    // 차단 화면 표시 확인
-    const bodyText = await page.locator('body').innerText()
-    expect(bodyText).toMatch(/정지|이용 불가|차단|비활성/)
+      // 차단 화면 표시 확인
+      const bodyText = await page.locator('body').innerText()
+      expect(bodyText).toMatch(/정지|이용 불가|차단|비활성/)
+    } finally {
+      // 복구: is_active를 true로 원복
+      await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${storeId}`, {
+        method: 'PATCH',
+        headers: serviceHeaders!,
+        body: JSON.stringify({ is_active: true })
+      })
+    }
   })
 
   test('SB-004: 구독 체크 실패 + 캐시 없음 시 차단', async ({ page }) => {

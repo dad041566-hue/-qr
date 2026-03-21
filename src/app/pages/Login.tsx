@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Utensils, Mail, Lock, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
@@ -14,6 +14,39 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
+  const [failCount, setFailCount] = useState<number>(() => {
+    const stored = sessionStorage.getItem('login_fail_count')
+    return stored ? parseInt(stored, 10) : 0
+  })
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const stored = sessionStorage.getItem('login_lockout_until')
+    if (!stored) return null
+    const val = parseInt(stored, 10)
+    return val > Date.now() ? val : null
+  })
+  const [countdown, setCountdown] = useState(0)
+
+  function getLockoutDuration(failures: number): number {
+    if (failures >= 10) return 60
+    if (failures >= 5) return 15
+    if (failures >= 3) return 5
+    return 0
+  }
+
+  useEffect(() => {
+    if (!lockoutUntil) return
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000)
+      if (remaining <= 0) {
+        setLockoutUntil(null)
+        setCountdown(0)
+        sessionStorage.removeItem('login_lockout_until')
+      } else {
+        setCountdown(remaining)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [lockoutUntil])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -26,11 +59,20 @@ export function Login() {
       return
     }
     setErrors({})
+
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      toast.error(`${countdown}초 후에 다시 시도해주세요.`)
+      return
+    }
+
     setLoading(true)
 
     try {
       await signInWithEmail(email.trim(), password)
       const refreshedUser = await refreshStoreUser()
+      setFailCount(0)
+      sessionStorage.removeItem('login_fail_count')
+      sessionStorage.removeItem('login_lockout_until')
 
       if (refreshedUser?.isFirstLogin) {
         navigate('/change-password', { replace: true })
@@ -39,7 +81,17 @@ export function Login() {
       const isSuperAdmin = await checkSuperAdmin()
       navigate(isSuperAdmin ? '/superadmin' : '/admin', { replace: true })
     } catch (err: any) {
-      toast.error(err?.message ?? '로그인에 실패했습니다.')
+      const newCount = failCount + 1
+      setFailCount(newCount)
+      sessionStorage.setItem('login_fail_count', String(newCount))
+      const duration = getLockoutDuration(newCount)
+      if (duration > 0) {
+        const until = Date.now() + duration * 1000
+        setLockoutUntil(until)
+        sessionStorage.setItem('login_lockout_until', String(until))
+      }
+      console.error('Login failed:', err)
+      toast.error('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
     } finally {
       setLoading(false)
     }
@@ -97,11 +149,11 @@ export function Login() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || (lockoutUntil !== null && Date.now() < lockoutUntil)}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-1"
             >
               <LogIn className="w-4 h-4" />
-              {loading ? '로그인 중...' : '로그인'}
+              {loading ? '로그인 중...' : lockoutUntil !== null && countdown > 0 ? `${countdown}초 후 재시도` : '로그인'}
             </Button>
           </form>
         </div>
