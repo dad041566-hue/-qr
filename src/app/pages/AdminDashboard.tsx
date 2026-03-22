@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
 import { isStoreSubscriptionActive } from '@/lib/utils/subscription';
 import { StaffManagement } from '@/app/components/admin/StaffManagement';
-import { requestNotificationPermission } from '@/hooks/useOrderNotification';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
+import { NotificationDeniedBanner } from '@/app/components/admin/NotificationDeniedBanner';
 import { useOrders, type OrderWithItems } from '@/hooks/useOrders';
 import { useRealtimeTables } from '@/hooks/useRealtimeTables';
 import { useMenuAdmin } from '@/hooks/useMenuAdmin';
@@ -129,30 +130,22 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const storeId = user?.storeId ?? '';
 
-  // 브라우저 알림 권한 요청은 사용자 제스처 이후 1회만 수행
+  // 브라우저 알림 권한 요청 + 거부 시 배너 표시
+  const { showBanner, dismissBanner, requestPermission } = useNotificationPermission()
+
   useEffect(() => {
-    let active = true;
-
     const requestOnce = () => {
-      window.removeEventListener('pointerdown', requestOnce);
-      window.removeEventListener('keydown', requestOnce);
-      requestNotificationPermission().then((permission) => {
-        if (!active) return;
-        if (permission === 'denied') {
-          toast.info('알림이 차단되어 있어 주문 알림이 표시되지 않습니다.');
-        }
-      });
-    };
-
-    window.addEventListener('pointerdown', requestOnce, { once: true });
-    window.addEventListener('keydown', requestOnce, { once: true });
-
+      window.removeEventListener('pointerdown', requestOnce)
+      window.removeEventListener('keydown', requestOnce)
+      requestPermission()
+    }
+    window.addEventListener('pointerdown', requestOnce, { once: true })
+    window.addEventListener('keydown', requestOnce, { once: true })
     return () => {
-      active = false;
-      window.removeEventListener('pointerdown', requestOnce);
-      window.removeEventListener('keydown', requestOnce);
-    };
-  }, [])
+      window.removeEventListener('pointerdown', requestOnce)
+      window.removeEventListener('keydown', requestOnce)
+    }
+  }, [requestPermission])
 
   // --- Supabase hooks ---
   const { orders: rawOrders, loading: ordersLoading, updateOrderStatus: apiUpdateOrderStatus, deleteOrder: apiDeleteOrder } = useOrders(storeId || null);
@@ -1922,6 +1915,13 @@ export function AdminDashboard() {
             </button>
           </div>
         </header>
+
+        {/* 알림 권한 거부 배너 */}
+        {showBanner && (
+          <div className="px-4 md:px-8 pt-3 shrink-0">
+            <NotificationDeniedBanner onDismiss={dismissBanner} />
+          </div>
+        )}
 
         {/* Dynamic Content Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 w-full max-w-[100vw]">

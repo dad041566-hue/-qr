@@ -24,10 +24,24 @@ export async function getOrders(storeId: string, status?: OrderStatus) {
   return data
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+export async function updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+  // 현재 상태 조회 → 전환 검증
+  const { data: current, error: fetchError } = await supabase
+    .from('orders')
+    .select('status')
+    .eq('id', orderId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const { canTransition } = await import('@/lib/utils/orderStatus')
+  if (current.status !== newStatus && !canTransition(current.status as OrderStatus, newStatus)) {
+    throw new Error(`유효하지 않은 상태 전환: ${current.status} → ${newStatus}`)
+  }
+
   const { data, error } = await supabase
     .from('orders')
-    .update({ status })
+    .update({ status: newStatus })
     .eq('id', orderId)
     .select()
     .single()
