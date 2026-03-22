@@ -41,8 +41,17 @@ export async function login(page: Page, email: string, password: string): Promis
 }
 
 export async function loginAndWaitForAdmin(page: Page, email: string, password: string): Promise<void> {
-  await login(page, email, password)
-  await expect(page).toHaveURL('/admin', { timeout: 10000 })
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await login(page, email, password)
+    try {
+      await expect(page).toHaveURL('/admin', { timeout: 15000 })
+      return
+    } catch {
+      if (attempt === 2) throw new Error(`loginAndWaitForAdmin failed after 3 attempts (still on ${page.url()})`)
+      // Rate limiting 대응: 재시도 전 대기
+      await page.waitForTimeout(2000)
+    }
+  }
 }
 
 export async function loginAndWaitForPasswordChange(page: Page, email: string, password: string): Promise<void> {

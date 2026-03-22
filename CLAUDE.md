@@ -16,10 +16,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm i          # 의존성 설치
-npm run dev    # Vite 개발 서버
-npm run build  # 프로덕션 빌드
-npx playwright test  # E2E 테스트 실행 (serial mode)
+npm i                        # 의존성 설치
+npm run dev                  # Vite 개발 서버 (localhost:5173)
+npm run build                # 프로덕션 빌드
+
+# Unit Tests (Vitest)
+npm run test:unit            # 단위 테스트 전체 실행
+npm run test:unit:watch      # 감시 모드
+npm run test:unit:coverage   # 커버리지 포함
+npx vitest run src/lib/api/order.test.ts  # 단일 파일 실행
+
+# E2E Tests (Playwright)
+npx playwright test                       # 전체 E2E
+npx playwright test e2e/order-flow.spec.ts  # 단일 스펙 실행
+npx playwright test --grep "주문 접수"       # 패턴 매칭
+npx playwright show-report test-reports/html  # 리포트 열기
 ```
 
 ## Environment Variables
@@ -28,6 +39,13 @@ npx playwright test  # E2E 테스트 실행 (serial mode)
 ```
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
+```
+
+E2E 테스트 추가 환경변수 (`.env`에 함께 설정):
+```
+TEST_SUPERADMIN_EMAIL=...
+TEST_SUPERADMIN_PASSWORD=...
+SUPABASE_SERVICE_ROLE_KEY=...   # E2E에서 직접 DB 조작 시 필요
 ```
 
 ## Architecture
@@ -39,7 +57,9 @@ VITE_SUPABASE_ANON_KEY=...
 | `/` | `Home` | 마케팅 랜딩 | 없음 |
 | `/table/:id` | `CustomerMenu` | 고객 QR 주문 (레거시) | 없음 |
 | `/m/:storeSlug/:tableId` | `CustomerMenu` | 고객 QR 주문 (모바일) | 없음 |
-| `/waiting` | `Waiting` | 대기 접수 키오스크 | 없음 |
+| `/waiting/:storeSlug` | `Waiting` | 대기 접수 키오스크 | 없음 |
+| `/privacy` | `Privacy` | 개인정보처리방침 | 없음 |
+| `/terms` | `Terms` | 이용약관 | 없음 |
 | `/login` | `Login` | 직원/점주 로그인 | 없음 |
 | `/change-password` | `ChangePassword` | 최초 로그인 비번 변경 | ProtectedRoute |
 | `/admin` | `AdminDashboard` | 점주 POS + 어드민 | ProtectedRoute |
@@ -58,7 +78,7 @@ VITE_SUPABASE_ANON_KEY=...
 3계층 구조:
 
 1. **`src/lib/supabase.ts`** — `Database` 타입으로 typed된 단일 supabase 클라이언트.
-2. **`src/lib/api/`** — 순수 async 함수 (DB 호출만). `admin.ts` (주문·테이블·매출), `menu.ts` (고객용 메뉴 조회), `menuAdmin.ts` (메뉴 CRUD), `order.ts` (주문 생성), `waiting.ts` (대기 접수).
+2. **`src/lib/api/`** — 순수 async 함수 (DB 호출만). `admin.ts` (주문·테이블·매출), `menu.ts` (고객용 메뉴 조회), `menuAdmin.ts` (메뉴 CRUD), `order.ts` (주문 생성), `waiting.ts` (대기 접수), `subscription.ts` (구독 상태), `staffAdmin.ts` (직원 관리), `superadmin.ts` (매장·계정 관리).
 3. **`src/hooks/`** — API 함수를 래핑 + Supabase Realtime 구독. 컴포넌트에서 직접 `supabase`를 호출하지 않고 훅을 통해서만 접근.
 
 ### Realtime 패턴
@@ -83,7 +103,7 @@ supabase.channel(`{table}:{storeId}`)
 | 프론트 배포 | Vercel (React SPA) |
 | 커스텀 API | AWS Lambda (필요 시) |
 | 인증 | Supabase Auth — 이메일+비번만 (카카오 소셜 없음) |
-| 슈퍼어드민 | Supabase Edge Function (`supabase/functions/superadmin/`) |
+| 슈퍼어드민 | Supabase Edge Functions (`supabase/functions/`) |
 | 도메인 | `tableflow.com` |
 
 ### Path Alias
@@ -113,3 +133,22 @@ supabase.channel(`{table}:{storeId}`)
 - **첫 로그인**: 임시 비번 제공 후 `/change-password`에서 강제 변경
 - **구독 상태**: 매장 활성 여부를 `checkStoreActive()` 함수로 매 세션 검증
 - **대기열 번호**: 순차 증가 + 롤오버 보안 (마이그레이션: `20260316000007_fix_queue_number_security.sql`)
+
+### 테스트 인프라
+
+**Unit (Vitest)**: `src/**/*.test.{ts,tsx}` 파일. jsdom 환경, `@testing-library/react` + `@testing-library/jest-dom` 사용. 설정: `vitest.config.ts`, 셋업: `src/test/setup.ts`.
+
+**E2E (Playwright)**: `e2e/*.spec.ts` 파일. `e2e/e2e-helpers.ts`에 공통 유틸 (`login`, `loginAndWaitForAdmin`, `requireEnv`, `getServiceRoleHeaders`). 개발 서버 자동 시작 (`localhost:5173`). timeout 90초, retry 1회, 실패 시 스크린샷·비디오·trace 자동 저장.
+
+### Edge Functions (`supabase/functions/`)
+
+| 함수 | 용도 |
+|------|------|
+| `superadmin/` | 슈퍼어드민 API (매장·계정·기간 관리) |
+| `create-store-with-owner/` | 매장 생성 + owner 계정 동시 생성 |
+| `create-staff/` | 직원 계정 생성 |
+| `check-superadmin/` | 슈퍼어드민 권한 검증 |
+
+### DB 마이그레이션
+
+`supabase/migrations/` — 시간순 SQL 파일. 직접 실행하지 않고 Supabase Dashboard 또는 `supabase db push`로 적용. RLS 정책, 인덱스, 보안 함수 포함.

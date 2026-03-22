@@ -12,11 +12,9 @@ export async function createStaffMember(
   name: string,
   role: 'manager' | 'staff',
 ): Promise<void> {
-  // getUser() validates with the Auth server (A07-003). getSession() kept for token.
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('인증 세션이 없습니다.')
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('인증 세션이 없습니다.')
+  // 비밀번호 변경 직후 JWT가 무효화될 수 있으므로 세션 강제 갱신
+  const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshError || !session) throw new Error('인증 세션이 없습니다.')
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -30,8 +28,10 @@ export async function createStaffMember(
     body: JSON.stringify({ storeId, email, password, name, role }),
   })
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? '직원 생성에 실패했습니다.')
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(data.error ?? data.message ?? `직원 생성 실패 (HTTP ${res.status})`)
+  }
 }
 
 // ============================================================
