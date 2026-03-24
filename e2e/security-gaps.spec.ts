@@ -589,9 +589,9 @@ test.describe('P0 보안 갭 E2E (SEC-E01-06, SEC-E27, GAP-23)', () => {
     await loginAndWaitForAdmin(page, OWNER_A_EMAIL, OWNER_A_NEW_PASSWORD)
     const ownerHeaders = await supabaseHeaders(page)
 
-    // Fire 6 orders rapidly via create_order_atomic
+    // Fire 16 orders rapidly via create_order_atomic (limit = 15/min)
     const results: number[] = []
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 16; i++) {
       const res = await fetch(`${url}/rest/v1/rpc/create_order_atomic`, {
         method: 'POST',
         headers: ownerHeaders,
@@ -604,24 +604,24 @@ test.describe('P0 보안 갭 E2E (SEC-E01-06, SEC-E27, GAP-23)', () => {
       results.push(res.status)
     }
 
-    // After migration: 6th order should fail (rate limit = 5/min)
-    // Before migration: all 6 succeed
+    // After migration: 16th order should fail (rate limit = 15/min)
+    // Before migration: all 16 succeed
     const successCount = results.filter((s) => s === 200).length
     const failedCount = results.filter((s) => s !== 200).length
 
-    if (failedCount > 0 && successCount >= 5) {
+    if (failedCount > 0 && successCount >= 15) {
       // Rate limit is active and working correctly
       expect(
-        results.slice(0, 5).every((s) => s === 200),
-        '처음 5건은 성공해야 합니다',
+        results.slice(0, 15).every((s) => s === 200),
+        '처음 15건은 성공해야 합니다',
       ).toBeTruthy()
-      expect(results[5], '6번째 주문은 차단되어야 합니다 (rate limit)').not.toBe(200)
-    } else if (successCount === 6) {
+      expect(results[15], '16번째 주문은 차단되어야 합니다 (rate limit)').not.toBe(200)
+    } else if (successCount === 16) {
       // Rate limit not yet applied — pre-migration state
-      console.warn('[SEC-E25] Rate limit 미적용 — 마이그레이션 적용 필요 (6건 모두 성공)')
+      console.warn('[SEC-E25] Rate limit 미적용 — 마이그레이션 적용 필요 (16건 모두 성공)')
     } else {
       // Some other error (e.g., auth issue)
-      console.warn(`[SEC-E25] 예상치 못한 결과: ${JSON.stringify(results)}`)
+      console.warn(`[SEC-E25] 예상치 못한 결과: success=${successCount}, failed=${failedCount}`)
     }
   })
 
