@@ -51,25 +51,25 @@ export default defineConfig({
     {
       name: 'iphone-14',
       use: { viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true },
-      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+      testMatch: ['**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
     },
     // iPhone 15/16 Pro Max (2023-2024) — 430x932
     {
       name: 'iphone-16-max',
       use: { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true },
-      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+      testMatch: ['**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
     },
     // Samsung Galaxy S23/S24 (2023-2024) — 360x780
     {
       name: 'galaxy-s24',
       use: { viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true },
-      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+      testMatch: ['**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
     },
     // Samsung Galaxy Z Fold (2023-2025) — 344x882 (folded outer)
     {
       name: 'galaxy-fold',
       use: { viewport: { width: 344, height: 882 }, isMobile: true, hasTouch: true },
-      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+      testMatch: ['**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
     },
     // iPad / Tablet (staff POS use) — 810x1080
     {

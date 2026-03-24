@@ -257,20 +257,26 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정 — service role로 stores PATCH 불가')
 
     const { url: supabaseUrl } = getSupabaseConfig()
+    const headers = { ...serviceHeaders!, Prefer: 'return=representation' }
 
-    // 매장 ID 조회
-    const lookupRes = await fetch(
-      `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
-      { headers: serviceHeaders! }
-    )
-    const storeRows = await lookupRes.json() as StoreRow[]
+    // 매장 ID 조회 (SB-002 이후 DB 전파 대기)
+    let storeRows: StoreRow[] = []
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const lookupRes = await fetch(
+        `${supabaseUrl}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
+        { headers }
+      )
+      storeRows = await lookupRes.json() as StoreRow[]
+      if (storeRows.length > 0) break
+      await new Promise(r => setTimeout(r, 1000))
+    }
     expect(storeRows.length).toBeGreaterThan(0)
     const storeId = storeRows[0].id
 
     // 매장을 is_active = false로 변경
     await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${storeId}`, {
       method: 'PATCH',
-      headers: serviceHeaders!,
+      headers,
       body: JSON.stringify({
         is_active: false,
         end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -281,8 +287,8 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
       // SC-028에서 비밀번호가 NewPass1234!@로 변경됨
       const currentPassword = 'NewPass1234!@'
       await page.goto('/login')
-      await page.getByPlaceholder('이메일').fill(OWNER_EMAIL)
-      await page.getByPlaceholder('비밀번호').fill(currentPassword)
+      await page.fill('#email', OWNER_EMAIL)
+      await page.fill('#password', currentPassword)
       await page.getByRole('button', { name: '로그인' }).click()
 
       await page.waitForLoadState('networkidle')
@@ -294,7 +300,7 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
       // 복구: is_active를 true로 원복
       await fetch(`${supabaseUrl}/rest/v1/stores?id=eq.${storeId}`, {
         method: 'PATCH',
-        headers: serviceHeaders!,
+        headers,
         body: JSON.stringify({ is_active: true })
       })
     }
