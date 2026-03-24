@@ -40,8 +40,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    const { data: userData } = await supabase.auth.getUser()
-    if (userData.user?.app_metadata?.role !== 'super_admin') {
+    if (user.app_metadata?.role !== 'super_admin') {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }

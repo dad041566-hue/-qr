@@ -11,6 +11,9 @@ export async function createStaffAction(
 ): Promise<void> {
   const supabase = await createClient()
 
+  // getUser()로 서버 측 토큰 검증 (getSession()은 토큰 위변조 감지 불가)
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('인증이 필요합니다.')
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   if (sessionError || !session) throw new Error('인증 세션이 없습니다.')
 
