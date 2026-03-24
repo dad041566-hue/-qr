@@ -125,17 +125,17 @@ test.describe('고객 장바구니 E2E (SC-022, SC-023)', () => {
     await expect(page.locator('body')).toContainText('테스트메뉴아이템', { timeout: 5000 })
 
     // 장바구니 +/- 버튼은 SVG 아이콘만 있어 accessible name이 없음
-    // bg-zinc-900 (검은 배경) = 증가 버튼, bg-white (흰 배경) = 감소 버튼
-    const qtyControls = page.locator('div.rounded-full').filter({ has: page.locator('button') })
-    const increaseBtn = page.locator('button.bg-zinc-900.rounded-full').last()
+    // 수량 컨트롤 영역: flex gap-3 rounded-full 컨테이너 안의 마지막(+) / 첫 번째(-) 버튼
+    const qtyControlRow = page.locator('div.flex.items-center.gap-3.bg-zinc-50').last()
+    const increaseBtn = qtyControlRow.locator('button').last()
     await expect(increaseBtn, '수량 증가 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
     await increaseBtn.click()
 
     // 수량이 2로 증가 후 합계 금액이 20,000원으로 표시되는지 확인
     await expect(page.locator('body')).toContainText('20,000', { timeout: 5000 })
 
-    // 수량 감소 (-) 버튼 클릭 — bg-white rounded-full 스타일
-    const decreaseBtn = page.locator('button.bg-white.rounded-full').filter({ has: page.locator('svg') }).last()
+    // 수량 감소 (-) 버튼 클릭 — 동일 컨트롤 행의 첫 번째 버튼
+    const decreaseBtn = qtyControlRow.locator('button').first()
     await expect(decreaseBtn, '수량 감소 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
     await decreaseBtn.click()
 

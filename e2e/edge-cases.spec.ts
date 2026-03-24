@@ -48,7 +48,7 @@ test('SC-035: 존재하지 않는 tableId 접근 시 에러/빈 상태', async (
       return text.includes('찾을 수 없습니다') || text.includes('오류')
     })
 
-  const menuItemCount = await page.locator('[data-testid="menu-item"]').count()
+  const menuItemCount = await page.locator('div.cursor-pointer').count()
 
   expect(
     errorVisible || menuItemCount === 0,

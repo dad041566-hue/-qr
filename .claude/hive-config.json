@@ -1,0 +1,59 @@
+{
+  "projectType": "node",
+  "projectName": "-qr",
+  "displayName": "TableFlow (테이블QR)",
+  "defaultLeads": [
+    "supabase-lead",
+    "frontend-lead",
+    "e2e-lead",
+    "security-lead"
+  ],
+  "fileOwnership": {
+    "supabase-lead": [
+      "supabase/**",
+      "src/lib/api/**",
+      "src/hooks/**",
+      "src/types/database.ts",
+      "supabase/migrations/**"
+    ],
+    "frontend-lead": [
+      "src/app/**",
+      "src/components/**",
+      "src/styles/**",
+      "src/contexts/**",
+      "src/lib/ui/**"
+    ],
+    "e2e-lead": [
+      "e2e/**",
+      "playwright.config.ts",
+      "src/**/*.spec.ts",
+      "src/**/*.test.ts",
+      "tests/**"
+    ],
+    "security-lead": [
+      "supabase/migrations/**",
+      "src/lib/api/staffAdmin.ts",
+      "src/lib/api/superadmin.ts",
+      "src/lib/auth/**",
+      "src/middleware/**"
+    ]
+  },
+  "teamPipeline": "team-plan → team-prd → team-exec → team-verify → team-fix",
+  "maxIterations": 15,
+  "preferredModels": {
+    "supabase-lead": "claude-opus-4",
+    "frontend-lead": "claude-sonnet-4",
+    "e2e-lead": "claude-sonnet-4",
+    "security-lead": "claude-opus-4"
+  },
+  "commands": {
+    "build": "npm run build",
+    "test": "npm run test:unit && npx playwright test",
+    "testUnit": "npm run test:unit",
+    "testE2e": "npx playwright test",
+    "lint": null,
+    "typeCheck": null
+  },
+  "obsidianPath": "C:\\Users\\PC_1M\\Documents\\Obsidian Vault\\Project\\-qr",
+  "createdAt": "2026-03-23T00:00:00.000Z"
+}

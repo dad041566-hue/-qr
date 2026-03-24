@@ -374,7 +374,7 @@ export function CustomerMenu() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 relative scroll-smooth">
             <AnimatePresence mode="popLayout">
               {filteredItems.map(item => (
-                <motion.div key={item.id} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.95 }} onClick={() => openItemDetail(item)} className="bg-white rounded-[24px] p-3 sm:p-4 shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-zinc-100 flex gap-4 relative cursor-pointer hover:border-orange-200 transition-all active:scale-[0.98]">
+                <motion.div data-testid="menu-card" key={item.id} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.95 }} onClick={() => openItemDetail(item)} className="bg-white rounded-[24px] p-3 sm:p-4 shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-zinc-100 flex gap-4 relative cursor-pointer hover:border-orange-200 transition-all active:scale-[0.98]">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[18px] overflow-hidden shrink-0 relative bg-zinc-100 shadow-sm">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
                     {item.badge && <div className={`absolute top-2 left-2 px-2.5 py-1 text-[10px] font-black rounded-lg text-white shadow-sm ${item.badge === 'BEST' ? 'bg-red-500' : item.badge === 'NEW' ? 'bg-blue-500' : 'bg-orange-500'}`}>{item.badge}</div>}
@@ -457,8 +457,9 @@ export function CustomerMenu() {
                         {opt.choices.map((choice, cIdx) => {
                           const isSelected = selectedOptions[opt.name] === choice.name;
                           return (
-                            <button 
-                              key={cIdx} 
+                            <button
+                              key={cIdx}
+                              data-testid={`option-choice-${choice.id || choice.name}`}
                               onClick={() => handleOptionSelect(opt.name, choice.name, opt.required)}
                               className={`w-full flex justify-between items-center p-4 rounded-xl border-2 transition-all ${isSelected ? 'border-orange-500 bg-orange-50/50' : 'border-zinc-100 hover:border-zinc-200'}`}
                             >

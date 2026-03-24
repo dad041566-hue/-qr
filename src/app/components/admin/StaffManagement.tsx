@@ -297,6 +297,7 @@ export function StaffManagement({ storeId, currentUserId }: Props) {
                       <button
                         key={r}
                         type="button"
+                        data-testid={`role-${r}`}
                         onClick={() => setFormRole(r)}
                         className={`py-3 rounded-xl text-sm font-black border-2 transition-all ${
                           formRole === r

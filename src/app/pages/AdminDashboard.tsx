@@ -895,7 +895,7 @@ export function AdminDashboard() {
                     </ul>
                   </div>
                   <div className="p-3 bg-zinc-50/50">
-                    <button onClick={() => updateOrderStatus(order.id, 'preparing')} className="w-full py-4 bg-zinc-900 text-white font-black text-lg rounded-xl hover:bg-zinc-800 transition-colors shadow-lg active:scale-[0.98]">
+                    <button data-testid="order-action-start" onClick={() => updateOrderStatus(order.id, 'preparing')} className="w-full py-4 bg-zinc-900 text-white font-black text-lg rounded-xl hover:bg-zinc-800 transition-colors shadow-lg active:scale-[0.98]">
                       조리 시작
                     </button>
                   </div>
@@ -977,7 +977,7 @@ export function AdminDashboard() {
                       </ul>
                     </div>
                     <div className="p-3 bg-zinc-50/50">
-                      <button onClick={() => updateOrderStatus(order.id, 'completed')} className="w-full py-4 bg-orange-500 text-white font-black text-lg rounded-xl hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                      <button data-testid="order-action-complete" onClick={() => updateOrderStatus(order.id, 'completed')} className="w-full py-4 bg-orange-500 text-white font-black text-lg rounded-xl hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
                         <Check className="w-6 h-6" /> 조리 완료
                       </button>
                     </div>
@@ -1056,7 +1056,7 @@ export function AdminDashboard() {
                     </ul>
                   </div>
                   <div className="p-3 bg-zinc-50/50">
-                    <button onClick={() => updateOrderStatus(order.id, 'served')} className="w-full py-4 bg-green-500 text-white font-black text-lg rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button data-testid="order-action-served" onClick={() => updateOrderStatus(order.id, 'served')} className="w-full py-4 bg-green-500 text-white font-black text-lg rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 active:scale-[0.98] flex items-center justify-center gap-2">
                       <Check className="w-6 h-6" /> 서빙 완료
                     </button>
                   </div>
@@ -1191,10 +1191,10 @@ export function AdminDashboard() {
                   </div>
 
                   <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
-                    <button onClick={() => callWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors">
+                    <button data-testid="waiting-call" onClick={() => callWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors">
                       <Volume2 className="w-4 h-4" /> 호출하기
                     </button>
-                    <button onClick={() => completeWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-md">
+                    <button data-testid="waiting-seat" onClick={() => completeWaiting(w.id, w.queue_number)} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-md">
                       <Check className="w-4 h-4" /> 입장 완료
                     </button>
                   </div>
