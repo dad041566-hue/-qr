@@ -652,124 +652,41 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     expect(permissionRequested, '첫 진입 시 알림 권한 자동 요청이 없어야 합니다.').toBeFalsy()
   })
 
-  test('NT-002: 첫 사용자 제스처 후 알림 권한 요청', async ({ page }) => {
-    test.skip(true, 'Stub test — serial suite 후반부 auth rate limiting으로 불안정. 실제 검증 로직 구현 필요')
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
-    await page.waitForLoadState('networkidle')
-
-    // 모킹: Notification.requestPermission 감시
-    let permissionRequestedAfterGesture = false
-
-    await page.evaluate(() => {
-      const originalRequestPermission = Notification.requestPermission
-      Object.defineProperty(Notification, 'requestPermission', {
-        value: async function() {
-          (window as any).__notificationPermissionRequested = true
-          return originalRequestPermission()
-        }
-      })
-    })
-
-    // 사용자 제스처 시뮬레이션 (버튼 클릭)
-    const buttons = await page.locator('button').all()
-    if (buttons.length > 0) {
-      await buttons[0].click()
-    }
-
-    // 권한 요청이 발생했는지 확인
-    const permissionWasRequested = await page.evaluate(() => {
-      return (window as any).__notificationPermissionRequested ?? false
-    })
-
-    // 실제 구현에서는 클릭 후 권한 요청이 발생해야 함
-    // (현재는 기본 구현 확인)
-    expect(true).toBeTruthy()
+  test.fixme('NT-002: 첫 사용자 제스처 후 알림 권한 요청', async ({ page }) => {
+    // TODO: Implement with separate browser context to avoid auth rate limiting.
+    // Steps:
+    //   1. page.addInitScript() to override Notification.requestPermission and set window.__notifRequested
+    //   2. loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    //   3. Click a button to trigger user gesture
+    //   4. Verify page.evaluate(() => window.__notifRequested) is true
   })
 
-  test('NT-003: 권한 거부 시 안내 toast 표시', async ({ page }) => {
-    test.skip(true, 'Stub test — serial suite auth rate limiting. 실제 toast 검증 구현 필요')
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
-    await page.waitForLoadState('networkidle')
-
-    // Notification.requestPermission을 모킹해서 'denied' 반환
-    await page.evaluate(() => {
-      Object.defineProperty(Notification, 'requestPermission', {
-        value: async () => 'denied'
-      })
-    })
-
-    // 사용자 제스처 시뮬레이션
-    const buttons = await page.locator('button').all()
-    if (buttons.length > 0) {
-      await buttons[0].click()
-    }
-
-    // 권한 거부 안내 toast 확인 (실제 구현에 따라)
-    // 현재: 구현 체크
-    expect(true).toBeTruthy()
+  test.fixme('NT-003: 권한 거부 시 안내 toast 표시', async ({ page }) => {
+    // TODO: Implement with page.addInitScript() to mock Notification.requestPermission returning 'denied'.
+    // Steps:
+    //   1. addInitScript: override requestPermission to return 'denied'
+    //   2. loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    //   3. Click a button to trigger user gesture / notification request
+    //   4. Verify a toast/snackbar with denial guidance appears in the DOM
   })
 
-  test('NT-004: 알림 권한 요청 반복 방지', async ({ page }) => {
-    test.skip(true, 'Stub test — serial suite auth rate limiting. 실제 반복 방지 검증 구현 필요')
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
-    await page.waitForLoadState('networkidle')
-
-    let requestCount = 0
-
-    await page.evaluate(() => {
-      let count = 0
-      const originalRequestPermission = Notification.requestPermission
-      Object.defineProperty(Notification, 'requestPermission', {
-        value: async function() {
-          count++
-          (window as any).__requestCount = count
-          return originalRequestPermission()
-        }
-      })
-    })
-
-    // 여러 번 제스처 시뮬레이션
-    const buttons = await page.locator('button').all()
-    for (let i = 0; i < 3; i++) {
-      if (buttons.length > i) {
-        await buttons[i].click({ timeout: 1000 }).catch(() => null)
-      }
-    }
-
-    // 권한 요청 횟수 확인 (1회만 요청되어야 함)
-    requestCount = await page.evaluate(() => {
-      return (window as any).__requestCount ?? 0
-    })
-
-    // 실제 구현에서는 1회만 요청
-    expect(true).toBeTruthy()
+  test.fixme('NT-004: 알림 권한 요청 반복 방지', async ({ page }) => {
+    // TODO: Implement call-count deduplication check.
+    // Steps:
+    //   1. addInitScript: override requestPermission to increment window.__requestCount
+    //   2. loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    //   3. Click 3 different buttons to produce multiple gestures
+    //   4. Verify page.evaluate(() => window.__requestCount ?? 0) === 1
   })
 
-  test('NT-005: 백그라운드 탭에서 새 주문 알림', async ({ page }) => {
-    test.skip(true, 'Stub test — serial suite auth rate limiting. 실제 백그라운드 알림 검증 구현 필요')
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
-    await page.waitForLoadState('networkidle')
-
-    // 알림 권한을 'granted'로 모킹
-    await page.evaluate(() => {
-      Object.defineProperty(Notification, 'permission', {
-        value: 'granted'
-      })
-
-      Object.defineProperty(Notification, 'requestPermission', {
-        value: async () => 'granted'
-      })
-    })
-
-    // 새 주문이 들어오는 시나리오 시뮬레이션
-    // (Realtime 이벤트에 의해 알림이 발생해야 함)
-
-    // 현재: Notification 객체 존재 확인
-    const notificationExists = await page.evaluate(() => {
-      return typeof Notification !== 'undefined'
-    })
-
-    expect(notificationExists, 'Notification API가 사용 가능해야 합니다.').toBeTruthy()
+  test.fixme('NT-005: 백그라운드 탭에서 새 주문 알림', async ({ page }) => {
+    // TODO: This scenario is largely covered by order-flow test 10 (notification probe).
+    // If a dedicated test is needed:
+    //   1. addInitScript: stub Notification constructor to record calls in window.__notifications[]
+    //   2. Override Notification.permission = 'granted'
+    //   3. loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    //   4. Trigger a Realtime INSERT event (via service-role API call)
+    //   5. Verify window.__notifications.length > 0 and title matches expected order text
   })
 
   test.afterAll(async () => {

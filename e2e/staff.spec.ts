@@ -300,43 +300,24 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     }
   })
 
-  test('SB-004: 구독 체크 실패 + 캐시 없음 시 차단', async ({ page }) => {
-    // 네트워크 실패를 시뮬레이션하려면:
-    // 1) checkStoreActive 함수 호출을 intercept
-    // 2) 네트워크 오류 반환
-
-    // (이 테스트는 네트워크 stubbing이 필요하므로, 기본 통과 처리)
-    await page.goto('/admin')
-
-    // 실제 구현에서는 checkStoreActive 네트워크 실패 시뮬레이션
-    // 현재: 구독 체크 로직이 작동하는지 확인만
-    expect(true).toBeTruthy()
+  test.fixme('SB-004: 구독 체크 실패 + 캐시 없음 시 차단', async ({ page }) => {
+    // TODO: Implement using page.route() network interception.
+    // Steps:
+    //   1. loginAndWaitForAdmin to establish session
+    //   2. Clear any subscription cache from localStorage
+    //   3. page.route('**/rest/v1/stores*', route => route.abort('connectionreset'))
+    //   4. page.reload() to trigger a fresh checkStoreActive call with no cache
+    //   5. Verify the page shows a blocked/error state (body matches /정지|이용 불가|차단|비활성|오류/)
   })
 
-  test('SB-005: 구독 체크 실패 + 활성 캐시 있음 시 진입 유지', async ({ page }) => {
-    test.skip(true, 'Stub test — SC-028 비밀번호 변경 의존 + serial suite auth rate limiting으로 불안정. 캐시 메커니즘 검증 구현 필요')
-    // 이 테스트는 캐시 메커니즘을 검증합니다
-    // 구현: checkStoreActive 호출 실패 시에도 localStorage cache가 있으면 진입 허용
-
-    // SC-028에서 비밀번호가 NewPass1234!@로 변경됨
-    const currentPassword = 'NewPass1234!@'
-    await loginAndWaitForAdmin(page, OWNER_EMAIL, currentPassword)
-    await page.waitForLoadState('networkidle')
-
-    // 캐시 데이터 저장 (실제 동작 시뮬레이션)
-    await page.evaluate(() => {
-      localStorage.setItem('storeActiveCache', JSON.stringify({
-        isActive: true,
-        expiresAt: Date.now() + 60000 // 1분 유효
-      }))
-    })
-
-    // 재로드 후에도 진입 유지 확인
-    await page.reload()
-    await page.waitForLoadState('networkidle')
-
-    // 어드민 페이지가 보여야 함
-    await expect(page.locator('body')).toContainText(/주문|메뉴|매장/, { timeout: 5000 })
+  test.fixme('SB-005: 구독 체크 실패 + 활성 캐시 있음 시 진입 유지', async ({ page }) => {
+    // TODO: Implement cache-fallback verification.
+    // Steps:
+    //   1. loginAndWaitForAdmin to populate a real session and subscription cache
+    //   2. Intercept stores API: page.route('**/rest/v1/stores*', route => route.abort('connectionreset'))
+    //   3. page.reload() — checkStoreActive will fail but valid cache should allow entry
+    //   4. Verify admin content still visible: expect(page.locator('body')).toContainText(/주문|메뉴|매장/)
+    // Note: depends on knowing the exact localStorage key used by checkStoreActive.
   })
 
   test.afterAll(async () => {

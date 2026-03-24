@@ -31,7 +31,53 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
-  reporter: [['list']],
+  reporter: [
+    ['list'],
+    ['html', {
+      outputFolder: 'test-reports/html',
+      open: 'never',
+    }],
+    ['json', {
+      outputFile: 'test-reports/results.json',
+    }],
+  ],
+  projects: [
+    // Desktop — all admin/staff/security specs
+    {
+      name: 'desktop',
+      testMatch: /.*\.spec\.ts/,
+    },
+    // iPhone 14 Pro (2022) — 393x852
+    {
+      name: 'iphone-14',
+      use: { viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true },
+      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+    },
+    // iPhone 15/16 Pro Max (2023-2024) — 430x932
+    {
+      name: 'iphone-16-max',
+      use: { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true },
+      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+    },
+    // Samsung Galaxy S23/S24 (2023-2024) — 360x780
+    {
+      name: 'galaxy-s24',
+      use: { viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true },
+      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+    },
+    // Samsung Galaxy Z Fold (2023-2025) — 344x882 (folded outer)
+    {
+      name: 'galaxy-fold',
+      use: { viewport: { width: 344, height: 882 }, isMobile: true, hasTouch: true },
+      testMatch: ['**/order-flow.spec.ts', '**/order-detail.spec.ts', '**/order-gaps.spec.ts', '**/waiting.spec.ts'],
+    },
+    // iPad / Tablet (staff POS use) — 810x1080
+    {
+      name: 'tablet-staff',
+      use: { viewport: { width: 810, height: 1080 }, isMobile: false, hasTouch: true },
+      testMatch: ['**/order-flow.spec.ts', '**/staff.spec.ts', '**/admin-gaps.spec.ts'],
+    },
+  ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
