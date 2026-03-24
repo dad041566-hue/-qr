@@ -20,7 +20,7 @@ try {
 export default defineConfig({
   testDir: './e2e',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:3000',
     headless: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -80,8 +80,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: 'npm run dev:next',
+    url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 30_000,
   },

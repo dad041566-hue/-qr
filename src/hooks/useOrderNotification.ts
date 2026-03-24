@@ -53,7 +53,7 @@ function showBrowserNotification(title: string, body: string, orderId?: string) 
     icon: '/favicon.ico',
     badge: '/favicon.ico',
     tag,        // 같은 주문ID는 덮어쓰기 방지, 다른 주문은 구분
-    renotify: true,
+    ...({ renotify: true } as any),
   })
 }
 

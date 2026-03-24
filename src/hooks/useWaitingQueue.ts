@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import { getWaitings } from '@/lib/api/waiting'
 import type { WaitingRow } from '@/types/database'
 
@@ -34,7 +37,7 @@ export function useWaitingQueue(storeId: string) {
           table: 'waitings',
           filter: `store_id=eq.${storeId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const newRow = payload.new as WaitingRow
           setWaitings((prev) => {
             // avoid duplicates
@@ -57,7 +60,7 @@ export function useWaitingQueue(storeId: string) {
           table: 'waitings',
           filter: `store_id=eq.${storeId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const updated = payload.new as WaitingRow
           setWaitings((prev) => {
             // Remove from list when status leaves 'waiting'

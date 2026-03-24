@@ -1,5 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
 import type { OrderStatus, TableStatus } from '@/types/database'
+
+// Cast to any to bypass Database type generic resolution issues with supabase-js v2.99
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 
 // ============================================================
 // Orders
@@ -32,11 +36,12 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
     .eq('id', orderId)
     .single()
 
-  if (fetchError) throw fetchError
+  if (fetchError || !current) throw fetchError ?? new Error('주문을 찾을 수 없습니다.')
 
+  const row = current as { status: string }
   const { canTransition } = await import('@/lib/utils/orderStatus')
-  if (current.status !== newStatus && !canTransition(current.status as OrderStatus, newStatus)) {
-    throw new Error(`유효하지 않은 상태 전환: ${current.status} → ${newStatus}`)
+  if (row.status !== newStatus && !canTransition(row.status as OrderStatus, newStatus)) {
+    throw new Error(`유효하지 않은 상태 전환: ${row.status} → ${newStatus}`)
   }
 
   const { data, error } = await supabase

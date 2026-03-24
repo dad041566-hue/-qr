@@ -30,11 +30,20 @@
     "src/app/(customer)/**/*.tsx",
     "src/app/(auth)/**/*.ts",
     "src/app/(auth)/**/*.tsx",
-    "src/app/admin/layout.tsx",
-    "src/app/admin/page.tsx",
-    "src/app/superadmin/layout.tsx",
-    "src/app/superadmin/page.tsx",
+    "src/app/admin/**/*.ts",
+    "src/app/admin/**/*.tsx",
+    "src/app/superadmin/**/*.ts",
+    "src/app/superadmin/**/*.tsx",
+    "src/app/components/admin/**/*.ts",
+    "src/app/components/admin/**/*.tsx",
+    "src/app/components/home/**/*.tsx",
+    "src/app/components/ui/**/*.ts",
+    "src/app/components/ui/**/*.tsx",
+    "src/providers/**/*.tsx",
+    "src/app/actions/**/*.ts",
     "src/lib/supabase/**/*.ts",
+    "src/lib/env.ts",
+    "src/lib/utils/**/*.ts",
     "src/middleware.ts",
     "src/types/**/*.ts",
     "src/types/**/*.d.ts"
@@ -44,6 +53,12 @@
     "src/app/App.tsx",
     "src/app/routes.tsx",
     "src/app/pages/**",
-    "src/app/components/**"
+    "src/app/components/Dashboard.tsx",
+    "src/app/components/Sidebar.tsx",
+    "src/app/components/ProtectedRoute.tsx",
+    "src/app/components/SuperAdminRoute.tsx",
+    "src/app/components/figma/**",
+    "src/app/components/StaffCreateModal.tsx",
+    "src/contexts/AuthContext.tsx"
   ]
 }

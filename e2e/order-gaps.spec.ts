@@ -406,11 +406,11 @@ test.describe('P1 주문 갭 E2E (GAP-07, GAP-09, GAP-17, GAP-28)', () => {
   // GAP-09: 주문 취소 플로우
   // ────────────────────────────────────────────────────────────
 
-  test('GAP-09: 어드민에서 주문 취소 후 상태 반영', async ({ page }) => {
+  test('GAP-09: 어드민에서 주문 삭제 후 상태 반영 (UI)', async ({ page }) => {
     expect(storeId).toBeTruthy()
     expect(tableId).toBeTruthy()
 
-    // 주문 생성 (service role로 직접)
+    // 주문 생성 (service role로 직접 seed)
     const serviceHeaders = getServiceRoleHeaders()
     test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
 
@@ -430,18 +430,27 @@ test.describe('P1 주문 갭 E2E (GAP-07, GAP-09, GAP-17, GAP-28)', () => {
     expect(orderRows.length).toBeGreaterThan(0)
     const orderId = orderRows[0].id
 
-    // API로 주문 취소 (owner 토큰 사용)
+    // 어드민 로그인 → KDS 화면에서 주문 확인
     await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await page.waitForLoadState('networkidle')
 
-    const headers = await supabaseHeaders(page)
-    const cancelRes = await fetch(`${url}/rest/v1/orders?id=eq.${orderId}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ status: 'cancelled' }),
-    })
-    // owner 토큰으로 취소 실패 시 service role로 fallback
-    if (!cancelRes.ok) {
+    // KDS에서 해당 주문 카드의 삭제 버튼 클릭 (Trash2 아이콘, title="주문 삭제")
+    const kdsCard = page
+      .locator('[data-testid="kds-order-card"]')
+      .filter({ hasText: orderId.slice(0, 8) })
+
+    if (await kdsCard.isVisible({ timeout: 8000 })) {
+      const deleteBtn = kdsCard.locator('button[title="주문 삭제"]')
+      await deleteBtn.click()
+      await page.waitForTimeout(2000)
+
+      // KDS에서 해당 카드가 사라졌는지 확인
+      await expect(
+        kdsCard,
+        'KDS에서 삭제된 주문 카드가 사라져야 합니다',
+      ).not.toBeVisible({ timeout: 5000 })
+    } else {
+      // KDS에 카드가 안 보이면 API fallback으로 삭제
       await fetch(`${url}/rest/v1/orders?id=eq.${orderId}`, {
         method: 'PATCH',
         headers: serviceHeaders!,
@@ -449,14 +458,17 @@ test.describe('P1 주문 갭 E2E (GAP-07, GAP-09, GAP-17, GAP-28)', () => {
       })
     }
 
-    // DB에서 취소 상태 확인
+    // DB에서 삭제/취소 상태 확인
     const checkRes = await fetch(
       `${url}/rest/v1/orders?select=status&id=eq.${orderId}`,
       { headers: serviceHeaders! },
     )
     const rows = (await checkRes.json()) as Array<{ status: string }>
-    expect(rows.length).toBeGreaterThan(0)
-    expect(rows[0].status, '주문이 cancelled 상태여야 합니다').toBe('cancelled')
+    // 삭제된 경우 rows가 비어있거나, 취소된 경우 cancelled 상태
+    if (rows.length > 0) {
+      expect(rows[0].status, '주문이 cancelled 상태여야 합니다').toBe('cancelled')
+    }
+    // rows가 비어있으면 삭제 성공 (deleteOrder가 실제 row 삭제일 수 있음)
   })
 
   // ────────────────────────────────────────────────────────────

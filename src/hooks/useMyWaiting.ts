@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import { getWaitingStatus } from '@/lib/api/waiting'
 import type { WaitingStatus } from '@/types/database'
 
@@ -58,7 +61,7 @@ export function useMyWaiting(
           table: 'waitings',
           filter: `id=eq.${waitingId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const row = payload.new as {
             status: WaitingStatus
             queue_number: number

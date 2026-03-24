@@ -16,8 +16,7 @@ export async function createStaffMember(
   const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
   if (refreshError || !session) throw new Error('인증 세션이 없습니다.')
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+  const { SUPABASE_URL: supabaseUrl, SUPABASE_ANON_KEY: anonKey } = await import('@/lib/env')
   const res = await fetch(`${supabaseUrl}/functions/v1/create-staff`, {
     method: 'POST',
     headers: {

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import { deleteOrder as apiDeleteOrder, getOrders, updateOrderStatus as apiUpdateOrderStatus } from '@/lib/api/admin'
 import type { OrderRow, OrderItemRow, OrderStatus } from '@/types/database'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
@@ -99,14 +102,14 @@ export function useOrders(storeId: string | null) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` },
-        (payload) => {
+        (payload: any) => {
           void handleInsert(payload as RealtimePostgresChangesPayload<OrderRow>)
         }
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` },
-        (payload) => {
+        (payload: any) => {
           try {
             handleUpdate(payload as RealtimePostgresChangesPayload<OrderRow>)
           } catch (err) {

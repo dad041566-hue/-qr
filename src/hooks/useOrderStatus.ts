@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import type { OrderStatus } from '@/types/database'
 
 export function useOrderStatus(orderId: string | null): { status: OrderStatus | null } {
@@ -18,7 +21,7 @@ export function useOrderStatus(orderId: string | null): { status: OrderStatus | 
           table: 'orders',
           filter: `id=eq.${orderId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const newStatus = (payload.new as { status: OrderStatus }).status
           if (newStatus) setStatus(newStatus)
         }

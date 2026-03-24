@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import type { StoreRow } from '@/types/database'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+import { SUPABASE_URL, SUPABASE_ANON_KEY as ANON_KEY } from '@/lib/env'
+
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1`
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 function assertAuthConfig() {
   if (!SUPABASE_URL || !ANON_KEY) {

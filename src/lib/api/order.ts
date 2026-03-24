@@ -1,4 +1,7 @@
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import type { OrderRow, PaymentMethod, SelectedOption } from '@/types/database'
 
 export interface OrderItemInput {

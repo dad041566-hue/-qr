@@ -184,6 +184,7 @@ export interface StoreMemberUpdate {
   user_id?: string
   role?: MemberRole
   created_at?: string
+  is_first_login?: boolean
 }
 
 // ------------------------------------------------------------
@@ -542,80 +543,96 @@ export interface Database {
         Row: StoreRow
         Insert: StoreInsert
         Update: StoreUpdate
+        Relationships: never[]
       }
       store_settings: {
         Row: StoreSettingsRow
         Insert: StoreSettingsInsert
         Update: StoreSettingsUpdate
+        Relationships: never[]
       }
       store_queue_sequences: {
         Row: StoreQueueSequenceRow
         Insert: StoreQueueSequenceInsert
         Update: StoreQueueSequenceUpdate
+        Relationships: never[]
       }
       platform_alimtalk_templates: {
         Row: PlatformAlimtalkTemplateRow
         Insert: PlatformAlimtalkTemplateInsert
         Update: PlatformAlimtalkTemplateUpdate
+        Relationships: never[]
       }
       store_members: {
         Row: StoreMemberRow
         Insert: StoreMemberInsert
         Update: StoreMemberUpdate
+        Relationships: never[]
       }
       tables: {
         Row: TableRow
         Insert: TableInsert
         Update: TableUpdate
+        Relationships: never[]
       }
       menu_categories: {
         Row: MenuCategoryRow
         Insert: MenuCategoryInsert
         Update: MenuCategoryUpdate
+        Relationships: never[]
       }
       menu_items: {
         Row: MenuItemRow
         Insert: MenuItemInsert
         Update: MenuItemUpdate
+        Relationships: never[]
       }
       option_groups: {
         Row: OptionGroupRow
         Insert: OptionGroupInsert
         Update: OptionGroupUpdate
+        Relationships: never[]
       }
       option_choices: {
         Row: OptionChoiceRow
         Insert: OptionChoiceInsert
         Update: OptionChoiceUpdate
+        Relationships: never[]
       }
       orders: {
         Row: OrderRow
         Insert: OrderInsert
         Update: OrderUpdate
+        Relationships: never[]
       }
       order_items: {
         Row: OrderItemRow
         Insert: OrderItemInsert
         Update: OrderItemUpdate
+        Relationships: never[]
       }
       waitings: {
         Row: WaitingRow
         Insert: WaitingInsert
         Update: WaitingUpdate
+        Relationships: never[]
       }
       waiting_notifications: {
         Row: WaitingNotificationRow
         Insert: WaitingNotificationInsert
         Update: WaitingNotificationUpdate
+        Relationships: never[]
       }
     }
-    Views: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       create_order_atomic: {
         Args: {
           p_store_id: string
           p_table_id: string
-          p_items: unknown
+          p_items: Record<string, unknown>[]
           p_guest_name?: string | null
           p_special_requests?: string | null
           p_payment_method?: PaymentMethod | null

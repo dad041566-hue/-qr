@@ -1,0 +1,937 @@
+'use client'
+
+import React, { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Bell, ChefHat, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid,
+  UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, Home,
+  QrCode, Gift, Volume2, X,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { AnimatePresence, motion } from 'motion/react'
+
+import { useAuth } from '@/providers/AuthProvider'
+import { supabase } from '@/lib/supabase'
+import { isStoreSubscriptionActive } from '@/lib/utils/subscription'
+import { getDailyRevenue, addTable } from '@/lib/api/admin'
+import { createOrder } from '@/lib/api/order'
+import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting'
+
+import { useOrders } from '@/hooks/useOrders'
+import { useRealtimeTables } from '@/hooks/useRealtimeTables'
+import { useMenuAdmin } from '@/hooks/useMenuAdmin'
+import { useWaitingQueue } from '@/hooks/useWaitingQueue'
+import { useNotificationPermission } from '@/hooks/useNotificationPermission'
+
+import {
+  adaptOrder, minutesAgo,
+  STAFF_ALLOWED_TABS, ORDER_STATUS_MAP,
+} from '@/app/components/admin/types'
+import type { UIOrder, UITable, UIMenu, RecentActivity } from '@/app/components/admin/types'
+import type { ItemBadge } from '@/types/database'
+
+import { NotificationDeniedBanner } from '@/app/components/admin/NotificationDeniedBanner'
+import { StaffManagement } from '@/app/components/admin/StaffManagement'
+import DashboardSummary from '@/app/components/admin/panels/DashboardSummary'
+import KDSPanel from '@/app/components/admin/panels/KDSPanel'
+import TablesPanel from '@/app/components/admin/panels/TablesPanel'
+import WaitingPanel from '@/app/components/admin/panels/WaitingPanel'
+import AnalyticsPanel from '@/app/components/admin/panels/AnalyticsPanel'
+import MenuPanel from '@/app/components/admin/panels/MenuPanel'
+import QRPanel from '@/app/components/admin/panels/QRPanel'
+import EventPanel from '@/app/components/admin/panels/EventPanel'
+import CustomersPanel from '@/app/components/admin/panels/CustomersPanel'
+import SettingsPanel from '@/app/components/admin/panels/SettingsPanel'
+import { PointPolicyModal } from '@/app/components/admin/modals/PointPolicyModal'
+import { CustomerEditModal } from '@/app/components/admin/modals/CustomerEditModal'
+import { MenuEditModal } from '@/app/components/admin/modals/MenuEditModal'
+import { TableDetailModal } from '@/app/components/admin/modals/TableDetailModal'
+import { AddOrderModal } from '@/app/components/admin/modals/AddOrderModal'
+import type { EventSettings } from '@/app/components/admin/panels/EventPanel'
+import type { Customer } from '@/app/components/admin/panels/CustomersPanel'
+import type { StaffCallOption } from '@/app/components/admin/panels/SettingsPanel'
+
+export default function AdminDashboardClient() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const storeId = user?.storeId ?? ''
+
+  // --- Notification permission ---
+  const { showBanner, dismissBanner, requestPermission } = useNotificationPermission()
+
+  useEffect(() => {
+    const requestOnce = () => {
+      window.removeEventListener('pointerdown', requestOnce)
+      window.removeEventListener('keydown', requestOnce)
+      requestPermission()
+    }
+    window.addEventListener('pointerdown', requestOnce, { once: true })
+    window.addEventListener('keydown', requestOnce, { once: true })
+    return () => {
+      window.removeEventListener('pointerdown', requestOnce)
+      window.removeEventListener('keydown', requestOnce)
+    }
+  }, [requestPermission])
+
+  // --- Supabase Realtime hooks ---
+  const {
+    orders: rawOrders,
+    updateOrderStatus: apiUpdateOrderStatus,
+    deleteOrder: apiDeleteOrder,
+  } = useOrders(storeId || null)
+
+  const {
+    tables: rawTables,
+    updateTableStatus: apiUpdateTableStatus,
+  } = useRealtimeTables(storeId || null)
+
+  const {
+    menuItems: rawMenuItems,
+    categories: rawCategories,
+    addMenuItem,
+    editMenuItem,
+    toggleAvailability,
+    uploadImage,
+    removeMenuItem: apiRemoveMenuItem,
+  } = useMenuAdmin(storeId || null)
+
+  const { waitings: rawWaitings } = useWaitingQueue(storeId)
+
+  // --- Lookup maps ---
+  const tableNumberMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const t of rawTables) m.set(t.id, t.table_number)
+    return m
+  }, [rawTables])
+
+  const categoryNameMap = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of rawCategories) m.set(c.id, c.name)
+    return m
+  }, [rawCategories])
+
+  // --- Adapted data ---
+  const adaptedOrders = useMemo<UIOrder[]>(
+    () => rawOrders.map((o) => adaptOrder(o, tableNumberMap)),
+    [rawOrders, tableNumberMap],
+  )
+
+  const adaptedTables = useMemo<UITable[]>(
+    () => rawTables.map((t) => ({
+      id: t.table_number,
+      _realId: t.id,
+      status: t.status,
+      time: '',
+      amount: 0,
+      pax: 0,
+    })),
+    [rawTables],
+  )
+
+  const adaptedMenus = useMemo<UIMenu[]>(
+    () => rawMenuItems.map((m) => ({
+      id: m.id,
+      name: m.name,
+      category: categoryNameMap.get(m.category_id) ?? '',
+      price: m.price,
+      stock: m.is_available,
+      image: m.image_url ?? undefined,
+      desc: m.description ?? undefined,
+      badge: m.badge ?? undefined,
+      options: [],
+    })),
+    [rawMenuItems, categoryNameMap],
+  )
+
+  // --- Revenue data ---
+  const [revenueData, setRevenueData] = useState<{ time: string; amount: number }[]>([])
+  useEffect(() => {
+    if (!storeId) return
+    getDailyRevenue(storeId, 7)
+      .then((rows) =>
+        setRevenueData(rows.map((r) => ({ time: r.date.slice(5), amount: Math.round(r.amount / 10000) }))),
+      )
+      .catch(() => {})
+  }, [storeId])
+
+  // --- Local UI state synced from hooks ---
+  const [orders, setOrders] = useState<UIOrder[]>([])
+  const [tables, setTables] = useState<UITable[]>([])
+  const [menus, setMenus] = useState<UIMenu[]>([])
+
+  useEffect(() => { setOrders(adaptedOrders) }, [adaptedOrders])
+  useEffect(() => {
+    setTables((prev) => {
+      const prevMap = new Map(prev.map((t) => [t.id, t]))
+      return adaptedTables.map((t) => {
+        const existing = prevMap.get(t.id)
+        if (existing) return { ...t, amount: existing.amount, pax: existing.pax, time: existing.time }
+        return t
+      })
+    })
+  }, [adaptedTables])
+  useEffect(() => { setMenus(adaptedMenus) }, [adaptedMenus])
+
+  // --- App mode / tab ---
+  const [appMode, setAppMode] = useState<'pos' | 'admin'>('pos')
+  const [activeTab, setActiveTab] = useState('orders')
+
+  useEffect(() => {
+    if (user?.role === 'staff' && appMode === 'admin') setAppMode('pos')
+    if (user?.role === 'staff' && !STAFF_ALLOWED_TABS.has(activeTab)) setActiveTab('orders')
+  }, [user?.role, appMode, activeTab])
+
+  // --- Subscription check ---
+  const [storeExpired, setStoreExpired] = useState(false)
+  useEffect(() => {
+    if (!storeId) return
+    supabase
+      .from('stores')
+      .select('is_active, subscription_end')
+      .eq('id', storeId)
+      .single()
+      .then(({ data }) => {
+        if (data && !isStoreSubscriptionActive(data)) setStoreExpired(true)
+      })
+  }, [storeId])
+
+  // --- Derived values ---
+  const pendingOrders = orders.filter((o) => o.status === 'pending')
+  const preparingOrders = orders.filter((o) => o.status === 'preparing')
+  const totalToday = orders.reduce((sum, o) => sum + o.total, 0)
+  const occupiedTablesCount = tables.filter((t) => t.status === 'occupied').length
+
+  const recentActivities = useMemo<RecentActivity[]>(() => {
+    return rawOrders.slice(0, 5).map((o) => {
+      const tableNum = tableNumberMap.get(o.table_id ?? '') ?? 0
+      return {
+        time: `${minutesAgo(o.created_at)}분 전`,
+        text: `${tableNum}번 테이블 주문 (${o.total_price.toLocaleString()}원)`,
+        type: 'order' as const,
+        icon: Receipt,
+        color: 'text-blue-500',
+        bg: 'bg-blue-50',
+      }
+    })
+  }, [rawOrders, tableNumberMap])
+
+  const POS_CATEGORIES = useMemo(
+    () => ['전체', ...Array.from(new Set(menus.map((m) => m.category)))],
+    [menus],
+  )
+
+  // --- Helper ---
+  const findRealTableId = (tableNumber: number): string | undefined =>
+    tables.find((t) => t.id === tableNumber)?._realId
+
+  // --- Order handlers ---
+  const updateOrderStatus = async (id: string, newStatus: string) => {
+    const dbStatus = ORDER_STATUS_MAP[newStatus]
+    if (!dbStatus) { toast.error('잘못된 주문 상태입니다.'); return }
+    try {
+      await apiUpdateOrderStatus(id, dbStatus)
+      if (newStatus === 'preparing') toast.success('주방으로 전달되었습니다.', { icon: <ChefHat className="w-5 h-5 text-orange-500" /> })
+      if (newStatus === 'completed') toast.success('서빙을 준비해주세요.', { icon: <CheckCircle2 className="w-5 h-5 text-green-500" /> })
+      if (newStatus === 'served') toast.success('서빙이 완료되었습니다.')
+    } catch {
+      toast.error('주문 상태 변경에 실패했습니다.')
+    }
+  }
+
+  const updateOrderPax = (id: string, pax: number) => {
+    setOrders((prev) => prev.map((o) => o.id === id ? { ...o, pax } : o))
+  }
+
+  const deleteOrder = async (id: string) => {
+    try {
+      await apiDeleteOrder(id)
+      toast.success('주문이 삭제되었습니다.')
+    } catch {
+      toast.error('주문 삭제에 실패했습니다.')
+    }
+  }
+
+  // --- Table handlers ---
+  const handleOpenTableModal = (table: UITable) => {
+    setSelectedTable(table)
+    setIsTableModalOpen(true)
+  }
+
+  const markTableAvailable = (id: number) => {
+    const realId = findRealTableId(id)
+    if (realId) apiUpdateTableStatus(realId, 'available')
+    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    toast.info(`${id}번 테이블 정리가 완료되었습니다.`)
+  }
+
+  const handleCheckoutTable = (id: number) => {
+    const realId = findRealTableId(id)
+    if (realId) apiUpdateTableStatus(realId, 'cleaning')
+    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 } : t))
+    toast.success(`${id}번 테이블 정산이 완료되었습니다. 정리 대기 중입니다.`)
+    setIsTableModalOpen(false)
+  }
+
+  const cancelTableOrder = (id: number) => {
+    const realId = findRealTableId(id)
+    if (realId) apiUpdateTableStatus(realId, 'available')
+    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    toast.success(`${id}번 테이블 주문이 전체 취소되었습니다.`)
+    setIsTableModalOpen(false)
+  }
+
+  const cancelTableMenuItem = (tableId: number, orderId: string, itemIndex: number) => {
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return
+    const removedItem = order.items[itemIndex]
+    const removedPrice = (removedItem.price || 0) * removedItem.qty
+
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o
+        const updatedItems = o.items.filter((_, idx) => idx !== itemIndex)
+        if (updatedItems.length === 0) return null as unknown as UIOrder
+        return { ...o, items: updatedItems, total: o.total - removedPrice }
+      }).filter((o): o is UIOrder => o !== null),
+    )
+
+    setTables((prev) =>
+      prev.map((t) => {
+        if (t.id !== tableId) return t
+        const newAmount = Math.max(0, t.amount - removedPrice)
+        const tableOrders = orders.filter((o) => o.table === tableId && o.id !== orderId)
+        const isLastItem = order.items.length === 1 && tableOrders.length === 0
+        if (isLastItem) return { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 }
+        return { ...t, amount: newAmount }
+      }),
+    )
+
+    if (selectedTable && selectedTable.id === tableId) {
+      const newAmount = Math.max(0, selectedTable.amount - removedPrice)
+      setSelectedTable((prev) => prev ? { ...prev, amount: newAmount } : prev)
+    }
+    toast.success('메뉴가 취소되었습니다.')
+  }
+
+  const markTableOccupied = (id: number) => {
+    const realId = findRealTableId(id)
+    if (realId) apiUpdateTableStatus(realId, 'occupied')
+    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'occupied', amount: 0, time: '방금 전', pax: 2 } : t))
+    toast.success(`${id}번 테이블 착석 처리되었습니다.`)
+    setIsTableModalOpen(false)
+  }
+
+  const updateTablePax = (id: number, pax: number) => {
+    setTables((prev) => prev.map((t) => t.id === id ? { ...t, pax } : t))
+    if (selectedTable && selectedTable.id === id) {
+      setSelectedTable((prev) => prev ? { ...prev, pax } : prev)
+    }
+  }
+
+  // --- Waiting handlers ---
+  const callWaiting = async (waitingId: string, queueNumber: number) => {
+    try {
+      await apiCallWaiting(waitingId)
+      toast.success(`대기 ${queueNumber}번 고객님을 호출했습니다.`, { icon: <Volume2 className="w-5 h-5 text-blue-500" /> })
+    } catch {
+      toast.error('호출에 실패했습니다.')
+    }
+  }
+
+  const completeWaiting = async (waitingId: string, queueNumber: number) => {
+    try {
+      await apiCompleteWaiting(waitingId)
+      toast.success(`대기 ${queueNumber}번 고객님 입장이 완료되었습니다.`)
+    } catch {
+      toast.error('입장 처리에 실패했습니다.')
+    }
+  }
+
+  // --- Menu handlers ---
+  const toggleMenuStock = (id: string) => {
+    const menu = menus.find((m) => m.id === id)
+    if (menu) toggleAvailability(id, menu.stock)
+    setMenus((prev) => prev.map((m) => m.id === id ? { ...m, stock: !m.stock } : m))
+  }
+
+  const handleSaveMenu = async (e: React.FormEvent<HTMLFormElement>, menuOptions: any[]) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('name') as string
+    const categoryName = formData.get('category') as string
+    const price = Number(formData.get('price'))
+    const desc = formData.get('desc') as string || ''
+    const badgeVal = formData.get('badge') as string
+    const badge = (badgeVal === '없음' ? null : (badgeVal?.toLowerCase() || null)) as ItemBadge | null
+    const cat = rawCategories.find((c) => c.name === categoryName)
+    const category_id = cat?.id ?? ''
+
+    try {
+      if (editingMenu) {
+        await editMenuItem(editingMenu.id, { name, category_id, price, description: desc || null, badge })
+      } else {
+        await addMenuItem({ store_id: storeId, name, category_id, price, description: desc || null, badge })
+      }
+    } catch {
+      // toast handled by hook
+    }
+    setIsMenuModalOpen(false)
+  }
+
+  // --- Add Order handlers ---
+  const handleAddToCart = (menu: UIMenu) => {
+    if (!menu.stock) { toast.error('품절된 메뉴입니다.'); return }
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === menu.id)
+      if (existing) return prev.map((item) => item.id === menu.id ? { ...item, qty: item.qty + 1 } : item)
+      return [...prev, { ...menu, qty: 1 }]
+    })
+  }
+
+  const handleUpdateCartQty = (id: string, delta: number) => {
+    setCart((prev) =>
+      prev.map((item) => item.id === id ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
+        .filter((item) => item.qty > 0),
+    )
+  }
+
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) { toast.error('메뉴를 선택해주세요.'); return }
+    if (!storeId) { toast.error('매장 정보를 찾을 수 없습니다.'); return }
+    if (!orderTableId) { toast.error('테이블을 선택해주세요.'); return }
+    const tableRealId = findRealTableId(orderTableId)
+    if (!tableRealId) { toast.error('테이블 정보를 불러오지 못했습니다.'); return }
+
+    const orderItems = cart.map((item) => ({
+      menuItemId: item.id,
+      menuItemName: item.name,
+      unitPrice: item.price,
+      quantity: item.qty,
+      totalPrice: item.price * item.qty,
+      selectedOptions: [],
+    }))
+    const totalAmount = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+
+    setIsPlacingOrder(true)
+    try {
+      await createOrder({ storeId, tableId: tableRealId, items: orderItems })
+      await apiUpdateTableStatus(tableRealId, 'occupied')
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === orderTableId
+            ? { ...t, status: 'occupied', amount: t.amount + totalAmount, time: t.time || '방금 전', pax: t.pax || 2 }
+            : t,
+        ),
+      )
+      if (selectedTable && selectedTable.id === orderTableId) {
+        setSelectedTable((prev) => prev ? ({
+          ...prev, status: 'occupied', amount: (prev.amount || 0) + totalAmount,
+          time: prev.time || '방금 전', pax: prev.pax || 2,
+        }) : prev)
+      }
+      toast.success(`${orderTableId}번 테이블 주문이 주방으로 전달되었습니다.`, {
+        icon: <ChefHat className="w-5 h-5 text-orange-500" />,
+      })
+      setIsAddOrderModalOpen(false)
+      setCart([])
+    } catch {
+      toast.error('주문 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setIsPlacingOrder(false)
+    }
+  }
+
+  const handleAddTable = async () => {
+    try {
+      const nextNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.id)) + 1 : 1
+      await addTable(storeId, nextNumber)
+      toast.success('테이블이 추가되었습니다.')
+    } catch {
+      toast.error('테이블 추가에 실패했습니다.')
+    }
+  }
+
+  // --- Settings state ---
+  const [eventSettings, setEventSettings] = useState<EventSettings>({
+    enabled: true,
+    title: '네이버 영수증 리뷰 이벤트 🎉',
+    desc: '참여하고 아메리카노 1잔 무료로 받기!',
+    reward: '아메리카노 1잔',
+  })
+
+  const [staffCallOptions, setStaffCallOptions] = useState<StaffCallOption[]>([
+    { id: 1, name: '직원만 호출' },
+    { id: 2, name: '물/얼음물 주세요' },
+    { id: 3, name: '물티슈 주세요' },
+    { id: 4, name: '앞치마 주세요' },
+    { id: 5, name: '주문 수정할게요' },
+  ])
+
+  const handleAddCallOption = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const newName = formData.get('name') as string
+    if (!newName) return
+    setStaffCallOptions((prev) => [...prev, { id: Date.now(), name: newName }])
+    e.currentTarget.reset()
+    toast.success('직원 호출 옵션이 추가되었습니다.')
+  }
+
+  const handleRemoveCallOption = (id: number) => {
+    setStaffCallOptions((prev) => prev.filter((opt) => opt.id !== id))
+    toast.success('직원 호출 옵션이 삭제되었습니다.')
+  }
+
+  const [pwNew, setPwNew] = useState('')
+  const [pwConfirm, setPwConfirm] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pwNew || !pwConfirm) { toast.error('모든 항목을 입력하세요.'); return }
+    if (!/^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/.test(pwNew)) {
+      toast.error('8자 이상, 특수문자를 포함해야 합니다.'); return
+    }
+    if (pwNew !== pwConfirm) { toast.error('새 비밀번호가 일치하지 않습니다.'); return }
+    setPwLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwNew })
+      if (error) throw error
+      toast.success('비밀번호가 변경되었습니다.')
+      setPwNew(''); setPwConfirm('')
+    } catch (err: any) {
+      toast.error(err?.message ?? '비밀번호 변경에 실패했습니다.')
+    } finally {
+      setPwLoading(false)
+    }
+  }
+
+  // --- Customers state ---
+  const [customers, setCustomers] = useState<Customer[]>([
+    { id: '1', name: '단골손님', phone: '010-1234-5678', points: 1500, visits: 12, lastVisit: '2023-10-24' },
+    { id: '2', name: '김철수', phone: '010-9876-5432', points: 500, visits: 3, lastVisit: '2023-10-22' },
+    { id: '3', name: '이영희', phone: '010-5555-4444', points: 3200, visits: 8, lastVisit: '2023-10-20' },
+  ])
+
+  const [pointRate, setPointRate] = useState(5)
+  const [isPointPolicyModalOpen, setIsPointPolicyModalOpen] = useState(false)
+  const [isCustomerEditModalOpen, setIsCustomerEditModalOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+
+  const handleSavePointPolicy = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    setPointRate(Number(formData.get('rate')))
+    setIsPointPolicyModalOpen(false)
+    toast.success('포인트 적립 정책이 저장되었습니다.')
+  }
+
+  const handleSaveCustomer = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const updatedPoints = Number(formData.get('points'))
+    if (!editingCustomer) return
+    setCustomers((prev) => prev.map((c) => c.id === editingCustomer.id ? { ...c, points: updatedPoints } : c))
+    setIsCustomerEditModalOpen(false)
+    toast.success('고객 정보가 업데이트 되었습니다.')
+  }
+
+  // --- Table modal state ---
+  const [selectedTable, setSelectedTable] = useState<UITable | null>(null)
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false)
+
+  // --- Add order modal state ---
+  const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false)
+  const [orderTableId, setOrderTableId] = useState<number | null>(null)
+  const [cart, setCart] = useState<any[]>([])
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [posCategory, setPosCategory] = useState('전체')
+
+  // --- Menu modal state ---
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false)
+  const [editingMenu, setEditingMenu] = useState<UIMenu | null>(null)
+
+  const handleOpenMenuModal = (menu?: UIMenu) => {
+    setEditingMenu(menu ?? null)
+    setIsMenuModalOpen(true)
+  }
+
+  // --- Guards ---
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-zinc-500 font-bold">로딩 중...</span>
+      </div>
+    )
+  }
+
+  if (storeExpired) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4 p-8 text-center">
+        <span className="text-4xl">⚠️</span>
+        <h1 className="text-xl font-bold text-zinc-800">이용 기간이 만료되었습니다</h1>
+        <p className="text-zinc-500 text-sm">
+          구독 기간이 만료되어 서비스를 이용할 수 없습니다.<br />관리자에게 문의해 주세요.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-[100dvh] bg-zinc-50 flex font-sans">
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-zinc-200 h-[70px] pb-safe z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] overflow-x-auto no-scrollbar">
+        <div className="flex items-center h-full w-full justify-around px-2">
+          {(appMode === 'pos' ? [
+            { id: 'orders', icon: ChefHat, label: 'KDS', badge: pendingOrders.length + preparingOrders.length },
+            { id: 'waiting', icon: Users, label: '웨이팅', badge: rawWaitings.length },
+            { id: 'tables', icon: LayoutGrid, label: '홀현황' },
+          ] : [
+            { id: 'analytics', icon: LayoutDashboard, label: '대시보드' },
+            { id: 'menu', icon: UtensilsCrossed, label: '메뉴' },
+            { id: 'customers', icon: Users, label: '고객' },
+            { id: 'qr', icon: QrCode, label: 'QR' },
+            { id: 'settings', icon: Settings, label: '설정' },
+            ...(user.role === 'owner' ? [{ id: 'staff', icon: Users, label: '직원' }] : []),
+          ] as { id: string; icon: React.ComponentType<{ className?: string }>; label: string; badge?: number }[]).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center justify-center flex-1 h-full relative transition-colors ${
+                activeTab === item.id ? 'text-orange-600' : 'text-zinc-400 hover:text-zinc-600'
+              }`}
+            >
+              <div className="relative mb-1 flex justify-center">
+                <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'fill-orange-50 stroke-orange-600' : ''}`} />
+                {item.badge ? (
+                  <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-sm">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </div>
+              <span className={`text-[10px] font-bold ${activeTab === item.id ? 'text-orange-600' : 'text-zinc-500'}`}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* PC Sidebar */}
+      <aside className="w-64 bg-zinc-950 text-zinc-400 flex-col hidden md:flex shrink-0">
+        <div className="h-20 flex items-center px-6 border-b border-zinc-800/50">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mr-3 shadow-lg shadow-orange-500/20">
+            <UtensilsCrossed className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-white font-black text-xl tracking-tight leading-none">TableFlow</h1>
+            <span className="text-orange-500 font-bold text-[10px] tracking-wider uppercase">Pro POS</span>
+          </div>
+        </div>
+
+        <div className="px-4 py-4 border-b border-zinc-800/50">
+          <div className="flex bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+            <button
+              onClick={() => { setAppMode('pos'); setActiveTab('orders') }}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${appMode === 'pos' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              👨‍🍳 현장 POS
+            </button>
+            {user.role !== 'staff' && (
+              <button
+                onClick={() => { setAppMode('admin'); setActiveTab('analytics') }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${appMode === 'admin' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                ⚙️ 매장 관리
+              </button>
+            )}
+          </div>
+        </div>
+
+        <nav className="flex-1 py-6 px-4 space-y-1">
+          {(appMode === 'pos' ? [
+            { id: 'orders', icon: ChefHat, label: '주방 디스플레이', badge: pendingOrders.length },
+            { id: 'waiting', icon: Users, label: '웨이팅 관리', badge: rawWaitings.length },
+            { id: 'tables', icon: LayoutDashboard, label: '홀 테이블 현황' },
+          ] : [
+            { id: 'analytics', icon: BarChart4, label: '매출 분석' },
+            { id: 'menu', icon: UtensilsCrossed, label: '메뉴 관리' },
+            { id: 'customers', icon: Users, label: '고객/포인트 관리' },
+            { id: 'qr', icon: QrCode, label: 'QR 코드 관리' },
+            { id: 'event', icon: Gift, label: '이벤트 관리' },
+            { id: 'settings', icon: Settings, label: '매장 설정' },
+            ...(user.role === 'owner' ? [{ id: 'staff', icon: Users, label: '직원 관리' }] : []),
+          ] as { id: string; icon: React.ComponentType<{ className?: string }>; label: string; badge?: number }[]).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all font-bold ${
+                activeTab === item.id ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-orange-500' : ''}`} />
+                <span>{item.label}</span>
+              </div>
+              {item.badge ? (
+                <span className="bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-sm">
+                  {item.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-zinc-800/50">
+          <div className="bg-zinc-900 rounded-2xl p-4 flex items-center gap-3 mb-3 border border-zinc-800">
+            <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-white shrink-0">
+              {(user.storeName ?? '').slice(0, 2)}
+            </div>
+            <div className="truncate">
+              <p className="text-white font-bold text-sm truncate">{user.storeName ?? ''}</p>
+              <p className="text-[11px] text-zinc-500 font-medium mt-0.5">
+                {user.role === 'owner' ? '최고관리자' : user.role === 'manager' ? '매니저' : '직원'}
+              </p>
+            </div>
+            <button className="ml-auto text-zinc-500 hover:text-white shrink-0">
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors text-sm font-bold border border-zinc-800"
+          >
+            <Home className="w-4 h-4" /> 홈으로 나가기
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col h-[100dvh] overflow-hidden bg-zinc-50/50 w-full">
+        {/* Header */}
+        <header className="h-14 md:h-20 bg-white border-b border-zinc-200/80 px-4 md:px-8 flex items-center justify-between shrink-0 shadow-sm z-10 sticky top-0">
+          <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+            <button onClick={() => router.push('/')} className="md:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
+              <Home className="w-5 h-5" />
+            </button>
+            <div className="md:hidden flex bg-zinc-100/80 p-1 rounded-xl mx-auto border border-zinc-200/50 shadow-inner">
+              <button
+                onClick={() => { setAppMode('pos'); setActiveTab('orders') }}
+                className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${appMode === 'pos' ? 'bg-white text-orange-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-zinc-500'}`}
+              >
+                👨‍🍳 현장 POS
+              </button>
+              {user.role !== 'staff' && (
+                <button
+                  onClick={() => { setAppMode('admin'); setActiveTab('analytics') }}
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${appMode === 'admin' ? 'bg-white text-orange-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-zinc-500'}`}
+                >
+                  ⚙️ 매장 관리
+                </button>
+              )}
+            </div>
+            <div className="hidden lg:flex items-center bg-zinc-100/80 px-4 py-2.5 rounded-2xl border border-zinc-200/50 focus-within:bg-white focus-within:border-orange-500 focus-within:ring-4 focus-within:ring-orange-500/10 transition-all">
+              <Search className="w-5 h-5 text-zinc-400 mr-2" />
+              <input type="text" placeholder="검색어 입력..." className="bg-transparent border-none outline-none text-sm w-64 font-medium text-zinc-800 placeholder:text-zinc-400" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 md:gap-5">
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 font-bold rounded-full text-xs border border-green-200/50">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 정상 가동중
+            </div>
+            <button className="hidden md:flex items-center gap-2 text-zinc-500 hover:text-zinc-900 font-bold text-sm">
+              <RefreshCcw className="w-4 h-4" /> 동기화
+            </button>
+            <div className="hidden md:block w-px h-6 bg-zinc-200"></div>
+            <button className="md:hidden p-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
+              <Search className="w-5 h-5" />
+            </button>
+            <button className="relative p-2 text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
+              <Bell className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+          </div>
+        </header>
+
+        {showBanner && (
+          <div className="px-4 md:px-8 pt-3 shrink-0">
+            <NotificationDeniedBanner onDismiss={dismissBanner} />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 w-full max-w-[100vw]">
+          <AnimatePresence mode="wait">
+            {activeTab === 'dashboard' && (
+              <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <DashboardSummary
+                  orders={orders}
+                  tables={tables}
+                  revenueData={revenueData}
+                  recentActivities={recentActivities}
+                  pendingOrdersCount={pendingOrders.length}
+                  occupiedTablesCount={occupiedTablesCount}
+                  totalToday={totalToday}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'orders' && (
+              <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                <KDSPanel
+                  orders={orders}
+                  tables={tables}
+                  updateOrderStatus={updateOrderStatus}
+                  deleteOrder={deleteOrder}
+                  updateOrderPax={updateOrderPax}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'waiting' && (
+              <motion.div key="waiting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <WaitingPanel
+                  waitings={rawWaitings}
+                  callWaiting={callWaiting}
+                  completeWaiting={completeWaiting}
+                  onOpenKioskMode={() => {}}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'tables' && (
+              <motion.div key="tables" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <TablesPanel
+                  tables={tables}
+                  onTableClick={handleOpenTableModal}
+                  markTableAvailable={markTableAvailable}
+                  occupiedTablesCount={occupiedTablesCount}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'analytics' && (
+              <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <AnalyticsPanel revenueData={revenueData} totalToday={totalToday} />
+              </motion.div>
+            )}
+            {activeTab === 'menu' && (
+              <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <MenuPanel
+                  menus={menus}
+                  categories={Array.from(new Set(menus.map((m) => m.category)))}
+                  onEditMenu={handleOpenMenuModal}
+                  toggleAvailability={toggleMenuStock}
+                  removeMenuItem={apiRemoveMenuItem}
+                  onAddMenu={() => handleOpenMenuModal()}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'qr' && (
+              <motion.div key="qr" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <QRPanel
+                  tables={tables}
+                  storeSlug={storeId}
+                  onAddTable={handleAddTable}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'event' && (
+              <motion.div key="event" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <EventPanel
+                  eventSettings={eventSettings}
+                  setEventSettings={setEventSettings}
+                  storeId={storeId}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'customers' && (
+              <motion.div key="customers" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <CustomersPanel
+                  customers={customers}
+                  onEditCustomer={(c) => { setEditingCustomer(c); setIsCustomerEditModalOpen(true) }}
+                  pointRate={pointRate}
+                  onEditPointPolicy={() => setIsPointPolicyModalOpen(true)}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'settings' && (
+              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <SettingsPanel
+                  staffCallOptions={staffCallOptions}
+                  setStaffCallOptions={setStaffCallOptions}
+                  pwNew={pwNew}
+                  setPwNew={setPwNew}
+                  pwConfirm={pwConfirm}
+                  setPwConfirm={setPwConfirm}
+                  pwLoading={pwLoading}
+                  handleChangePassword={handleChangePassword}
+                  handleAddCallOption={handleAddCallOption}
+                  handleRemoveCallOption={handleRemoveCallOption}
+                />
+              </motion.div>
+            )}
+            {activeTab === 'staff' && user.role === 'owner' && (
+              <motion.div key="staff" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <StaffManagement storeId={storeId} currentUserId={user.id} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {/* Modals */}
+      <PointPolicyModal
+        isOpen={isPointPolicyModalOpen}
+        onClose={() => setIsPointPolicyModalOpen(false)}
+        pointRate={pointRate}
+        onSave={handleSavePointPolicy}
+      />
+
+      <CustomerEditModal
+        isOpen={isCustomerEditModalOpen}
+        onClose={() => setIsCustomerEditModalOpen(false)}
+        customer={editingCustomer}
+        onSave={handleSaveCustomer}
+      />
+
+      <MenuEditModal
+        isOpen={isMenuModalOpen}
+        onClose={() => setIsMenuModalOpen(false)}
+        editingMenu={editingMenu}
+        categories={Array.from(new Set(menus.map((m) => m.category)))}
+        onSave={handleSaveMenu}
+        onImageUpload={uploadImage}
+      />
+
+      <TableDetailModal
+        isOpen={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
+        table={selectedTable}
+        orders={orders}
+        onUpdatePax={updateTablePax}
+        onCancelMenuItem={cancelTableMenuItem}
+        onCancelOrder={cancelTableOrder}
+        onMarkOccupied={markTableOccupied}
+        onMarkAvailable={markTableAvailable}
+        onCheckout={handleCheckoutTable}
+        onAddOrder={(tableId) => {
+          setOrderTableId(tableId)
+          setIsAddOrderModalOpen(true)
+        }}
+      />
+
+      <AddOrderModal
+        isOpen={isAddOrderModalOpen}
+        onClose={() => { setIsAddOrderModalOpen(false); setCart([]) }}
+        tableId={orderTableId}
+        menus={menus}
+        categories={POS_CATEGORIES}
+        cart={cart}
+        posCategory={posCategory}
+        setPosCategory={setPosCategory}
+        onAddToCart={handleAddToCart}
+        onUpdateCartQty={handleUpdateCartQty}
+        onPlaceOrder={handlePlaceOrder}
+        isPlacingOrder={isPlacingOrder}
+      />
+    </div>
+  )
+}

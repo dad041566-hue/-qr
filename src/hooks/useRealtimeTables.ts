@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import { getTables, updateTableStatus as apiUpdateTableStatus } from '@/lib/api/admin'
 import type { TableRow, TableStatus } from '@/types/database'
 
@@ -37,7 +40,7 @@ export function useRealtimeTables(storeId: string | null) {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'tables', filter: `store_id=eq.${storeId}` },
-        (payload) => {
+        (payload: any) => {
           setTables((prev) =>
             prev.map((t) =>
               t.id === payload.new.id ? { ...t, ...(payload.new as TableRow) } : t
@@ -48,7 +51,7 @@ export function useRealtimeTables(storeId: string | null) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'tables', filter: `store_id=eq.${storeId}` },
-        (payload) => {
+        (payload: any) => {
           setTables((prev) => [...prev, payload.new as TableRow].sort((a, b) => a.table_number - b.table_number))
         }
       )
