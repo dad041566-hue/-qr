@@ -59,7 +59,7 @@ type OrderHistoryEntry = {
 export default function CustomerMenuClient({ store, table, categories, items }: Props) {
   const storeSlug = store.slug
   const tableId = table.id
-  const orderHistoryKey = `order-history:${storeSlug}:${tableId}`
+  const orderHistoryKey = `order-history:${storeSlug}:${table.qr_token}`
 
   const [activeCategory, setActiveCategory] = useState('전체')
   const [cart, setCart] = useState<CartItem[]>([])

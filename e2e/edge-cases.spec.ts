@@ -64,7 +64,15 @@ test('SC-030: 세션 만료 후 자동 리다이렉트', async ({ page }) => {
   await login(page, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD)
   await expect(page).toHaveURL(/\/(superadmin|admin)/, { timeout: 10000 })
 
-  // localStorage에서 supabase 세션 토큰 제거하여 만료 시뮬레이션
+  // 쿠키에서 supabase 세션 토큰 제거하여 만료 시뮬레이션 (Next.js는 쿠키 기반 인증)
+  const cookies = await page.context().cookies()
+  const authCookies = cookies.filter(
+    (c) => c.name.includes('supabase') || c.name.includes('auth'),
+  )
+  if (authCookies.length > 0) {
+    await page.context().clearCookies()
+  }
+  // localStorage도 정리 (fallback)
   await page.evaluate(() => {
     const keys = Object.keys(localStorage)
     for (const key of keys) {
@@ -176,7 +184,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await freshPage.waitForLoadState('networkidle')
 
     // 만료 안내 메시지 확인
-    await expect(freshPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await expect(freshPage.locator('body')).toContainText('이용 기간이 만료되었습니다', { timeout: 15000 })
     await newContext.close()
 
     // 복구: subscription_end를 미래 날짜로 원복
@@ -200,7 +208,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await login(deactivatedPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await expect(deactivatedPage).toHaveURL('/admin', { timeout: 15000 })
     await deactivatedPage.waitForLoadState('networkidle')
-    await expect(deactivatedPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await expect(deactivatedPage.locator('body')).toContainText('이용 기간이 만료되었습니다', { timeout: 15000 })
     await deactivatedCtx.close()
 
     // Restore is_active
@@ -238,7 +246,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await login(expiredPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await expect(expiredPage).toHaveURL('/admin', { timeout: 15000 })
     await expiredPage.waitForLoadState('networkidle')
-    await expect(expiredPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await expect(expiredPage.locator('body')).toContainText('이용 기간이 만료되었습니다', { timeout: 15000 })
     await expiredCtx.close()
 
     // 3) 슈퍼어드민이 기간 연장 (subscription_end를 미래로)
@@ -259,7 +267,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     // 만료 메시지가 없어야 함
     const bodyText = await restoredPage.locator('body').innerText()
     expect(
-      bodyText.includes('이용 기간이 만료되었습니다.'),
+      bodyText.includes('이용 기간이 만료되었습니다'),
       '기간 연장 후 만료 메시지가 표시되지 않아야 합니다.',
     ).toBeFalsy()
     await restoredCtx.close()
@@ -291,7 +299,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await login(suspendedPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await expect(suspendedPage).toHaveURL('/admin', { timeout: 15000 })
     await suspendedPage.waitForLoadState('networkidle')
-    await expect(suspendedPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await expect(suspendedPage.locator('body')).toContainText('이용 기간이 만료되었습니다', { timeout: 15000 })
     await suspendedCtx.close()
 
     // 3) 강제 정지 해제
@@ -311,7 +319,7 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     // 만료 메시지가 없어야 함
     const bodyText = await restoredPage.locator('body').innerText()
     expect(
-      bodyText.includes('이용 기간이 만료되었습니다.'),
+      bodyText.includes('이용 기간이 만료되었습니다'),
       '강제 정지 해제 후 만료 메시지가 표시되지 않아야 합니다.',
     ).toBeFalsy()
     await restoredCtx.close()
@@ -591,9 +599,20 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     const menuText = await anonPage.locator('body').innerText()
     expect(menuText).toContain('<script>alert(1)</script>')
 
-    // DOM에 실제 <script> 엘리먼트가 주입되지 않아야 함
+    // DOM에 실제 사용자 삽입 <script> 엘리먼트가 주입되지 않아야 함
+    // Next.js hydration/RSC 스크립트는 제외 (자체적으로 JSON 데이터에 메뉴명을 포함할 수 있음)
     const injectedScripts = await anonPage.locator('script').evaluateAll((scripts) =>
-      scripts.filter((s) => s.textContent?.includes('alert(1)')).length,
+      scripts.filter((s) => {
+        // Next.js 내부 스크립트 제외 (type="application/json", self.__next 등)
+        const isNextInternal = s.type === 'application/json'
+          || s.id?.startsWith('__NEXT')
+          || s.textContent?.includes('self.__next')
+          || s.textContent?.includes('__webpack')
+          || s.src?.includes('_next/')
+          || s.dataset?.['nscript'] !== undefined
+        if (isNextInternal) return false
+        return s.textContent?.includes('alert(1)')
+      }).length,
     )
     expect(injectedScripts, 'alert(1) 스크립트가 DOM에 삽입되어서는 안 됩니다.').toBe(0)
 

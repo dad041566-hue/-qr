@@ -362,7 +362,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     const customerCtx = await browser.newContext()
     const customerPage = await customerCtx.newPage()
     await customerPage.goto(`/m/${STORE_SLUG}/${qrToken}`)
-    await expect(customerPage.locator('body')).not.toContainText('로그인')
+    await expect(customerPage.locator('body')).toContainText('환영합니다', { timeout: 10000 })
 
     await placeOneOrderFromCustomer(customerPage)
 
@@ -406,7 +406,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     const customerCtx = await browser.newContext()
     const customerPage = await customerCtx.newPage()
     await customerPage.goto(`/m/${STORE_SLUG}/${qrToken}`)
-    await expect(customerPage.locator('body')).not.toContainText('로그인')
+    await expect(customerPage.locator('body')).toContainText('환영합니다', { timeout: 10000 })
 
     await placeOneOrderFromCustomer(customerPage)
     const newOrderId = await waitForNewOrderIdByTable(ownerAdminPage, tableId, previousOrderId)
@@ -488,7 +488,7 @@ test.describe('TableFlow 사용자 시나리오 E2E', () => {
     const customerCtx = await browser.newContext()
     const customerPage = await customerCtx.newPage()
     await customerPage.goto(`/m/${STORE_SLUG}/${qrToken}`)
-    await expect(customerPage.locator('body')).not.toContainText('로그인')
+    await expect(customerPage.locator('body')).toContainText('환영합니다', { timeout: 10000 })
 
     await placeOneOrderFromCustomer(customerPage)
 

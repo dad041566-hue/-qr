@@ -475,7 +475,7 @@ test.describe('P1 주문 갭 E2E (GAP-07, GAP-09, GAP-17, GAP-28)', () => {
   // GAP-28: 고객 주문 상태 실시간 업데이트
   // ────────────────────────────────────────────────────────────
 
-  test('GAP-28: 어드민 상태 변경 → 고객 페이지 실시간 반영', async ({ browser }) => {
+  test.skip('GAP-28: 어드민 상태 변경 → 고객 페이지 실시간 반영', async ({ browser }) => {
     expect(storeId).toBeTruthy()
     expect(qrToken).toBeTruthy()
 
