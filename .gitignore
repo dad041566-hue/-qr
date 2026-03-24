@@ -6,6 +6,8 @@
 # 빌드 결과물
 dist/
 dist-ssr/
+.next/
+out/
 
 # 의존성
 node_modules/
@@ -30,7 +32,18 @@ npm-debug.log*
 # Vite 캐시
 .vite/
 
+# Next.js
+next-env.d.ts
+
 # Claude Code 자동 생성 파일 (충돌 방지)
 .claude/context/
 .claude/settings.json
 .claude/settings.local.json
+
+.vercel
+
+# 테스트 리포트 (HTML/JSON 자동 생성)
+test-reports/
+test-results/
+playwright-report/
+coverage/

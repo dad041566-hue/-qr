@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "next.config.ts",
+    "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/app/(public)/**/*.ts",
+    "src/app/(public)/**/*.tsx",
+    "src/app/(customer)/**/*.ts",
+    "src/app/(customer)/**/*.tsx",
+    "src/app/(auth)/**/*.ts",
+    "src/app/(auth)/**/*.tsx",
+    "src/app/admin/layout.tsx",
+    "src/app/admin/page.tsx",
+    "src/app/superadmin/layout.tsx",
+    "src/app/superadmin/page.tsx",
+    "src/lib/supabase/**/*.ts",
+    "src/middleware.ts",
+    "src/types/**/*.ts",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/app/App.tsx",
+    "src/app/routes.tsx",
+    "src/app/pages/**",
+    "src/app/components/**"
+  ]
+}
