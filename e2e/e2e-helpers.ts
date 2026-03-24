@@ -107,6 +107,19 @@ export function getSupabaseConfig() {
 }
 
 async function getAccessToken(page: Page): Promise<string | null> {
+  // 1. Try cookie-based auth (Supabase SSR / Next.js stores tokens in cookies)
+  const cookies = await page.context().cookies()
+  const authCookie = cookies.find((c) => c.name.includes('auth-token') && c.name.includes('sb-'))
+  if (authCookie) {
+    try {
+      // Cookie value is base64-encoded JSON with access_token
+      const decoded = Buffer.from(authCookie.value.replace(/^base64-/, ''), 'base64').toString('utf8')
+      const parsed = JSON.parse(decoded)
+      if (parsed?.access_token) return parsed.access_token
+    } catch { /* fall through to localStorage */ }
+  }
+
+  // 2. Fallback to localStorage (Vite / older Supabase client)
   return await page.evaluate(() => {
     const keys = Object.keys(localStorage)
     const sessionKey = keys.find((k) => k.includes('auth-token') || k.includes('supabase'))

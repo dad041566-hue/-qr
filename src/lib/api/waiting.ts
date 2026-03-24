@@ -1,4 +1,7 @@
-import { supabase } from '@/lib/supabase'
+import { supabase as _supabase } from '@/lib/supabase'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabase = _supabase as any
 import type { WaitingRow, TableRow } from '@/types/database'
 
 // -------------------------------------------------------
@@ -51,7 +54,7 @@ export async function getWaitingStatus(
 
   const list = allWaiting ?? []
   const totalWaiting = list.length
-  const myIndex = list.findIndex((w) => w.id === waitingId)
+  const myIndex = list.findIndex((w: any) => w.id === waitingId)
   const myPosition = myIndex >= 0 ? myIndex : totalWaiting
 
   return { myPosition, totalWaiting }

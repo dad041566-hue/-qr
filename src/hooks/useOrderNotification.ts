@@ -6,7 +6,7 @@
  */
 
 export async function requestNotificationPermission() {
-  if (!('Notification' in window)) return
+  if (typeof window === 'undefined' || !('Notification' in window)) return
   if (Notification.permission === 'default') {
     const result = await Notification.requestPermission()
     return result
@@ -17,7 +17,7 @@ export async function requestNotificationPermission() {
 export function notifyNewOrder(tableLabel: string, orderId?: string) {
   // 탭이 포커스된 경우 브라우저 알림 불필요 (toast로 충분)
   // 백그라운드이거나 다른 탭 활성화 시 브라우저 알림 표시
-  if (document.visibilityState !== 'visible' || document.hidden) {
+  if (typeof document !== 'undefined' && (document.visibilityState !== 'visible' || document.hidden)) {
     showBrowserNotification(`새 주문 — ${tableLabel}`, '주문이 접수되었습니다. 확인해주세요.', orderId)
   }
   vibrate([200, 100, 200, 100, 400])
@@ -33,7 +33,7 @@ export function notifyOrderStatusChanged(tableLabel: string, orderId: string, st
   }
   const label = statusLabel[status] ?? status
 
-  if (document.visibilityState !== 'visible' || document.hidden) {
+  if (typeof document !== 'undefined' && (document.visibilityState !== 'visible' || document.hidden)) {
     showBrowserNotification(`${label} — ${tableLabel}`, '주문 상태가 변경되었습니다.', orderId)
   }
 
@@ -43,7 +43,7 @@ export function notifyOrderStatusChanged(tableLabel: string, orderId: string, st
 }
 
 function showBrowserNotification(title: string, body: string, orderId?: string) {
-  if (!('Notification' in window)) return
+  if (typeof window === 'undefined' || !('Notification' in window)) return
   if (Notification.permission !== 'granted') return
 
   const tag = orderId ? `order-alert-${orderId}` : 'order-alert'
@@ -53,11 +53,11 @@ function showBrowserNotification(title: string, body: string, orderId?: string) 
     icon: '/favicon.ico',
     badge: '/favicon.ico',
     tag,        // 같은 주문ID는 덮어쓰기 방지, 다른 주문은 구분
-    renotify: true,
+    ...({ renotify: true } as any),
   })
 }
 
 function vibrate(pattern: number[]) {
-  if (!('vibrate' in navigator)) return
+  if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return
   navigator.vibrate(pattern)
 }

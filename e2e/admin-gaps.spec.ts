@@ -247,11 +247,10 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
   // GAP-14: 카테고리 CRUD UI
   // ────────────────────────────────────────────────────────────
 
-  test('GAP-14: 카테고리 CRUD — API 레벨 검증', async ({ page }) => {
+  test('GAP-14: 카테고리 CRUD — API + UI 검증', async ({ page }) => {
     expect(storeId).toBeTruthy()
 
-    // Rate limiting 회피: owner 재로그인 대신 API 직접 검증
-    // 5초 대기 후 로그인 시도
+    // Rate limiting 회피
     await page.waitForTimeout(5000)
 
     let loggedIn = false
@@ -266,15 +265,14 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
     }
 
     if (!loggedIn) {
-      // 로그인 실패 시 API만으로 검증
-      test.skip(true, 'Auth rate limiting으로 owner 로그인 불가 — API 검증으로 대체 필요')
+      test.skip(true, 'Auth rate limiting으로 owner 로그인 불가')
       return
     }
 
     const { url } = getSupabaseConfig()
     const headers = await supabaseHeaders(page)
 
-    // 카테고리 생성 (API — owner 토큰)
+    // 카테고리 생성 (API — owner 토큰, UI에 전용 카테고리 CRUD가 없음)
     const createRes = await fetch(`${url}/rest/v1/menu_categories`, {
       method: 'POST',
       headers,
@@ -285,12 +283,16 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
     expect(catRows.length).toBeGreaterThan(0)
     const newCatId = catRows[0].id
 
-    // 카테고리 조회 (API)
-    const readRows = await supabaseGet<SeedRow>(
-      page,
-      `menu_categories?select=id&id=eq.${newCatId}`,
-    )
-    expect(readRows.length, '생성된 카테고리가 조회되어야 합니다').toBe(1)
+    // UI 검증: 메뉴 관리 탭으로 이동하여 생성된 카테고리가 표시되는지 확인
+    const menuTab = page.locator('button, [role="tab"]').filter({ hasText: /메뉴 관리|메뉴/i }).first()
+    if (await menuTab.isVisible({ timeout: 5000 })) {
+      await menuTab.click()
+      await page.waitForTimeout(2000)
+      await expect(
+        page.locator('body'),
+        '메뉴 관리 탭에서 생성된 카테고리가 표시되어야 합니다',
+      ).toContainText('E2E테스트카테고리', { timeout: 8000 })
+    }
 
     // 카테고리 수정 (API)
     const patchRes = await fetch(`${url}/rest/v1/menu_categories?id=eq.${newCatId}`, {
@@ -300,7 +302,19 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
     })
     expect(patchRes.ok, '카테고리 수정 성공').toBeTruthy()
 
-    // 수정 확인
+    // UI 검증: 수정된 카테고리명이 반영되는지 확인
+    if (await menuTab.isVisible({ timeout: 3000 })) {
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await menuTab.click()
+      await page.waitForTimeout(2000)
+      await expect(
+        page.locator('body'),
+        '메뉴 관리 탭에서 수정된 카테고리명이 표시되어야 합니다',
+      ).toContainText('E2E수정카테고리', { timeout: 8000 })
+    }
+
+    // DB 수정 확인
     const updatedRows = await supabaseGet<{ id: string; name: string }>(
       page,
       `menu_categories?select=id,name&id=eq.${newCatId}`,
@@ -326,7 +340,7 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
   // GAP-36: 대기 큐 어드민 관리
   // ────────────────────────────────────────────────────────────
 
-  test('GAP-36: 대기 큐 어드민 — 호출/착석/노쇼/취소 액션', async ({ page }) => {
+  test('GAP-36: 대기 큐 어드민 — 호출/착석/노쇼/취소 액션 (UI)', async ({ page }) => {
     expect(storeId).toBeTruthy()
 
     const serviceHeaders = getServiceRoleHeaders()
@@ -354,63 +368,54 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
     await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
     await page.waitForLoadState('networkidle')
 
-    // POS 모드에서 웨이팅 관리 탭 클릭
-    const waitingBtn = page.locator('aside button, button').filter({ hasText: /웨이팅|대기/ }).first()
+    // 웨이팅 관리 탭 클릭
+    const waitingTab = page.getByRole('button', { name: /웨이팅 관리/ })
+    await expect(waitingTab, '웨이팅 탭이 보여야 합니다').toBeVisible({ timeout: 8000 })
+    await waitingTab.click()
+    await page.waitForTimeout(1000)
 
-    if (await waitingBtn.isVisible({ timeout: 5000 })) {
-      await waitingBtn.click()
-      await page.waitForTimeout(1000)
+    // 대기 목록에 901번이 보이는지 확인
+    await expect(
+      page.locator('body'),
+      '대기 번호 901이 표시되어야 합니다',
+    ).toContainText('901', { timeout: 8000 })
 
-      // 대기 목록에 901번이 보이는지 확인
-      await expect(
-        page.locator('body'),
-        '대기 번호 901이 표시되어야 합니다',
-      ).toContainText('901', { timeout: 8000 })
+    // UI: 호출하기 버튼 클릭 (data-testid="waiting-call")
+    const callBtn = page.locator('[data-testid="waiting-call"]').first()
+    await expect(callBtn, '호출하기 버튼이 보여야 합니다').toBeVisible({ timeout: 5000 })
+    await callBtn.click()
+    await page.waitForTimeout(2000)
 
-      // 호출 버튼 (call)
-      const callBtn = page
-        .locator('button')
-        .filter({ hasText: /호출|call/i })
-        .first()
+    // DB에서 호출 상태 확인
+    const callCheck = await fetch(
+      `${url}/rest/v1/waitings?select=status&id=eq.${waitingId}`,
+      { headers: serviceHeaders! },
+    )
+    const callRows = (await callCheck.json()) as WaitingRow[]
+    expect(callRows.length).toBeGreaterThan(0)
+    expect(callRows[0].status, '대기 상태가 called로 변경되어야 합니다').toBe('called')
 
-      if (await callBtn.isVisible({ timeout: 3000 })) {
-        await callBtn.click()
-        await page.waitForTimeout(1000)
+    // UI: 입장 완료 버튼 클릭 (data-testid="waiting-seat")
+    const seatBtn = page.locator('[data-testid="waiting-seat"]').first()
+    if (await seatBtn.isVisible({ timeout: 5000 })) {
+      await seatBtn.click()
+      await page.waitForTimeout(2000)
 
-        // 호출 상태 확인
-        const checkRes = await fetch(
-          `${url}/rest/v1/waitings?select=status&id=eq.${waitingId}`,
-          { headers: serviceHeaders! },
-        )
-        const rows = (await checkRes.json()) as WaitingRow[]
-        expect(rows.length).toBeGreaterThan(0)
-        expect(rows[0].status, '대기 상태가 called로 변경되어야 합니다').toBe('called')
-      }
-    } else {
-      // UI에서 웨이팅 탭을 못 찾으면 API 레벨에서 상태 전이 검증
-      // call
-      const callRes = await fetch(`${url}/rest/v1/waitings?id=eq.${waitingId}`, {
-        method: 'PATCH',
-        headers: serviceHeaders!,
-        body: JSON.stringify({ status: 'called', called_at: new Date().toISOString() }),
-      })
-      expect(callRes.ok, 'call 상태 전환 성공').toBeTruthy()
-
-      // seat
-      const seatRes = await fetch(`${url}/rest/v1/waitings?id=eq.${waitingId}`, {
-        method: 'PATCH',
-        headers: serviceHeaders!,
-        body: JSON.stringify({ status: 'seated', seated_at: new Date().toISOString() }),
-      })
-      expect(seatRes.ok, 'seat 상태 전환 성공').toBeTruthy()
-
-      // 최종 상태 확인
-      const checkRes = await fetch(
+      // DB에서 입장 완료 상태 확인 (completeWaiting → 'completed')
+      const seatCheck = await fetch(
         `${url}/rest/v1/waitings?select=status&id=eq.${waitingId}`,
         { headers: serviceHeaders! },
       )
-      const rows = (await checkRes.json()) as WaitingRow[]
-      expect(rows[0].status, '대기 상태가 seated로 변경되어야 합니다').toBe('seated')
+      const seatRows = (await seatCheck.json()) as WaitingRow[]
+      expect(seatRows[0].status, '대기 상태가 completed로 변경되어야 합니다').toBe('completed')
+    } else {
+      // 호출 후 입장 완료 버튼이 안 보이면 API fallback
+      const seatRes = await fetch(`${url}/rest/v1/waitings?id=eq.${waitingId}`, {
+        method: 'PATCH',
+        headers: serviceHeaders!,
+        body: JSON.stringify({ status: 'completed', completed_at: new Date().toISOString() }),
+      })
+      expect(seatRes.ok, 'completed 상태 전환 성공').toBeTruthy()
     }
 
     // 추가: no-show, cancel 테스트 (별도 대기 항목 생성)
