@@ -49,16 +49,6 @@
     "src/types/**/*.d.ts"
   ],
   "exclude": [
-    "node_modules",
-    "src/app/App.tsx",
-    "src/app/routes.tsx",
-    "src/app/pages/**",
-    "src/app/components/Dashboard.tsx",
-    "src/app/components/Sidebar.tsx",
-    "src/app/components/ProtectedRoute.tsx",
-    "src/app/components/SuperAdminRoute.tsx",
-    "src/app/components/figma/**",
-    "src/app/components/StaffCreateModal.tsx",
-    "src/contexts/AuthContext.tsx"
+    "node_modules"
   ]
 }

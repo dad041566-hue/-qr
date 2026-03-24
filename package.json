@@ -4,10 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "build:next": "next build",
-    "dev": "vite",
-    "dev:next": "next dev",
+    "build": "next build",
+    "dev": "next dev",
     "test:e2e": "npx playwright test",
     "test:e2e:report": "npx playwright test && npx playwright show-report test-reports/html",
     "test:report:open": "npx playwright show-report test-reports/html",
@@ -69,7 +67,6 @@
     "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",
     "react-responsive-masonry": "2.7.1",
-    "react-router": "7.13.0",
     "react-slick": "0.31.0",
     "recharts": "2.15.2",
     "sonner": "2.0.3",
@@ -80,25 +77,16 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.2.2",
-    "@tailwindcss/vite": "4.1.12",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "4.7.0",
     "@vitest/coverage-v8": "^4.1.0",
     "@vitest/ui": "^4.1.0",
     "jsdom": "^29.0.1",
     "tailwindcss": "4.1.12",
     "typescript": "^6.0.2",
-    "vite": "6.3.5",
-    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "6.3.5"
-    }
   }
 }
