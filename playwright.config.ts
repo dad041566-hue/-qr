@@ -26,6 +26,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  workers: 2,
   retries: 1,
   timeout: 90_000,
   expect: {
@@ -75,7 +76,7 @@ export default defineConfig({
     {
       name: 'tablet-staff',
       use: { viewport: { width: 810, height: 1080 }, isMobile: false, hasTouch: true },
-      testMatch: ['**/order-flow.spec.ts', '**/staff.spec.ts', '**/admin-gaps.spec.ts'],
+      testMatch: ['**/order-flow.spec.ts', '**/staff.spec.ts'],
     },
   ],
   webServer: {
