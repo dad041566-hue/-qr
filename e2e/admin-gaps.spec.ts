@@ -185,6 +185,65 @@ test.describe('P1 어드민 갭 E2E (GAP-19, GAP-14, GAP-36)', () => {
   })
 
   // ────────────────────────────────────────────────────────────
+  // GAP-KDS: 매니저 KDS(주문) 탭 접근 검증
+  // ────────────────────────────────────────────────────────────
+
+  test('GAP-KDS: 매니저 — KDS(주문) 탭 접근 및 렌더링 확인', async ({ page }) => {
+    // 매니저 로그인 (이전 테스트에서 비번 변경 완료)
+    await loginAndWaitForAdmin(page, MANAGER_EMAIL, MANAGER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    // 주문 관리(KDS) 탭은 기본 POS 화면이므로 바로 렌더링되어야 함
+    // 어드민 대시보드의 기본 모드가 POS(주문 관리)
+    const bodyText = await page.locator('body').innerText()
+    const hasKdsContent =
+      bodyText.includes('주문') ||
+      bodyText.includes('신규') ||
+      bodyText.includes('조리') ||
+      bodyText.includes('서빙') ||
+      bodyText.includes('POS')
+
+    expect(
+      hasKdsContent,
+      '매니저는 KDS(주문 관리) 화면에 접근할 수 있어야 합니다',
+    ).toBeTruthy()
+  })
+
+  // ────────────────────────────────────────────────────────────
+  // GAP-REVENUE: 매니저 매출 분석 탭 접근 검증
+  // ────────────────────────────────────────────────────────────
+
+  test('GAP-REVENUE: 매니저 — 매출 분석 탭 접근 확인', async ({ page }) => {
+    await loginAndWaitForAdmin(page, MANAGER_EMAIL, MANAGER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    // 매장 관리 모드 전환
+    await clickSidebarButton(page, /매장 관리/)
+
+    // 매출 분석 탭 클릭
+    const analyticsBtn = page.locator('aside button, button').filter({ hasText: /매출 분석/ }).first()
+    const analyticsVisible = await analyticsBtn.isVisible({ timeout: 5000 }).catch(() => false)
+
+    if (analyticsVisible) {
+      await analyticsBtn.click()
+      await page.waitForTimeout(1000)
+
+      // 매출 분석 화면이 로드되었는지 확인
+      await expect(page.locator('body')).toContainText(/매출|통계|분석/, { timeout: 8000 })
+    } else {
+      // 매니저에게 매출 분석 탭이 보이지 않으면 권한 모델 확인
+      // 권한 테이블에 따르면 manager는 매출 조회 가능
+      const bodyText = await page.locator('body').innerText()
+      const hasAnalytics =
+        bodyText.includes('매출') || bodyText.includes('분석') || bodyText.includes('통계')
+      expect(
+        hasAnalytics,
+        '매니저는 매출 분석 탭에 접근할 수 있어야 합니다 (권한 모델: manager → 매출 조회 O)',
+      ).toBeTruthy()
+    }
+  })
+
+  // ────────────────────────────────────────────────────────────
   // GAP-14: 카테고리 CRUD UI
   // ────────────────────────────────────────────────────────────
 

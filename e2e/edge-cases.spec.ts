@@ -317,6 +317,52 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
     await restoredCtx.close()
   })
 
+  // ────────────────────────────────────────────────────────────────
+  // UC-SA10: 슈퍼어드민 매장 구독 기간 수정 (UI)
+  // ────────────────────────────────────────────────────────────────
+
+  test('UC-SA10: 슈퍼어드민 — 매장 이용기간 수정 (구독 날짜 변경)', async ({ page }) => {
+    expect(storeId, '이전 테스트에서 storeId가 설정되어야 합니다.').toBeTruthy()
+
+    await login(page, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD)
+    await expect(page).toHaveURL('/superadmin', { timeout: 10000 })
+
+    // 매장 목록에서 해당 매장의 "수정" 버튼 클릭
+    const storeRow = page.locator('tr').filter({ hasText: STORE_NAME })
+    await expect(storeRow).toBeVisible({ timeout: 8000 })
+    await storeRow.locator('button').filter({ hasText: '수정' }).click()
+
+    // 이용기간 수정 다이얼로그 확인
+    await expect(page.locator('text=이용기간 수정')).toBeVisible({ timeout: 5000 })
+
+    // 종료일을 2년 뒤로 변경
+    const twoYearsLater = new Date(Date.now() + 730 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const endInput = page.locator('input[type="date"]').nth(1) // 두 번째 date input = 종료일
+    await endInput.fill(twoYearsLater)
+
+    // 저장 버튼 클릭
+    await page.locator('button').filter({ hasText: '저장' }).click()
+
+    // 성공 toast 확인
+    await expect(page.locator('body')).toContainText(/이용기간이 업데이트되었습니다|업데이트/, { timeout: 8000 })
+
+    // DB에서 변경 확인
+    const serviceHeaders = getServiceRoleHeaders()
+    if (serviceHeaders) {
+      const { url } = getSupabaseConfig()
+      const checkRes = await fetch(
+        `${url}/rest/v1/stores?select=subscription_end&id=eq.${storeId}`,
+        { headers: serviceHeaders },
+      )
+      const rows = (await checkRes.json()) as Array<{ subscription_end: string }>
+      expect(rows.length).toBeGreaterThan(0)
+      expect(
+        rows[0].subscription_end.slice(0, 10),
+        '구독 종료일이 변경되어야 합니다',
+      ).toBe(twoYearsLater)
+    }
+  })
+
   test('SC-034: 약한 비밀번호로 매장 생성 시도 — 실패 확인', async ({ page }) => {
     await login(page, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD)
     await expect(page).toHaveURL('/superadmin', { timeout: 10000 })

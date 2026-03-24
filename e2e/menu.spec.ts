@@ -7,12 +7,14 @@ import {
   deleteStoresWithTestTag,
   deleteStoreBySlug,
   fillDateRange,
+  getSupabaseConfig,
   markStoreTestData,
   login,
   loginAndWaitForAdmin,
   loginAndWaitForPasswordChange,
   requireEnv,
   supabaseGet,
+  supabaseHeaders,
   supabasePost,
 } from './e2e-helpers'
 
@@ -263,6 +265,66 @@ test.describe('메뉴 CRUD E2E (SC-014~SC-019)', () => {
 
     // 판매중인 메뉴가 표시되어야 함
     await expect(page.locator('body')).toContainText('테스트된장찌개', { timeout: 10000 })
+  })
+
+  test('UC-M15: 메뉴 아이템 삭제 (soft-delete) — 관리자 목록 + 고객 화면 미노출', async ({ page }) => {
+    expect(storeId).toBeTruthy()
+    expect(menuItemId2, 'menuItemId2가 설정되어야 합니다.').toBeTruthy()
+    expect(qrToken, 'qrToken이 설정되어야 합니다.').toBeTruthy()
+
+    // 1) owner 로그인 후 API 토큰 획득 + soft-delete 실행
+    await loginAndWaitForAdmin(page, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+
+    const { url } = getSupabaseConfig()
+    const headers = await supabaseHeaders(page)
+
+    const deleteRes = await fetch(
+      `${url}/rest/v1/menu_items?id=eq.${menuItemId2}`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString() }),
+      },
+    )
+    expect(deleteRes.ok, '메뉴 아이템 soft-delete 성공').toBeTruthy()
+
+    // 2) 새 컨텍스트로 로그인 → 메뉴 관리 탭 진입 (fresh 데이터 로드)
+    const adminCtx = await page.context().browser()!.newContext()
+    const adminPage = await adminCtx.newPage()
+    await loginAndWaitForAdmin(adminPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await adminPage.waitForLoadState('networkidle')
+
+    await clickSidebarButton(adminPage, /매장 관리/)
+    await clickSidebarButton(adminPage, /메뉴 관리/)
+    await expect(adminPage.locator('h2').filter({ hasText: '메뉴 관리' })).toBeVisible({ timeout: 5000 })
+
+    // 메뉴 목록 로딩 대기 (최소 다른 메뉴가 보일 때까지)
+    await expect(adminPage.locator('body')).toContainText('₩', { timeout: 15000 })
+
+    // 삭제된 메뉴(테스트된장찌개)가 목록에서 사라졌는지 확인
+    const adminBodyText = await adminPage.locator('body').innerText()
+    expect(
+      adminBodyText.includes('테스트된장찌개'),
+      '삭제된 메뉴 아이템은 관리 목록에 표시되지 않아야 합니다',
+    ).toBeFalsy()
+
+    await adminCtx.close()
+
+    // 3) 고객 QR 메뉴 페이지에서도 미노출 확인
+    const anonCtx = await page.context().browser()!.newContext()
+    const anonPage = await anonCtx.newPage()
+    await anonPage.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await anonPage.waitForLoadState('networkidle')
+    await anonPage.waitForTimeout(3000)
+
+    const customerText = await anonPage.locator('body').innerText()
+    expect(
+      customerText.includes('테스트된장찌개'),
+      '삭제된 메뉴 아이템은 고객 메뉴 페이지에 표시되지 않아야 합니다',
+    ).toBeFalsy()
+
+    await anonCtx.close()
   })
 
   test('SC-021: 점주 매출 분석 탭', async ({ page }) => {
