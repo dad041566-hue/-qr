@@ -6,6 +6,8 @@ import {
   deleteStoresWithTestTag,
   deleteStoreBySlug,
   fillDateRange,
+  getServiceRoleHeaders,
+  getSupabaseConfig,
   markStoreTestData,
   login,
   loginAndWaitForAdmin,
@@ -30,6 +32,8 @@ const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().
 
 let qrToken = ''
 let storeId = ''
+let optionGroupId = ''
+let optionChoiceId = ''
 
 type StoreRow = { id: string }
 type TableRow = { id: string; qr_token: string }
@@ -96,6 +100,146 @@ test.describe('고객 장바구니 E2E (SC-022, SC-023)', () => {
       sort_order: 1,
     })
     expect(itemRows.length).toBeGreaterThan(0)
+    const menuItemId = itemRows[0].id
+
+    // 옵션 그룹 + 선택지 seed (service role 필요)
+    const serviceHeaders = getServiceRoleHeaders()
+    if (serviceHeaders) {
+      const { url } = getSupabaseConfig()
+
+      const optGroupRes = await fetch(`${url}/rest/v1/option_groups`, {
+        method: 'POST',
+        headers: { ...serviceHeaders, Prefer: 'return=representation' },
+        body: JSON.stringify({
+          store_id: storeId,
+          menu_item_id: menuItemId,
+          name: '사이즈 선택',
+          is_required: false,
+          sort_order: 1,
+        }),
+      })
+      if (optGroupRes.ok) {
+        const optGroupRows = (await optGroupRes.json()) as SeedRow[]
+        optionGroupId = optGroupRows[0].id
+
+        const optChoiceRes = await fetch(`${url}/rest/v1/option_choices`, {
+          method: 'POST',
+          headers: { ...serviceHeaders, Prefer: 'return=representation' },
+          body: JSON.stringify({
+            store_id: storeId,
+            option_group_id: optionGroupId,
+            name: '라지 사이즈',
+            extra_price: 2000,
+            sort_order: 1,
+          }),
+        })
+        if (optChoiceRes.ok) {
+          const optChoiceRows = (await optChoiceRes.json()) as SeedRow[]
+          optionChoiceId = optChoiceRows[0].id
+        }
+      }
+    }
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // UC-C07~C08: 옵션 선택 모달 진입/UI
+  // ────────────────────────────────────────────────────────────────
+
+  test('UC-C07~C08: 옵션 선택 모달 — 메뉴 아이템 클릭 시 옵션 그룹 표시 및 선택', async ({ page }) => {
+    expect(qrToken, 'qrToken이 설정되어야 합니다.').toBeTruthy()
+    test.skip(!optionChoiceId, 'SUPABASE_SERVICE_ROLE_KEY 없어 옵션 seed 불가 — skip')
+
+    await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000) // splash screen dismiss
+
+    // 메뉴 카드 클릭 → 상세/옵션 모달 열기
+    const menuCard = page.locator('[data-testid="menu-card"]').first()
+    await expect(menuCard, '메뉴 카드가 보여야 합니다.').toBeVisible({ timeout: 10000 })
+    await menuCard.click()
+
+    // 옵션 그룹명이 모달에 표시되어야 함
+    await expect(page.locator('body')).toContainText('사이즈 선택', { timeout: 5000 })
+
+    // 옵션 선택지(라지 사이즈) 버튼이 표시되어야 함
+    const optionBtn = page.locator('button').filter({ hasText: '라지 사이즈' }).first()
+    await expect(optionBtn, '옵션 선택지 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+
+    // 옵션 선택 클릭
+    await optionBtn.click()
+    await page.waitForTimeout(500)
+
+    // 담기 버튼 클릭 → 장바구니에 옵션 포함 아이템 추가
+    const addBtn = page.getByRole('button', { name: /원 담기/ })
+    await expect(addBtn, '담기 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+    await addBtn.click()
+    await page.waitForTimeout(500)
+
+    // 장바구니 열기 → 옵션 포함 가격 확인
+    const cartBtn = page.getByRole('button', { name: /주문 확인|장바구니/ }).first()
+    await expect(cartBtn, '주문 확인 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+    await cartBtn.click()
+    await page.waitForTimeout(500)
+
+    // 장바구니에 옵션명이 표시되어야 함
+    await expect(page.locator('body')).toContainText('라지 사이즈', { timeout: 5000 })
+
+    // 장바구니에 옵션 포함 가격 확인 (10000 + 2000 = 12000)
+    const cartBody = await page.locator('body').innerText()
+    expect(
+      cartBody.includes('12,000') || cartBody.includes('12000'),
+      `장바구니에 옵션 포함 가격 12,000원이 표시되어야 합니다.`,
+    ).toBeTruthy()
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // UC-C12~C13: 아이템 수량 설정 + 장바구니 추가
+  // ────────────────────────────────────────────────────────────────
+
+  test('UC-C12~C13: 아이템 수량 설정 + 장바구니 추가 — 모달에서 수량 변경 후 담기', async ({ page }) => {
+    expect(qrToken, 'qrToken이 설정되어야 합니다.').toBeTruthy()
+
+    await page.goto(`/m/${STORE_SLUG}/${qrToken}`)
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000) // splash screen dismiss
+
+    // 메뉴 카드 클릭 → 모달 열기
+    const menuCard = page.locator('[data-testid="menu-card"]').first()
+    await expect(menuCard, '메뉴 카드가 보여야 합니다.').toBeVisible({ timeout: 10000 })
+    await menuCard.click()
+
+    // 모달 내 수량 조절 영역 확인 — 수량 컨트롤은 flex rounded-full 컨테이너
+    const qtyControlRow = page.locator('div.flex.items-center.gap-3').first()
+    const increaseBtn = qtyControlRow.locator('button').last()
+
+    // 수량 증가 버튼이 있으면 클릭하여 수량 2로 변경
+    if (await increaseBtn.isVisible({ timeout: 3000 })) {
+      await increaseBtn.click()
+      await page.waitForTimeout(500)
+
+      // 담기 버튼에 수량 2 반영 가격 표시 확인 (10000 * 2 = 20000)
+      const addBtn = page.getByRole('button', { name: /원 담기/ })
+      const addBtnText = await addBtn.innerText()
+      expect(
+        addBtnText.includes('20,000') || addBtnText.includes('20000'),
+        `수량 2일 때 담기 버튼에 20,000원이 표시되어야 합니다. 실제: ${addBtnText}`,
+      ).toBeTruthy()
+    }
+
+    // 담기 버튼 클릭 → 장바구니에 추가
+    const addToCartBtn = page.getByRole('button', { name: /원 담기/ })
+    await expect(addToCartBtn, '담기 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+    await addToCartBtn.click()
+    await page.waitForTimeout(500)
+
+    // 장바구니(주문 확인) 버튼이 나타나야 함
+    const cartBtn = page.getByRole('button', { name: /주문 확인|장바구니/ }).first()
+    await expect(cartBtn, '장바구니 버튼이 보여야 합니다.').toBeVisible({ timeout: 5000 })
+    await cartBtn.click()
+    await page.waitForTimeout(500)
+
+    // 장바구니 시트에 메뉴 아이템이 표시되어야 함
+    await expect(page.locator('body')).toContainText('테스트메뉴아이템', { timeout: 5000 })
   })
 
   test('SC-022: 장바구니 수량 변경 — +/- 버튼으로 수량 업데이트', async ({ page }) => {

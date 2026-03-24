@@ -10,6 +10,7 @@ import {
   markStoreTestData,
   requireEnv,
   getSupabaseConfig,
+  getServiceRoleHeaders,
   supabaseGet,
   supabaseHeaders,
   supabasePost,
@@ -209,6 +210,111 @@ test.describe('엣지 케이스 E2E (SC-033, SC-038)', () => {
       body: JSON.stringify({ is_active: true }),
     })
     expect(reactivateRes.ok).toBeTruthy()
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // UC-SA09: 기간 연장 후 만료 매장 복구
+  // ────────────────────────────────────────────────────────────────
+
+  test('UC-SA09: 기간 연장 — 만료 매장의 subscription_end 연장 후 점주 정상 접근', async ({ page }) => {
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    expect(storeId, '이전 테스트에서 storeId가 설정되어야 합니다.').toBeTruthy()
+
+    const { url } = getSupabaseConfig()
+
+    // 1) 매장을 만료 상태로 설정
+    const expireRes = await fetch(`${url}/rest/v1/stores?id=eq.${storeId}`, {
+      method: 'PATCH',
+      headers: serviceHeaders!,
+      body: JSON.stringify({ subscription_end: '2025-01-01' }),
+    })
+    expect(expireRes.ok, `만료 PATCH 실패: ${expireRes.status}`).toBeTruthy()
+
+    // 2) 만료 상태에서 점주 로그인 시 차단 확인
+    const expiredCtx = await page.context().browser()!.newContext()
+    const expiredPage = await expiredCtx.newPage()
+    await login(expiredPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await expect(expiredPage).toHaveURL('/admin', { timeout: 15000 })
+    await expiredPage.waitForLoadState('networkidle')
+    await expect(expiredPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await expiredCtx.close()
+
+    // 3) 슈퍼어드민이 기간 연장 (subscription_end를 미래로)
+    const futureDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const extendRes = await fetch(`${url}/rest/v1/stores?id=eq.${storeId}`, {
+      method: 'PATCH',
+      headers: serviceHeaders!,
+      body: JSON.stringify({ subscription_end: futureDate }),
+    })
+    expect(extendRes.ok, `기간 연장 PATCH 실패: ${extendRes.status}`).toBeTruthy()
+
+    // 4) 기간 연장 후 점주 정상 접근 확인
+    const restoredCtx = await page.context().browser()!.newContext()
+    const restoredPage = await restoredCtx.newPage()
+    await loginAndWaitForAdmin(restoredPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await restoredPage.waitForLoadState('networkidle')
+
+    // 만료 메시지가 없어야 함
+    const bodyText = await restoredPage.locator('body').innerText()
+    expect(
+      bodyText.includes('이용 기간이 만료되었습니다.'),
+      '기간 연장 후 만료 메시지가 표시되지 않아야 합니다.',
+    ).toBeFalsy()
+    await restoredCtx.close()
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // UC-SA08: 강제 정지 해제 후 복구
+  // ────────────────────────────────────────────────────────────────
+
+  test('UC-SA08: 강제 정지 해제 — is_active=false→true 후 점주 정상 접근', async ({ page }) => {
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    expect(storeId, '이전 테스트에서 storeId가 설정되어야 합니다.').toBeTruthy()
+
+    const { url } = getSupabaseConfig()
+
+    // 1) 매장 강제 정지
+    const suspendRes = await fetch(`${url}/rest/v1/stores?id=eq.${storeId}`, {
+      method: 'PATCH',
+      headers: serviceHeaders!,
+      body: JSON.stringify({ is_active: false }),
+    })
+    expect(suspendRes.ok, `강제 정지 PATCH 실패: ${suspendRes.status}`).toBeTruthy()
+
+    // 2) 강제 정지 상태에서 점주 차단 확인
+    const suspendedCtx = await page.context().browser()!.newContext()
+    const suspendedPage = await suspendedCtx.newPage()
+    await login(suspendedPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await expect(suspendedPage).toHaveURL('/admin', { timeout: 15000 })
+    await suspendedPage.waitForLoadState('networkidle')
+    await expect(suspendedPage.locator('body')).toContainText('이용 기간이 만료되었습니다.', { timeout: 15000 })
+    await suspendedCtx.close()
+
+    // 3) 강제 정지 해제
+    const reactivateRes = await fetch(`${url}/rest/v1/stores?id=eq.${storeId}`, {
+      method: 'PATCH',
+      headers: serviceHeaders!,
+      body: JSON.stringify({ is_active: true }),
+    })
+    expect(reactivateRes.ok, `강제 정지 해제 PATCH 실패: ${reactivateRes.status}`).toBeTruthy()
+
+    // 4) 해제 후 점주 정상 접근 확인
+    const restoredCtx = await page.context().browser()!.newContext()
+    const restoredPage = await restoredCtx.newPage()
+    await loginAndWaitForAdmin(restoredPage, OWNER_EMAIL, OWNER_NEW_PASSWORD)
+    await restoredPage.waitForLoadState('networkidle')
+
+    // 만료 메시지가 없어야 함
+    const bodyText = await restoredPage.locator('body').innerText()
+    expect(
+      bodyText.includes('이용 기간이 만료되었습니다.'),
+      '강제 정지 해제 후 만료 메시지가 표시되지 않아야 합니다.',
+    ).toBeFalsy()
+    await restoredCtx.close()
   })
 
   test('SC-034: 약한 비밀번호로 매장 생성 시도 — 실패 확인', async ({ page }) => {
