@@ -130,7 +130,11 @@ export function useOrders(storeId: string | null) {
         for (const order of fresh) {
           notifyIfNew(order)
         }
-      } catch (err) {
+      } catch (err: any) {
+        // 401/403 = JWT 만료 → 세션 갱신 시도
+        if (err?.status === 401 || err?.status === 403 || err?.message?.includes('JWT')) {
+          await supabase.auth.refreshSession()
+        }
         console.error('useOrders poll:', err)
       }
     }, 1500)

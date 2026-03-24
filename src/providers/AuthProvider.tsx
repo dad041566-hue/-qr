@@ -73,7 +73,16 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
     refreshStoreUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (_event === 'USER_UPDATED' || _event === 'TOKEN_REFRESHED') {
+      if (_event === 'TOKEN_REFRESHED') {
+        // 토큰 갱신 시 사용자 상태도 동기화 (역할 변경 등 반영)
+        if (session?.user) {
+          const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
+          setUser(storeUser)
+        }
+        setLoading(false)
+        return
+      }
+      if (_event === 'USER_UPDATED') {
         setLoading(false)
         return
       }
@@ -87,7 +96,24 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // 탭이 백그라운드에서 돌아올 때 세션 갱신 (POS 장시간 사용 대응)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            fetchStoreUser(authUser.id, authUser.email ?? '').then((storeUser) => {
+              if (storeUser) setUser(storeUser)
+            })
+          }
+        }).catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [supabase, refreshStoreUser, fetchStoreUser])
 
   async function signInWithEmail(email: string, password: string) {
