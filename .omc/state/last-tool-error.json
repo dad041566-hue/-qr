@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"D:/Project/-qr\\\" && npx playwright test e2e/edge-cases.spec.ts -g \\\"SC-038\\\" --reporter=list 2>&1\",\"timeout\":120000}",
-  "error": "Exit code 1\n\nRunning 9 tests using 1 worker\n\n[teardown] SUPABASE_SERVICE_ROLE_KEY not set — skipping test tag for slug: edge-test-1773681835262\n  ✓  1 e2e\\edge-cases.spec.ts:104:3 › 엣지 케이스 E2E (SC-033, SC-038) › 1. 슈퍼어드민 — 매장 생성 (3.7s)\n  ✓  2 e2e\\edge-cases.spec.ts:122:3 › 엣지 케이스 E2E (SC-033, SC-038) › 2. 점주 첫 로그인 → 비번 변경 (2.5s)\n  ✓  3 e2e\\edge-cases.spec.ts:127:3 › 엣지 케이스 E2E (SC-033, SC-038) › 3. 매장/테이블 정보 추출 (2.0s)\n  -  4 e2e\\edge-cases.spec.ts:147:3 › 엣지 케이스 E2E (SC-033, SC-038) › SC-007: 만료...",
-  "timestamp": "2026-03-16T17:25:14.151Z",
+  "tool_input_preview": "{\"command\":\"git checkout --theirs .omc/project-memory.json .omc/state/hud-state.json .omc/state/last-tool-error.json && git add .omc/ .env.example && git rebase --continue\",\"description\":\"Resolve .omc...",
+  "error": "Exit code 1\nUpdated 3 paths from the index\nYou must edit all merge conflicts and then\nmark them as resolved using git add",
+  "timestamp": "2026-03-27T09:51:06.414Z",
   "retry_count": 2
 }
