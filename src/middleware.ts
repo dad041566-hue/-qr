@@ -30,6 +30,11 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
+  // 루트 → 로그인 리다이렉트 (로그인 상태면 admin으로)
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL(user ? '/admin' : '/login', request.url))
+  }
+
   // Protected routes
   if (!user && (pathname.startsWith('/admin') || pathname === '/change-password')) {
     return NextResponse.redirect(new URL('/login', request.url))
@@ -49,5 +54,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/change-password', '/superadmin/:path*'],
+  matcher: ['/', '/admin/:path*', '/change-password', '/superadmin/:path*'],
 }
