@@ -96,8 +96,8 @@ export async function fillDateRange(page: Page, startDate: string, endDate: stri
 }
 
 export function getSupabaseConfig() {
-  const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL
-  const anonKey = process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY
 
   if (!url || !anonKey) {
     throw new Error('Supabase env not configured.')
@@ -119,7 +119,7 @@ async function getAccessToken(page: Page): Promise<string | null> {
     } catch { /* fall through to localStorage */ }
   }
 
-  // 2. Fallback to localStorage (Vite / older Supabase client)
+  // 2. Fallback to localStorage (older Supabase client)
   return await page.evaluate(() => {
     const keys = Object.keys(localStorage)
     const sessionKey = keys.find((k) => k.includes('auth-token') || k.includes('supabase'))

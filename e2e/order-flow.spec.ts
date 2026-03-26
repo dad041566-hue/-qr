@@ -22,16 +22,16 @@ if (!SUPERADMIN_EMAIL || !SUPERADMIN_PASSWORD) {
   throw new Error('TEST_SUPERADMIN_EMAIL and TEST_SUPERADMIN_PASSWORD must be set.')
 }
 if (
-  !process.env.VITE_SUPABASE_URL &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.SUPABASE_URL
 ) {
-  throw new Error('VITE_SUPABASE_URL (or SUPABASE_URL) must be set.')
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) must be set.')
 }
 if (
-  !process.env.VITE_SUPABASE_ANON_KEY &&
+  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
   !process.env.SUPABASE_ANON_KEY
 ) {
-  throw new Error('VITE_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY) must be set.')
+  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY) must be set.')
 }
 
 const ts = Date.now()
