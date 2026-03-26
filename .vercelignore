@@ -1,0 +1,8 @@
+dist/
+dist-ssr/
+.next/
+node_modules/
+.venv/
+test-results/
+.omc/
+.omx/
