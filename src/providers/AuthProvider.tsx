@@ -26,6 +26,20 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient())
 
   const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string): Promise<StoreUserWithFirstLogin | null> => {
+    // Check if the user is a super_admin (no store membership needed)
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser?.app_metadata?.role === 'super_admin') {
+      setIsFirstLogin(false)
+      return {
+        id: supabaseUserId,
+        email,
+        isFirstLogin: false,
+        role: 'owner' as StoreUser['role'],
+        storeId: '',
+        storeName: 'SuperAdmin',
+      }
+    }
+
     const { data, error } = await supabase
       .from('store_members')
       .select('role, store_id, is_first_login, stores(name)')

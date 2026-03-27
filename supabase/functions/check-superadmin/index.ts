@@ -6,6 +6,8 @@ function getAllowedOrigin(req: Request): string {
   const allowed = [
     'https://tableflow.com',
     'https://www.tableflow.com',
+    'https://tabledotflow.com',
+    'https://www.tabledotflow.com',
   ]
   // Allow localhost in development
   if (origin.startsWith('http://localhost:')) allowed.push(origin)

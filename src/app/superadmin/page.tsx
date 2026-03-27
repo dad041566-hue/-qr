@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Building2, Plus, Pencil, LogOut, Utensils } from 'lucide-react'
+import { Building2, Plus, Pencil, LogOut, Utensils, RefreshCw, Copy } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
@@ -33,6 +33,16 @@ type StoreWithSub = StoreRow
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,}$/
+
+function generateTempPassword(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  const specials = '!@#$%&*'
+  const values = crypto.getRandomValues(new Uint8Array(8))
+  const password = Array.from(values.slice(0, 7), (v) => chars[v % chars.length]).join('')
+  const special = specials[values[7] % specials.length]
+  const insertAt = Math.floor(Math.random() * (password.length + 1))
+  return password.slice(0, insertAt) + special + password.slice(insertAt)
+}
 
 function normalizeSlug(value: string): string {
   return value
@@ -343,7 +353,7 @@ interface AddStoreForm {
 }
 
 function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
-  const [form, setForm] = useState<AddStoreForm>({
+  const [form, setForm] = useState<AddStoreForm>(() => ({
     name: '',
     slug: '',
     address: '',
@@ -351,8 +361,8 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
     subscriptionStart: '',
     subscriptionEnd: '',
     ownerEmail: '',
-    ownerPassword: '',
-  })
+    ownerPassword: generateTempPassword(),
+  }))
   const [loading, setLoading] = useState(false)
 
   function handleChange(field: keyof AddStoreForm, value: string) {
@@ -408,7 +418,7 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
       setForm({
         name: '', slug: '', address: '', phone: '',
         subscriptionStart: '', subscriptionEnd: '',
-        ownerEmail: '', ownerPassword: '',
+        ownerEmail: '', ownerPassword: generateTempPassword(),
       })
       onCreated()
       onTabChange('stores')
@@ -501,13 +511,39 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-600">임시 비밀번호 *</label>
-            <Input
-              type="password"
-              placeholder="8자 이상"
-              value={form.ownerPassword}
-              onChange={(e) => handleChange('ownerPassword', e.target.value)}
-              required
-            />
+            <div className="flex gap-1.5">
+              <Input
+                type="text"
+                value={form.ownerPassword}
+                onChange={(e) => handleChange('ownerPassword', e.target.value)}
+                className="font-mono text-sm"
+                required
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0 px-2"
+                title="새로 생성"
+                onClick={() => handleChange('ownerPassword', generateTempPassword())}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0 px-2"
+                title="복사"
+                onClick={() => {
+                  navigator.clipboard.writeText(form.ownerPassword)
+                  toast.success('임시 비밀번호가 복사되었습니다.')
+                }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-zinc-400">자동 생성됨 · 첫 로그인 시 변경 필요</p>
           </div>
         </div>
 
