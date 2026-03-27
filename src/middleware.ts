@@ -30,9 +30,17 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // 루트 → 로그인 리다이렉트 (로그인 상태면 admin으로)
+  const isSuperAdmin = user?.app_metadata?.role === 'super_admin'
+
+  // 루트 → 로그인 리다이렉트 (super_admin은 /superadmin으로)
   if (pathname === '/') {
-    return NextResponse.redirect(new URL(user ? '/admin' : '/login', request.url))
+    if (!user) return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL(isSuperAdmin ? '/superadmin' : '/admin', request.url))
+  }
+
+  // super_admin이 /admin 접근 시 /superadmin으로 리다이렉트
+  if (isSuperAdmin && pathname.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/superadmin', request.url))
   }
 
   // Protected routes
