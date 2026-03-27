@@ -25,10 +25,9 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
   const [isFirstLogin, setIsFirstLogin] = useState(false)
   const [supabase] = useState(() => createClient())
 
-  const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string): Promise<StoreUserWithFirstLogin | null> => {
-    // Check if the user is a super_admin (no store membership needed)
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (authUser?.app_metadata?.role === 'super_admin') {
+  const fetchStoreUser = useCallback(async (supabaseUserId: string, email: string, appMetadata?: Record<string, unknown>): Promise<StoreUserWithFirstLogin | null> => {
+    // super_admin은 매장 소속 없이 바로 통과
+    if (appMetadata?.role === 'super_admin') {
       setIsFirstLogin(false)
       return {
         id: supabaseUserId,
@@ -72,7 +71,7 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      const storeUser = await fetchStoreUser(user.id, user.email ?? '')
+      const storeUser = await fetchStoreUser(user.id, user.email ?? '', user.app_metadata)
       setUser(storeUser)
       setLoading(false)
       return storeUser
@@ -90,7 +89,7 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
       if (_event === 'TOKEN_REFRESHED') {
         // 토큰 갱신 시 사용자 상태도 동기화 (역할 변경 등 반영)
         if (session?.user) {
-          const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
+          const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '', session.user.app_metadata)
           setUser(storeUser)
         }
         setLoading(false)
@@ -101,7 +100,7 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       if (session?.user) {
-        const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '')
+        const storeUser = await fetchStoreUser(session.user.id, session.user.email ?? '', session.user.app_metadata)
         setUser(storeUser)
       } else {
         setUser(null)
@@ -115,7 +114,7 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
       if (document.visibilityState === 'visible') {
         supabase.auth.getUser().then(({ data: { user: authUser } }) => {
           if (authUser) {
-            fetchStoreUser(authUser.id, authUser.email ?? '').then((storeUser) => {
+            fetchStoreUser(authUser.id, authUser.email ?? '', authUser.app_metadata).then((storeUser) => {
               if (storeUser) setUser(storeUser)
             })
           }
