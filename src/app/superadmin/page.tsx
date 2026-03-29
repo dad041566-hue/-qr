@@ -27,20 +27,25 @@ import { createClient } from '@/lib/supabase/client'
 import type { StoreRow } from '@/types/database'
 import { getKstDateString } from '@/lib/utils/subscription'
 
-// StoreRow already includes subscription_start, subscription_end, is_active
-type StoreWithSub = StoreRow
 
 const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,}$/
 
+function randomIndex(max: number): number {
+  if (max <= 0) throw new RangeError('randomIndex: max must be > 0')
+  const limit = Math.floor(256 / max) * max
+  let v: number
+  do { v = crypto.getRandomValues(new Uint8Array(1))[0] } while (v >= limit)
+  return v % max
+}
+
 function generateTempPassword(): string {
   const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
   const specials = '!@#$%&*'
-  const values = crypto.getRandomValues(new Uint8Array(8))
-  const password = Array.from(values.slice(0, 7), (v) => chars[v % chars.length]).join('')
-  const special = specials[values[7] % specials.length]
-  const insertAt = Math.floor(Math.random() * (password.length + 1))
+  const password = Array.from({ length: 7 }, () => chars[randomIndex(chars.length)]).join('')
+  const special = specials[randomIndex(specials.length)]
+  const insertAt = randomIndex(password.length + 1)
   return password.slice(0, insertAt) + special + password.slice(insertAt)
 }
 
@@ -52,7 +57,7 @@ function normalizeSlug(value: string): string {
     .replace(/[^a-z0-9-]/g, '')
 }
 
-function getStoreStatus(store: StoreWithSub): 'active' | 'expired' | 'inactive' {
+function getStoreStatus(store: StoreRow): 'active' | 'expired' | 'inactive' {
   if (!store.is_active) return 'inactive'
   if (!store.subscription_end) return 'active'
   return store.subscription_end >= getKstDateString() ? 'active' : 'expired'
@@ -82,7 +87,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('로그인이 필요합니다.')
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('로그인이 필요합니다.')
+  if (!session) throw new Error('세션이 만료되었습니다.')
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${session.access_token}`,
@@ -120,8 +125,8 @@ interface CreateStoreWithOwnerParams {
   ownerPassword: string
 }
 
-async function getAllStores(): Promise<StoreWithSub[]> {
-  return callSuperadmin<StoreWithSub[]>('list-stores')
+async function getAllStores(): Promise<StoreRow[]> {
+  return callSuperadmin<StoreRow[]>('list-stores')
 }
 
 async function updateStoreSubscription(params: {
@@ -157,7 +162,7 @@ async function createStoreWithOwner(params: CreateStoreWithOwnerParams): Promise
 // ============================================================
 
 interface SubEditDialogProps {
-  store: StoreWithSub | null
+  store: StoreRow | null
   onClose: () => void
   onSaved: () => void
 }
@@ -251,9 +256,9 @@ function SubEditDialog({ store, onClose, onSaved }: SubEditDialogProps) {
 // ============================================================
 
 interface StoreListTabProps {
-  stores: StoreWithSub[]
+  stores: StoreRow[]
   loading: boolean
-  onEdit: (store: StoreWithSub) => void
+  onEdit: (store: StoreRow) => void
   onAddClick: () => void
 }
 
@@ -517,6 +522,8 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
                 value={form.ownerPassword}
                 onChange={(e) => handleChange('ownerPassword', e.target.value)}
                 className="font-mono text-sm"
+                autoComplete="off"
+                autoCorrect="off"
                 required
               />
               <Button
@@ -535,9 +542,13 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
                 variant="outline"
                 className="shrink-0 px-2"
                 title="복사"
-                onClick={() => {
-                  navigator.clipboard.writeText(form.ownerPassword)
-                  toast.success('임시 비밀번호가 복사되었습니다.')
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(form.ownerPassword)
+                    toast.success('임시 비밀번호가 복사되었습니다.')
+                  } catch {
+                    toast.error('클립보드 복사에 실패했습니다.')
+                  }
                 }}
               >
                 <Copy className="w-4 h-4" />
@@ -565,16 +576,16 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
 
 export default function SuperAdminPage() {
   const { user, signOut } = useAuth()
-  const [stores, setStores] = useState<StoreWithSub[]>([])
+  const [stores, setStores] = useState<StoreRow[]>([])
   const [listLoading, setListLoading] = useState(true)
-  const [editingStore, setEditingStore] = useState<StoreWithSub | null>(null)
+  const [editingStore, setEditingStore] = useState<StoreRow | null>(null)
   const [activeTab, setActiveTab] = useState('stores')
 
   async function loadStores() {
     setListLoading(true)
     try {
       const data = await getAllStores()
-      setStores(data as StoreWithSub[])
+      setStores(data as StoreRow[])
     } catch (err: unknown) {
       const e = err as { message?: string }
       toast.error(e?.message ?? '매장 목록을 불러오지 못했습니다.')

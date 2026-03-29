@@ -1,26 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-function getAllowedOrigin(req: Request): string {
-  const origin = req.headers.get('origin') ?? ''
-  const allowed = [
-    'https://tableflow.com',
-    'https://www.tableflow.com',
-    'https://tabledotflow.com',
-    'https://www.tabledotflow.com',
-  ]
-  // Allow localhost in development
-  if (origin.startsWith('http://localhost:')) allowed.push(origin)
-  return allowed.includes(origin) ? origin : allowed[0]
-}
-
-function corsHeaders(req: Request) {
-  return {
-    'Access-Control-Allow-Origin': getAllowedOrigin(req),
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  }
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 function json(data: unknown, init: ResponseInit = {}, req?: Request) {
   return new Response(JSON.stringify(data), {

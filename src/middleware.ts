@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    if (user.app_metadata?.role !== 'super_admin') {
+    if (!isSuperAdmin) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
