@@ -10,7 +10,7 @@ import type { StoreRow, TableRow, MenuCategoryRow, SelectedOption } from '@/type
 export interface MenuItemOption {
   name: string
   required: boolean
-  choices: { name: string; price: number }[]
+  choices: { id: string; name: string; price: number }[]
 }
 
 export interface MenuItem {
@@ -45,6 +45,7 @@ type CartItem = {
   price: number
   qty: number
   options: string[]
+  selectedOptions: SelectedOption[]
   image: string
 }
 
@@ -74,6 +75,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
   const [selectedOptions, setSelectedOptions] = useState<{ [key: string]: string }>({})
   const [itemQuantity, setItemQuantity] = useState(1)
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [user, setUser] = useState<{ name: string; points: number } | null>(null)
   const [showSplash, setShowSplash] = useState(true)
 
@@ -148,14 +150,21 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
     if (!selectedItem) return
     let extraPrice = 0
     const optionStrings: string[] = []
+    const optionsForOrder: SelectedOption[] = []
     if (selectedItem.options) {
       selectedItem.options.forEach((opt) => {
-        const choice = selectedOptions[opt.name]
-        if (choice) {
-          const choiceObj = opt.choices.find((c) => c.name === choice)
+        const choiceName = selectedOptions[opt.name]
+        if (choiceName) {
+          const choiceObj = opt.choices.find((c) => c.name === choiceName)
           if (choiceObj) {
             extraPrice += choiceObj.price
-            optionStrings.push(`${opt.name}: ${choice}`)
+            optionStrings.push(`${opt.name}: ${choiceName}`)
+            optionsForOrder.push({
+              option_choice_id: choiceObj.id,
+              group: opt.name,
+              choice: choiceName,
+              extra_price: choiceObj.price,
+            })
           }
         }
       })
@@ -167,6 +176,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       price: selectedItem.price + extraPrice,
       qty: itemQuantity,
       options: optionStrings,
+      selectedOptions: optionsForOrder,
       image: selectedItem.image,
     }
     setCart((prev) => [...prev, cartItem])
@@ -183,7 +193,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
   }
 
   const handleOrder = async () => {
-    if (totalItems === 0) return
+    if (totalItems === 0 || isSubmitting) return
+    setIsSubmitting(true)
     try {
       const supabase = createClient()
       const rpcArgs = {
@@ -193,11 +204,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
           menu_item_id: item.id,
           menu_item_name: item.name,
           quantity: item.qty,
-          selected_options: item.options.length > 0
-            ? item.options.map((opt) => {
-                const [group, choice] = opt.split(': ')
-                return { group, choice, extra_price: 0 } as SelectedOption
-              })
+          selected_options: item.selectedOptions.length > 0
+            ? item.selectedOptions
             : null,
         })),
       }
@@ -230,6 +238,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       setIsCartOpen(false)
     } catch {
       toast.error('주문에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -485,7 +495,12 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
 
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-zinc-100 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10 pb-safe">
                   <button onClick={addToCart} className="w-full bg-orange-500 text-white py-4 sm:py-5 rounded-2xl font-black text-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-[0.98]">
-                    <ShoppingBag className="w-5 h-5" /> {(selectedItem.price * itemQuantity).toLocaleString()}원 담기
+                    <ShoppingBag className="w-5 h-5" /> {((selectedItem.price + (selectedItem.options ?? []).reduce((sum, opt) => {
+                      const chosen = selectedOptions[opt.name]
+                      if (!chosen) return sum
+                      const choiceObj = opt.choices.find((c) => c.name === chosen)
+                      return sum + (choiceObj?.price ?? 0)
+                    }, 0)) * itemQuantity).toLocaleString()}원 담기
                   </button>
                 </div>
               </motion.div>
@@ -545,8 +560,12 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                     <span className="text-zinc-500 font-bold text-lg">총 주문금액</span>
                     <span className="text-3xl font-black text-zinc-900 tracking-tight">₩{totalPrice.toLocaleString()}</span>
                   </div>
-                  <button onClick={handleOrder} className="w-full bg-orange-500 text-white py-5 rounded-2xl font-black text-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-[0.98]">
-                    <ShoppingBag className="w-6 h-6" /> 주문하기
+                  <button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 text-white py-5 rounded-2xl font-black text-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isSubmitting ? (
+                      <><span className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> 주문 처리중...</>
+                    ) : (
+                      <><ShoppingBag className="w-6 h-6" /> 주문하기</>
+                    )}
                   </button>
                 </div>
               </motion.div>

@@ -56,8 +56,8 @@ export async function completeWaitingAction(waitingId: string): Promise<void> {
   const { error } = await sb
     .from('waitings')
     .update({
-      status: 'seated',
-      seated_at: new Date().toISOString(),
+      status: 'completed',
+      completed_at: new Date().toISOString(),
     })
     .eq('id', waitingId)
 

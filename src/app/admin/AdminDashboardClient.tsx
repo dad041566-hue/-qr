@@ -53,7 +53,7 @@ import type { StaffCallOption } from '@/app/components/admin/panels/SettingsPane
 
 export default function AdminDashboardClient() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isFirstLogin } = useAuth()
   const storeId = user?.storeId ?? ''
 
   // --- Notification permission ---
@@ -95,7 +95,7 @@ export default function AdminDashboardClient() {
     removeMenuItem: apiRemoveMenuItem,
   } = useMenuAdmin(storeId || null)
 
-  const { waitings: rawWaitings } = useWaitingQueue(storeId)
+  const { waitings: rawWaitings } = useWaitingQueue(storeId || null)
 
   // --- Lookup maps ---
   const tableNumberMap = useMemo(() => {
@@ -563,6 +563,11 @@ export default function AdminDashboardClient() {
         <span className="text-zinc-500 font-bold">로딩 중...</span>
       </div>
     )
+  }
+
+  if (isFirstLogin) {
+    window.location.href = '/change-password'
+    return null
   }
 
   if (storeExpired) {
