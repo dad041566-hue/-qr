@@ -137,7 +137,7 @@ export function useOrders(storeId: string | null) {
         }
         console.error('useOrders poll:', err)
       }
-    }, 1500)
+    }, 30000)
 
     return () => {
       supabase.removeChannel(channel)

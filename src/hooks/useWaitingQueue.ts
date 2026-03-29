@@ -7,12 +7,13 @@ const supabase = _supabase as any
 import { getWaitings } from '@/lib/api/waiting'
 import type { WaitingRow } from '@/types/database'
 
-export function useWaitingQueue(storeId: string) {
+export function useWaitingQueue(storeId: string | null) {
   const [waitings, setWaitings] = useState<WaitingRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
+    if (!storeId) return
     try {
       const data = await getWaitings(storeId)
       setWaitings(data)

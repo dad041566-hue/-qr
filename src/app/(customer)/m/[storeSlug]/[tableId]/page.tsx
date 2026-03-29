@@ -76,6 +76,7 @@ export default async function CustomerMenuPage({ params }: Props) {
             name: group.name,
             required: group.is_required,
             choices: choices.map((c) => ({
+              id: c.id,
               name: c.name,
               price: c.extra_price,
             })),

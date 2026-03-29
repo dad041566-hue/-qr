@@ -409,6 +409,7 @@ export interface OrderUpdate {
 // ------------------------------------------------------------
 
 export interface SelectedOption {
+  option_choice_id: string
   group: string
   choice: string
   extra_price: number
