@@ -64,7 +64,12 @@ let storeATableId = ''
 let storeAQrToken = ''
 let storeBTableId = ''
 let storeBOrderId = ''
+let storeBMemberId = ''
 let managerMemberId = ''
+let storeAMenuItemId = ''
+let storeAOptionGroupId = ''
+let storeAOptionChoiceId = ''
+const OPTION_EXTRA_PRICE = 500
 
 test.describe.configure({ mode: 'serial' })
 
@@ -199,6 +204,71 @@ test.describe('P0 보안 갭 E2E (SEC-E01-06, SEC-E27, GAP-23)', () => {
     const orderRows = (await orderRes.json()) as SeedRow[]
     expect(orderRows.length).toBeGreaterThan(0)
     storeBOrderId = orderRows[0].id
+
+    // Store B owner member ID 추출 (SEC-E05 삭제 차단 테스트용)
+    const memberBRes = await fetch(
+      `${url}/rest/v1/store_members?select=id,role&store_id=eq.${storeBId}&limit=1`,
+      { headers: serviceHeaders! },
+    )
+    const memberBRows = (await memberBRes.json()) as MemberRow[]
+    if (memberBRows.length > 0) {
+      storeBMemberId = memberBRows[0].id
+    }
+
+    // Store A에 옵션 메뉴 seed (SEC-E15 + GAP-07 테스트용)
+    // 카테고리가 없으면 생성
+    const catARes = await fetch(`${url}/rest/v1/menu_categories`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({ store_id: storeAId, name: '옵션테스트', sort_order: 99 }),
+    })
+    const catARows = (await catARes.json()) as SeedRow[]
+    const catAId = catARows[0].id
+
+    const itemARes = await fetch(`${url}/rest/v1/menu_items`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        store_id: storeAId,
+        category_id: catAId,
+        name: '옵션테스트메뉴',
+        price: 8000,
+        is_available: true,
+        sort_order: 1,
+      }),
+    })
+    const itemARows = (await itemARes.json()) as SeedRow[]
+    storeAMenuItemId = itemARows[0].id
+
+    // 옵션 그룹 + 옵션 선택지 생성
+    const ogRes = await fetch(`${url}/rest/v1/option_groups`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        store_id: storeAId,
+        menu_item_id: storeAMenuItemId,
+        name: '토핑',
+        is_required: false,
+        max_select: 1,
+        sort_order: 1,
+      }),
+    })
+    const ogRows = (await ogRes.json()) as SeedRow[]
+    storeAOptionGroupId = ogRows[0].id
+
+    const ocRes = await fetch(`${url}/rest/v1/option_choices`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        store_id: storeAId,
+        option_group_id: storeAOptionGroupId,
+        name: '치즈추가',
+        extra_price: OPTION_EXTRA_PRICE,
+        sort_order: 1,
+      }),
+    })
+    const ocRows = (await ocRes.json()) as SeedRow[]
+    storeAOptionChoiceId = ocRows[0].id
   })
 
   // ────────────────────────────────────────────────────────────
@@ -299,6 +369,33 @@ test.describe('P0 보안 갭 E2E (SEC-E01-06, SEC-E27, GAP-23)', () => {
       members.length,
       'Store A 점주는 Store B 직원 목록을 조회할 수 없어야 합니다',
     ).toBe(0)
+  })
+
+  test('SEC-E05: Store A 점주가 Store B 직원 삭제 차단', async ({ page }) => {
+    test.skip(!storeBMemberId, 'Store B 멤버 데이터 없음 (service role 미설정)')
+
+    await loginAndWaitForAdmin(page, OWNER_A_EMAIL, OWNER_A_NEW_PASSWORD)
+
+    const { url } = getSupabaseConfig()
+    const headers = await supabaseHeaders(page)
+
+    // Owner A 토큰으로 Store B 직원 삭제 시도
+    await fetch(`${url}/rest/v1/store_members?id=eq.${storeBMemberId}`, {
+      method: 'DELETE',
+      headers,
+    })
+
+    // 삭제되지 않았는지 확인 (service role)
+    const serviceHeaders = getServiceRoleHeaders()!
+    const checkRes = await fetch(
+      `${url}/rest/v1/store_members?select=id&id=eq.${storeBMemberId}`,
+      { headers: serviceHeaders },
+    )
+    const rows = (await checkRes.json()) as SeedRow[]
+    expect(
+      rows.length,
+      'Store A 점주가 Store B 직원을 삭제할 수 없어야 합니다 (RLS 격리)',
+    ).toBeGreaterThan(0)
   })
 
   test('SEC-E06: Store A 점주가 Store B 매출 조회 차단', async ({ page }) => {
@@ -457,6 +554,141 @@ test.describe('P0 보안 갭 E2E (SEC-E01-06, SEC-E27, GAP-23)', () => {
       headers: serviceHeaders!,
       body: JSON.stringify({ subscription_end: nextYear }),
     })
+  })
+
+  // ────────────────────────────────────────────────────────────
+  // SEC-E15: 옵션 가격 조작 방지 (enforce_menu_item_price trigger)
+  // ────────────────────────────────────────────────────────────
+
+  test('SEC-E15: 클라이언트가 옵션 extra_price=0으로 보내도 서버가 실제 가격 적용', async ({ page }) => {
+    test.skip(!storeAMenuItemId, 'Store A 옵션 메뉴 seed 안 됨')
+    test.skip(!storeAOptionChoiceId, 'Store A 옵션 선택지 seed 안 됨')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    const { url } = getSupabaseConfig()
+
+    // Owner A 토큰으로 옵션 가격 조작 주문 시도
+    await loginAndWaitForAdmin(page, OWNER_A_EMAIL, OWNER_A_NEW_PASSWORD)
+    const ownerHeaders = await supabaseHeaders(page)
+
+    const orderRes = await fetch(`${url}/rest/v1/rpc/create_order_atomic`, {
+      method: 'POST',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        p_store_id: storeAId,
+        p_table_id: storeATableId,
+        p_items: [{
+          menu_item_id: storeAMenuItemId,
+          quantity: 2,
+          selected_options: [{
+            option_choice_id: storeAOptionChoiceId,
+            name: '치즈추가',
+            extra_price: 0,  // 조작: 실제 500원인데 0원으로 전송
+          }],
+        }],
+      }),
+    })
+    expect(orderRes.ok, '주문 생성 성공').toBeTruthy()
+
+    const orderId = await orderRes.json()
+    expect(typeof orderId).toBe('string')
+    expect(orderId).toBeTruthy()
+
+    // order_items에서 실제 저장된 가격 확인 (service role)
+    const itemsRes = await fetch(
+      `${url}/rest/v1/order_items?select=unit_price,total_price,selected_options&order_id=eq.${orderId}`,
+      { headers: serviceHeaders! },
+    )
+    const items = (await itemsRes.json()) as Array<{
+      unit_price: number
+      total_price: number
+      selected_options: Array<{ extra_price: number }>
+    }>
+    expect(items.length).toBeGreaterThan(0)
+
+    const item = items[0]
+
+    // 서버가 실제 가격(500)을 적용했는지 검증
+    expect(
+      item.selected_options[0].extra_price,
+      `옵션 가격이 서버에서 실제 가격(${OPTION_EXTRA_PRICE})으로 교정되어야 합니다`,
+    ).toBe(OPTION_EXTRA_PRICE)
+
+    // total_price = (base_price + option_extra) * quantity = (8000 + 500) * 2 = 17000
+    const expectedTotal = (8000 + OPTION_EXTRA_PRICE) * 2
+    expect(
+      item.total_price,
+      `total_price가 (8000 + ${OPTION_EXTRA_PRICE}) * 2 = ${expectedTotal}이어야 합니다`,
+    ).toBe(expectedTotal)
+  })
+
+  // ────────────────────────────────────────────────────────────
+  // GAP-07: 옵션 포함 주문 전체 플로우
+  // ────────────────────────────────────────────────────────────
+
+  test('GAP-07: 옵션 포함 주문 생성 → 저장 검증', async ({ page }) => {
+    test.skip(!storeAMenuItemId, 'Store A 옵션 메뉴 seed 안 됨')
+    test.skip(!storeAOptionChoiceId, 'Store A 옵션 선택지 seed 안 됨')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    const { url } = getSupabaseConfig()
+
+    // Owner A 토큰으로 옵션 포함 주문 (정상 가격 전송)
+    await loginAndWaitForAdmin(page, OWNER_A_EMAIL, OWNER_A_NEW_PASSWORD)
+    const ownerHeaders = await supabaseHeaders(page)
+
+    const orderRes = await fetch(`${url}/rest/v1/rpc/create_order_atomic`, {
+      method: 'POST',
+      headers: ownerHeaders,
+      body: JSON.stringify({
+        p_store_id: storeAId,
+        p_table_id: storeATableId,
+        p_items: [{
+          menu_item_id: storeAMenuItemId,
+          quantity: 1,
+          selected_options: [{
+            option_choice_id: storeAOptionChoiceId,
+            name: '치즈추가',
+            extra_price: OPTION_EXTRA_PRICE,
+          }],
+        }],
+      }),
+    })
+    expect(orderRes.ok, '옵션 포함 주문 생성 성공').toBeTruthy()
+
+    const orderId = await orderRes.json()
+    expect(typeof orderId).toBe('string')
+    expect(orderId).toBeTruthy()
+
+    // order_items 검증 (service role)
+    const itemsRes = await fetch(
+      `${url}/rest/v1/order_items?select=unit_price,total_price,selected_options,menu_item_name&order_id=eq.${orderId}`,
+      { headers: serviceHeaders! },
+    )
+    const items = (await itemsRes.json()) as Array<{
+      unit_price: number
+      total_price: number
+      menu_item_name: string
+      selected_options: Array<{ name: string; extra_price: number; option_choice_id: string }>
+    }>
+    expect(items.length, '주문 아이템이 1개 존재해야 합니다').toBe(1)
+
+    const item = items[0]
+
+    // 기본 가격 검증
+    expect(item.unit_price, '기본 가격 8000원').toBe(8000)
+
+    // 옵션 데이터 검증
+    expect(item.selected_options, '옵션 데이터가 존재해야 합니다').toBeTruthy()
+    expect(item.selected_options.length, '옵션 1개').toBe(1)
+    expect(item.selected_options[0].name, '옵션 이름').toBe('치즈추가')
+    expect(item.selected_options[0].extra_price, '옵션 추가금').toBe(OPTION_EXTRA_PRICE)
+    expect(item.selected_options[0].option_choice_id, '옵션 선택지 ID').toBe(storeAOptionChoiceId)
+
+    // total_price = (8000 + 500) * 1 = 8500
+    expect(item.total_price, 'total_price = 8500').toBe(8000 + OPTION_EXTRA_PRICE)
   })
 
   // ────────────────────────────────────────────────────────────

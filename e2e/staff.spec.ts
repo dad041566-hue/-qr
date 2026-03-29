@@ -15,6 +15,7 @@ import {
   sidebarBtn,
   getSupabaseConfig,
   supabaseGet,
+  supabaseHeaders,
   getServiceRoleHeaders,
 } from './e2e-helpers'
 
@@ -22,6 +23,9 @@ requireEnv('TEST_SUPERADMIN_EMAIL')
 requireEnv('TEST_SUPERADMIN_PASSWORD')
 
 type StoreRow = { id: string }
+type SeedRow = { id: string }
+
+let storeId = ''
 
 const ts = Date.now()
 const STORE_NAME = `직원테스트매장${ts}`
@@ -56,6 +60,18 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
 
     await expect(page.getByRole('cell', { name: STORE_NAME })).toBeVisible({ timeout: 10000 })
     await markStoreTestData(STORE_SLUG)
+
+    // storeId 추출 (service role)
+    const serviceHeaders = getServiceRoleHeaders()
+    if (serviceHeaders) {
+      const { url } = getSupabaseConfig()
+      const res = await fetch(
+        `${url}/rest/v1/stores?select=id&slug=eq.${encodeURIComponent(STORE_SLUG)}&limit=1`,
+        { headers: serviceHeaders },
+      )
+      const rows = (await res.json()) as StoreRow[]
+      if (rows.length > 0) storeId = rows[0].id
+    }
   })
 
   test('2. 점주 첫 로그인 → 비번 변경', async ({ page }) => {
@@ -123,6 +139,220 @@ test.describe('직원 관리 E2E (SC-011~SC-013, SC-020)', () => {
     expect(loggedIn, '직원 계정으로 로그인해야 SC-013을 진행할 수 있습니다.').toBeTruthy()
     await expect(sidebarBtn(page, /설정|직원 관리/)).toHaveCount(0, { timeout: 5000 })
     await expect(page.locator('body')).toContainText('직원', { ignoreCase: true })
+  })
+
+  // ────────────────────────────────────────────────────────────
+  // SEC-E07-10: Staff API-level RLS 차단
+  // UI 탭 숨김만으로는 불충분 — API 직접 호출 시 RLS가 차단하는지 검증
+  // ────────────────────────────────────────────────────────────
+
+  test('SEC-E07: Staff API — 메뉴 아이템 생성 차단 (RLS)', async ({ page }) => {
+    test.skip(!storeId, 'storeId 없음 (service role 미설정)')
+
+    // Staff 로그인
+    await login(page, STAFF_EMAIL, STAFF_PASSWORD)
+    await page.waitForLoadState('networkidle')
+    if (page.url().includes('change-password')) {
+      await completePasswordChange(page, STAFF_NEW_PASSWORD)
+    } else {
+      try { await expect(page).toHaveURL('/admin', { timeout: 8000 }) } catch {
+        // 이미 비번 변경 후 로그인된 상태
+        await login(page, STAFF_EMAIL, STAFF_NEW_PASSWORD)
+        await expect(page).toHaveURL('/admin', { timeout: 8000 })
+      }
+    }
+
+    const { url } = getSupabaseConfig()
+    const headers = await supabaseHeaders(page)
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    // Staff 토큰으로 카테고리 생성 시도
+    const catRes = await fetch(`${url}/rest/v1/menu_categories`, {
+      method: 'POST',
+      headers: { ...headers, Prefer: 'return=representation' },
+      body: JSON.stringify({ store_id: storeId, name: 'StaffTest', sort_order: 99 }),
+    })
+
+    // RLS 차단: 201이 아니어야 함 (403 또는 빈 결과)
+    if (catRes.status === 201) {
+      // Cleanup: delete the category if it was created (shouldn't happen)
+      const cats = (await catRes.json()) as SeedRow[]
+      if (cats.length > 0) {
+        await fetch(`${url}/rest/v1/menu_categories?id=eq.${cats[0].id}`, {
+          method: 'DELETE',
+          headers: serviceHeaders,
+        })
+      }
+    }
+    expect(
+      catRes.status,
+      'Staff는 카테고리를 생성할 수 없어야 합니다 (RLS: owner/manager만 가능)',
+    ).not.toBe(201)
+  })
+
+  test('SEC-E08: Staff API — 메뉴 아이템 수정 차단 (RLS)', async ({ page }) => {
+    test.skip(!storeId, 'storeId 없음 (service role 미설정)')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    const { url } = getSupabaseConfig()
+
+    // Seed: 메뉴 아이템 생성 (service role)
+    const catRes = await fetch(`${url}/rest/v1/menu_categories`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({ store_id: storeId, name: 'APITest', sort_order: 98 }),
+    })
+    const cats = (await catRes.json()) as SeedRow[]
+    const catId = cats[0].id
+
+    const itemRes = await fetch(`${url}/rest/v1/menu_items`, {
+      method: 'POST',
+      headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+      body: JSON.stringify({
+        store_id: storeId,
+        category_id: catId,
+        name: 'APITestItem',
+        price: 5000,
+        is_available: true,
+        sort_order: 1,
+      }),
+    })
+    const items = (await itemRes.json()) as SeedRow[]
+    const itemId = items[0].id
+
+    // Staff 로그인
+    await login(page, STAFF_EMAIL, STAFF_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+    if (page.url().includes('change-password')) {
+      await completePasswordChange(page, STAFF_NEW_PASSWORD)
+    }
+    await expect(page).toHaveURL('/admin', { timeout: 10000 })
+
+    const staffHeaders = await supabaseHeaders(page)
+
+    // Staff 토큰으로 메뉴 아이템 가격 수정 시도
+    await fetch(`${url}/rest/v1/menu_items?id=eq.${itemId}`, {
+      method: 'PATCH',
+      headers: staffHeaders,
+      body: JSON.stringify({ price: 1 }),
+    })
+
+    // 수정되지 않았는지 확인 (service role)
+    const checkRes = await fetch(
+      `${url}/rest/v1/menu_items?select=price&id=eq.${itemId}`,
+      { headers: serviceHeaders! },
+    )
+    const rows = (await checkRes.json()) as Array<{ price: number }>
+    expect(rows.length).toBeGreaterThan(0)
+    expect(
+      rows[0].price,
+      'Staff가 메뉴 가격을 수정할 수 없어야 합니다 (RLS: owner/manager만 가능)',
+    ).toBe(5000)
+  })
+
+  test('SEC-E09: Staff API — 직원 삭제 차단 (RLS)', async ({ page }) => {
+    test.skip(!storeId, 'storeId 없음 (service role 미설정)')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    const { url } = getSupabaseConfig()
+
+    // Owner의 member ID 가져오기
+    const memberRes = await fetch(
+      `${url}/rest/v1/store_members?select=id,role&store_id=eq.${storeId}&role=eq.owner&limit=1`,
+      { headers: serviceHeaders! },
+    )
+    const members = (await memberRes.json()) as Array<{ id: string; role: string }>
+    test.skip(members.length === 0, 'Owner member 못 찾음')
+    const ownerMemberId = members[0].id
+
+    // Staff 로그인
+    await login(page, STAFF_EMAIL, STAFF_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+    if (page.url().includes('change-password')) {
+      await completePasswordChange(page, STAFF_NEW_PASSWORD)
+    }
+    await expect(page).toHaveURL('/admin', { timeout: 10000 })
+
+    const staffHeaders = await supabaseHeaders(page)
+
+    // Staff 토큰으로 owner 직원 삭제 시도
+    await fetch(`${url}/rest/v1/store_members?id=eq.${ownerMemberId}`, {
+      method: 'DELETE',
+      headers: staffHeaders,
+    })
+
+    // 삭제되지 않았는지 확인 (service role)
+    const checkRes = await fetch(
+      `${url}/rest/v1/store_members?select=id&id=eq.${ownerMemberId}`,
+      { headers: serviceHeaders! },
+    )
+    const rows = (await checkRes.json()) as SeedRow[]
+    expect(
+      rows.length,
+      'Staff가 직원(owner)을 삭제할 수 없어야 합니다 (RLS: owner만 가능)',
+    ).toBeGreaterThan(0)
+  })
+
+  test('SEC-E10: Staff API — 매장 설정 수정 차단 (RLS)', async ({ page }) => {
+    test.skip(!storeId, 'storeId 없음 (service role 미설정)')
+    const serviceHeaders = getServiceRoleHeaders()
+    test.skip(!serviceHeaders, 'SUPABASE_SERVICE_ROLE_KEY 미설정')
+
+    const { url } = getSupabaseConfig()
+
+    // store_settings 존재 확인/생성
+    const settingsRes = await fetch(
+      `${url}/rest/v1/store_settings?select=id&store_id=eq.${storeId}&limit=1`,
+      { headers: serviceHeaders! },
+    )
+    const settings = (await settingsRes.json()) as SeedRow[]
+    if (settings.length === 0) {
+      await fetch(`${url}/rest/v1/store_settings`, {
+        method: 'POST',
+        headers: { ...serviceHeaders!, Prefer: 'return=representation' },
+        body: JSON.stringify({ store_id: storeId }),
+      })
+    }
+
+    // Staff 로그인
+    await login(page, STAFF_EMAIL, STAFF_NEW_PASSWORD)
+    await page.waitForLoadState('networkidle')
+    if (page.url().includes('change-password')) {
+      await completePasswordChange(page, STAFF_NEW_PASSWORD)
+    }
+    await expect(page).toHaveURL('/admin', { timeout: 10000 })
+
+    const staffHeaders = await supabaseHeaders(page)
+
+    // Staff 토큰으로 store_settings 수정 시도
+    const updateRes = await fetch(
+      `${url}/rest/v1/store_settings?store_id=eq.${storeId}`,
+      {
+        method: 'PATCH',
+        headers: staffHeaders,
+        body: JSON.stringify({ alimtalk_enabled: true }),
+      },
+    )
+
+    // RLS 차단 확인
+    if (updateRes.ok) {
+      // 실제로 변경됐는지 확인
+      const checkRes = await fetch(
+        `${url}/rest/v1/store_settings?select=alimtalk_enabled&store_id=eq.${storeId}`,
+        { headers: serviceHeaders! },
+      )
+      const rows = (await checkRes.json()) as Array<{ alimtalk_enabled: boolean }>
+      expect(
+        rows[0].alimtalk_enabled,
+        'Staff가 매장 설정을 수정할 수 없어야 합니다 (RLS: owner/manager만 가능)',
+      ).toBe(false)
+    } else {
+      // 직접 차단 — 예상 동작
+      expect(updateRes.status).toBeGreaterThanOrEqual(400)
+    }
   })
 
   test('SC-032: 직원 계정 비활성화 (삭제)', async ({ page }) => {
