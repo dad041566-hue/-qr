@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git checkout --theirs .omc/project-memory.json .omc/state/hud-state.json .omc/state/last-tool-error.json && git add .omc/ .env.example && git rebase --continue\",\"description\":\"Resolve .omc...",
-  "error": "Exit code 1\nUpdated 3 paths from the index\nYou must edit all merge conflicts and then\nmark them as resolved using git add",
-  "timestamp": "2026-03-27T09:51:06.414Z",
-  "retry_count": 2
+  "tool_input_preview": "{\"command\":\"cd \\\"D:/Project/-qr\\\" && git pull --rebase origin main\",\"timeout\":30000,\"description\":\"Pull and rebase before push\"}",
+  "error": "Exit code 128\nerror: cannot pull with rebase: You have unstaged changes.\nerror: Please commit or stash them.",
+  "timestamp": "2026-03-29T09:49:04.202Z",
+  "retry_count": 4
 }

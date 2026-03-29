@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-16T15:45:52.016Z",
-  "turn_count": 50,
-  "last_agent_output": "남은 건 두 가지입니다.\n\n1. `59개 중 실패한 테스트`만 추려서 원인 분류\n2. 이번에 정리한 신규 시나리오를 E2E에 반영\n   - `/waiting/:storeSlug`\n"
+  "last_turn_at": "2026-03-20T15:03:19.179Z",
+  "turn_count": 55,
+  "last_agent_output": "원인은 명확합니다. WSL의 `codex`는 정상이고 `omx` 명령도 PATH에 있지만, WSL의 `~/.codex/config.toml`에 OMX 설정이 전혀 없습니다.\n\n지금"
 }

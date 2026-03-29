@@ -4,86 +4,100 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**TableFlow (테이블QR)** — B2B SaaS for restaurant QR ordering + POS management.
-- `tableflow.com` — 서비스 도메인
-- 고객 메뉴 URL: `/m/:storeSlug/:tableId`
+**TableFlow** — B2B SaaS for restaurant QR ordering + POS management.
+- Domain: `tableflow.com`
+- Customer menu URL: `/m/:storeSlug/:tableId`
 
-세 개의 사용자 인터페이스: 고객 QR 주문 메뉴, 점주 어드민 대시보드, 대기 키오스크. 마케팅 랜딩 페이지 포함.
+Three UIs: customer QR ordering menu, store owner admin dashboard, waiting queue kiosk. Plus marketing landing page.
 
-현재 상태: Supabase 연동 완료 (Auth, Realtime, DB). 일부 페이지 Mock → API 전환 작업 진행 중.
-기획 문서: `docs/PRD.md`, `docs/DECISIONS.md`, `docs/SCHEMA.md`, `docs/schema.sql`
+Current state: Supabase fully integrated (Auth, Realtime, DB). Some pages still migrating Mock -> API.
+Docs: `docs/PRD.md`, `docs/DECISIONS.md`, `docs/SCHEMA.md`, `docs/schema.sql`
 
 ## Commands
 
 ```bash
-npm i                        # 의존성 설치
-npm run dev                  # Vite 개발 서버 (localhost:5173)
-npm run build                # 프로덕션 빌드
+npm run dev                  # Next.js dev server (localhost:3000)
+npm run build                # Production build (next build)
 
 # Unit Tests (Vitest)
-npm run test:unit            # 단위 테스트 전체 실행
-npm run test:unit:watch      # 감시 모드
-npm run test:unit:coverage   # 커버리지 포함
-npx vitest run src/lib/api/order.test.ts  # 단일 파일 실행
+npm run test:unit            # Run all unit tests
+npm run test:unit:watch      # Watch mode
+npm run test:unit:coverage   # With coverage
+npx vitest run src/lib/api/order.test.ts  # Single file
 
 # E2E Tests (Playwright)
-npx playwright test                       # 전체 E2E
-npx playwright test e2e/order-flow.spec.ts  # 단일 스펙 실행
-npx playwright test --grep "주문 접수"       # 패턴 매칭
-npx playwright show-report test-reports/html  # 리포트 열기
+npm run test:e2e             # All E2E tests
+npx playwright test e2e/order-flow.spec.ts  # Single spec
+npx playwright test --grep "주문 접수"       # Pattern match
+npm run test:report:open     # Open HTML report
 ```
 
 ## Environment Variables
 
-`.env` 파일 필요:
+`.env.local` (Next.js convention):
 ```
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-E2E 테스트 추가 환경변수 (`.env`에 함께 설정):
+E2E test variables (also in `.env`):
 ```
 TEST_SUPERADMIN_EMAIL=...
 TEST_SUPERADMIN_PASSWORD=...
-SUPABASE_SERVICE_ROLE_KEY=...   # E2E에서 직접 DB 조작 시 필요
+SUPABASE_SERVICE_ROLE_KEY=...   # Direct DB manipulation in E2E
 ```
+
+Sentry (set in Vercel/CI, not required locally):
+```
+SENTRY_ORG=...
+SENTRY_PROJECT=...
+```
+
+Env validation: `src/lib/env.ts` exports typed `SUPABASE_URL` and `SUPABASE_ANON_KEY` with runtime checks.
 
 ## Architecture
 
-### Routing (`src/app/routes.tsx`)
+### Framework: Next.js 15 (App Router)
 
-| Path | Component | 대상 | 인증 |
-|------|-----------|------|------|
-| `/` | `Home` | 마케팅 랜딩 | 없음 |
-| `/table/:id` | `CustomerMenu` | 고객 QR 주문 (레거시) | 없음 |
-| `/m/:storeSlug/:tableId` | `CustomerMenu` | 고객 QR 주문 (모바일) | 없음 |
-| `/waiting/:storeSlug` | `Waiting` | 대기 접수 키오스크 | 없음 |
-| `/privacy` | `Privacy` | 개인정보처리방침 | 없음 |
-| `/terms` | `Terms` | 이용약관 | 없음 |
-| `/login` | `Login` | 직원/점주 로그인 | 없음 |
-| `/change-password` | `ChangePassword` | 최초 로그인 비번 변경 | ProtectedRoute |
-| `/admin` | `AdminDashboard` | 점주 POS + 어드민 | ProtectedRoute |
-| `/superadmin` | `SuperAdmin` | 개발사 매장·계정·기간 관리 | SuperAdminRoute |
+Migrated from Vite SPA. Uses file-based routing, Server Actions, and middleware-based auth.
 
-### 핵심 구조
+### Routing (file-based)
 
-- `src/app/pages/` — 라우트 컴포넌트. `CustomerMenu.tsx`·`AdminDashboard.tsx`는 대형 단일 컴포넌트.
-- `src/app/components/ui/` — shadcn/ui 프리미티브 48개. **수정 금지 (read-only 라이브러리)**.
-- `src/styles/theme.css` — 모든 CSS 커스텀 프로퍼티 토큰 정의. 색상·간격 값 하드코딩 금지, 이 파일의 변수 사용.
-- `src/contexts/AuthContext.tsx` — `AuthProvider` + `useAuthContext()` 훅. `StoreUser` (id, email, role, storeId, storeName) 제공.
-- `src/app/components/ProtectedRoute.tsx` — 인증 미완료 시 `/login` 리다이렉트.
+```
+src/app/
+├── layout.tsx              # Root layout (NextAuthProvider, ToastProvider)
+├── page.tsx                # / -> redirects to /login or /admin via middleware
+├── global-error.tsx        # Sentry error boundary
+├── (auth)/change-password/ # First-login password change (protected)
+├── (customer)/             # QR menu: /m/:storeSlug/:tableId, /table/:id (legacy)
+├── (public)/               # /privacy, /terms, /waiting/:storeSlug
+├── admin/                  # Store owner POS + admin dashboard (protected)
+├── superadmin/             # Dev-only store/account management (super_admin role)
+├── actions/                # Server Actions: order.ts, staff.ts, superadmin.ts, waiting.ts
+└── components/             # App-level components including ui/ (shadcn)
+```
 
-### 데이터 레이어
+Route protection: `src/middleware.ts` checks Supabase auth. Redirects unauthenticated users from `/admin`, `/change-password`, `/superadmin`. Superadmin requires `app_metadata.role === 'super_admin'`.
 
-3계층 구조:
+### Key Directories
 
-1. **`src/lib/supabase.ts`** — `Database` 타입으로 typed된 단일 supabase 클라이언트.
-2. **`src/lib/api/`** — 순수 async 함수 (DB 호출만). `admin.ts` (주문·테이블·매출), `menu.ts` (고객용 메뉴 조회), `menuAdmin.ts` (메뉴 CRUD), `order.ts` (주문 생성), `waiting.ts` (대기 접수), `subscription.ts` (구독 상태), `staffAdmin.ts` (직원 관리), `superadmin.ts` (매장·계정 관리).
-3. **`src/hooks/`** — API 함수를 래핑 + Supabase Realtime 구독. 컴포넌트에서 직접 `supabase`를 호출하지 않고 훅을 통해서만 접근.
+- `src/app/components/ui/` — shadcn/ui primitives. **Do not modify** (read-only library).
+- `src/styles/theme.css` — All CSS custom property tokens. Never hardcode color/spacing values; use these variables.
+- `src/providers/AuthProvider.tsx` — `NextAuthProvider` + `useAuthContext()` hook. Provides `StoreUser` (id, email, role, storeId, storeName).
 
-### Realtime 패턴
+### Data Layer (3 tiers)
 
-모든 realtime 훅은 동일한 패턴을 따름:
+1. **`src/lib/supabase/`** — `client.ts` (browser client via `@supabase/ssr`), `server.ts` (server-side client). Both typed with `Database`.
+2. **`src/lib/api/`** — Pure async functions (DB calls only). `admin.ts`, `menu.ts`, `menuAdmin.ts`, `order.ts`, `waiting.ts`, `subscription.ts`, `staffAdmin.ts`, `superadmin.ts`.
+3. **`src/hooks/`** — Wrap API functions + Supabase Realtime subscriptions. Components access data through hooks only, never calling supabase directly.
+
+### Server Actions (`src/app/actions/`)
+
+Next.js Server Actions for mutations: `order.ts`, `staff.ts`, `superadmin.ts`, `waiting.ts`. These run server-side with service role access when needed.
+
+### Realtime Pattern
+
+All realtime hooks follow this pattern:
 ```ts
 supabase.channel(`{table}:{storeId}`)
   .on('postgres_changes', { event: 'INSERT'|'UPDATE', ... }, handler)
@@ -91,64 +105,70 @@ supabase.channel(`{table}:{storeId}`)
 // cleanup: supabase.removeChannel(channel)
 ```
 
-### 타입 (`src/types/database.ts`)
+### Types (`src/types/database.ts`)
 
-자동 생성이 아닌 수동 관리. `docs/SCHEMA.md` 또는 `docs/schema.sql` 변경 시 직접 업데이트 필요. 각 테이블마다 `Row`, `Insert`, `Update` 타입과 `Database` 인터페이스로 구성.
+Manually maintained (not auto-generated). Keep in sync with `docs/schema.sql`. Each table has `Row`, `Insert`, `Update` types plus a `Database` interface.
 
-### 인프라 스택
+### Infrastructure
 
-| 레이어 | 기술 |
+| Layer | Tech |
 |-------|------|
 | Backend/DB | Supabase (PostgreSQL + Realtime + Auth + Storage + Edge Functions) |
-| 프론트 배포 | Vercel (React SPA) |
-| 커스텀 API | AWS Lambda (필요 시) |
-| 인증 | Supabase Auth — 이메일+비번만 (카카오 소셜 없음) |
-| 슈퍼어드민 | Supabase Edge Functions (`supabase/functions/`) |
-| 도메인 | `tableflow.com` |
+| Frontend deploy | Vercel (Next.js) |
+| Auth | Supabase Auth (email+password only) |
+| Error tracking | Sentry (`@sentry/nextjs`) |
+| Superadmin API | Supabase Edge Functions (`supabase/functions/`) |
+| Domain | `tableflow.com` |
 
 ### Path Alias
 
-`@` → `./src` (`vite.config.ts`). `@/app/...`, `@/styles/...` 형태로 임포트.
+`@` -> `./src` (configured in `tsconfig.json`). Import as `@/app/...`, `@/lib/...`, `@/styles/...`.
 
 ### Styling
 
-- 디자인 토큰: `src/styles/theme.css` CSS 변수. 하드코딩 금지.
-- 강조색: orange (`text-orange-500` / `#f97316`)
-- Tailwind CSS v4 — `@tailwindcss/vite` 플러그인 사용, PostCSS 설정 불필요.
-- 다크모드: CSS 커스텀 프로퍼티로 지원.
+- Design tokens: `src/styles/theme.css` CSS variables. No hardcoding.
+- Accent color: orange (`text-orange-500` / `#f97316`)
+- Tailwind CSS v4 — `@tailwindcss/postcss` plugin. Config in `postcss.config.mjs`.
+- Dark mode: CSS custom properties with `.dark` selector.
 
-### 권한 모델
+### Permission Model
 
-| 역할 | 주문 관리 | 메뉴 수정 | 직원 관리 | 매출 조회 |
-|------|----------|----------|----------|----------|
-| owner | ✅ | ✅ | ✅ | ✅ |
-| manager | ✅ | ✅ | ❌ | ✅ |
-| staff | ✅ | ❌ | ❌ | ❌ |
+| Role | Orders | Menu edit | Staff mgmt | Revenue |
+|------|--------|-----------|------------|---------|
+| owner | O | O | O | O |
+| manager | O | O | X | O |
+| staff | O | X | X | X |
 
-고객(비로그인)은 주문 INSERT만 허용. Supabase RLS로 `store_id` 기반 멀티테넌트 격리.
+Customers (unauthenticated) can only INSERT orders. Supabase RLS enforces `store_id`-based multi-tenant isolation.
 
-### 보안 정책
+### Security
 
-- **비밀번호**: 8자 이상 + 특수문자 필수
-- **첫 로그인**: 임시 비번 제공 후 `/change-password`에서 강제 변경
-- **구독 상태**: 매장 활성 여부를 `checkStoreActive()` 함수로 매 세션 검증
-- **대기열 번호**: 순차 증가 + 롤오버 보안 (마이그레이션: `20260316000007_fix_queue_number_security.sql`)
+- **Passwords**: 8+ chars + special character required
+- **First login**: Temporary password -> forced change at `/change-password`
+- **Subscription**: Store active status checked via `checkStoreActive()` each session
+- **Queue numbers**: Sequential + rollover security (migration: `20260316000007_fix_queue_number_security.sql`)
 
-### 테스트 인프라
+### Testing
 
-**Unit (Vitest)**: `src/**/*.test.{ts,tsx}` 파일. jsdom 환경, `@testing-library/react` + `@testing-library/jest-dom` 사용. 설정: `vitest.config.ts`, 셋업: `src/test/setup.ts`.
+**Unit (Vitest)**: `src/**/*.test.{ts,tsx}`. jsdom environment, `@testing-library/react` + `@testing-library/jest-dom`. Config: `vitest.config.ts`, setup: `src/test/setup.ts`.
 
-**E2E (Playwright)**: `e2e/*.spec.ts` 파일. `e2e/e2e-helpers.ts`에 공통 유틸 (`login`, `loginAndWaitForAdmin`, `requireEnv`, `getServiceRoleHeaders`). 개발 서버 자동 시작 (`localhost:5173`). timeout 90초, retry 1회, 실패 시 스크린샷·비디오·trace 자동 저장.
+**E2E (Playwright)**: `e2e/*.spec.ts`. Helpers in `e2e/e2e-helpers.ts` (`login`, `loginAndWaitForAdmin`, `requireEnv`, `getServiceRoleHeaders`). Dev server auto-starts on `localhost:3000`. Timeout 90s, retry 1, auto-captures screenshots/video/trace on failure. Tests run across 6 device profiles (desktop, iPhone 14, iPhone 16 Max, Galaxy S24, Galaxy Fold, iPad).
 
 ### Edge Functions (`supabase/functions/`)
 
-| 함수 | 용도 |
-|------|------|
-| `superadmin/` | 슈퍼어드민 API (매장·계정·기간 관리) |
-| `create-store-with-owner/` | 매장 생성 + owner 계정 동시 생성 |
-| `create-staff/` | 직원 계정 생성 |
-| `check-superadmin/` | 슈퍼어드민 권한 검증 |
+| Function | Purpose |
+|----------|---------|
+| `superadmin/` | Superadmin API (store/account/subscription management) |
+| `create-store-with-owner/` | Create store + owner account atomically |
+| `create-staff/` | Create staff accounts |
+| `check-superadmin/` | Superadmin permission verification |
 
-### DB 마이그레이션
+### DB Migrations
 
-`supabase/migrations/` — 시간순 SQL 파일. 직접 실행하지 않고 Supabase Dashboard 또는 `supabase db push`로 적용. RLS 정책, 인덱스, 보안 함수 포함.
+`supabase/migrations/` — Chronological SQL files. Apply via Supabase Dashboard or `supabase db push`. Contains RLS policies, indexes, security functions.
+
+### CI/CD
+
+GitHub Actions (`.github/workflows/`):
+- `deploy.yml` — Build -> Migrate -> Deploy Edge Functions -> Deploy to Vercel
+- `pr-check.yml` — PR validation

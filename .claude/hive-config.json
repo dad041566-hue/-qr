@@ -1,59 +1,53 @@
 {
-  "projectType": "node",
+  "projectType": "nextjs",
   "projectName": "-qr",
   "displayName": "TableFlow (테이블QR)",
   "defaultLeads": [
-    "supabase-lead",
-    "frontend-lead",
-    "e2e-lead",
-    "security-lead"
+    "research-lead",
+    "coding-lead",
+    "qa-lead",
+    "design-lead"
   ],
   "fileOwnership": {
-    "supabase-lead": [
-      "supabase/**",
-      "src/lib/api/**",
+    "coding-lead": [
+      "src/lib/**",
       "src/hooks/**",
-      "src/types/database.ts",
-      "supabase/migrations/**"
+      "src/types/**",
+      "src/providers/**",
+      "src/app/actions/**",
+      "src/middleware.ts",
+      "supabase/**"
     ],
-    "frontend-lead": [
-      "src/app/**",
-      "src/components/**",
+    "design-lead": [
+      "src/app/(customer)/**",
+      "src/app/(public)/**",
+      "src/app/(auth)/**",
+      "src/app/admin/**",
+      "src/app/superadmin/**",
+      "src/app/components/**",
       "src/styles/**",
-      "src/contexts/**",
-      "src/lib/ui/**"
+      "docs/**",
+      "**/*.md"
     ],
-    "e2e-lead": [
+    "qa-lead": [
       "e2e/**",
-      "playwright.config.ts",
-      "src/**/*.spec.ts",
       "src/**/*.test.ts",
-      "tests/**"
-    ],
-    "security-lead": [
-      "supabase/migrations/**",
-      "src/lib/api/staffAdmin.ts",
-      "src/lib/api/superadmin.ts",
-      "src/lib/auth/**",
-      "src/middleware/**"
+      "src/**/*.test.tsx",
+      "src/**/*.spec.ts",
+      "src/test/**",
+      "playwright.config.ts",
+      "vitest.config.ts"
     ]
-  },
-  "teamPipeline": "team-plan → team-prd → team-exec → team-verify → team-fix",
-  "maxIterations": 15,
-  "preferredModels": {
-    "supabase-lead": "claude-opus-4",
-    "frontend-lead": "claude-sonnet-4",
-    "e2e-lead": "claude-sonnet-4",
-    "security-lead": "claude-opus-4"
   },
   "commands": {
     "build": "npm run build",
-    "test": "npm run test:unit && npx playwright test",
+    "test": "npm run test:unit && npm run test:e2e",
     "testUnit": "npm run test:unit",
-    "testE2e": "npx playwright test",
+    "testE2e": "npm run test:e2e",
     "lint": null,
-    "typeCheck": null
+    "typeCheck": "npx tsc --noEmit"
   },
   "obsidianPath": "C:\\Users\\PC_1M\\Documents\\Obsidian Vault\\Project\\-qr",
-  "createdAt": "2026-03-23T00:00:00.000Z"
+  "createdAt": "2026-03-23T00:00:00.000Z",
+  "updatedAt": "2026-03-27T00:00:00.000Z"
 }

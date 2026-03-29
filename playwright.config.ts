@@ -80,7 +80,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev:next',
+    command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 30_000,
