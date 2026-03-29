@@ -137,6 +137,7 @@ export function NextAuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
+    window.location.href = '/login'
   }
 
   return (
