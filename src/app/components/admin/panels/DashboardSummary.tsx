@@ -7,13 +7,14 @@ import { motion } from 'motion/react';
 import type { RecentActivity } from '../types';
 
 interface DashboardSummaryProps {
-  orders: { id: string; total: number; status: string }[];
+  orders?: { id: string; total: number; status: string }[];
   tables: { id: number; status: string }[];
   revenueData: { time: string; amount: number }[];
   recentActivities: RecentActivity[];
   pendingOrdersCount: number;
   occupiedTablesCount: number;
   totalToday: number;
+  orderCount?: number;
 }
 
 export default function DashboardSummary({

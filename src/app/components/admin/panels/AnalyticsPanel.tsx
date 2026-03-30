@@ -12,6 +12,10 @@ import { WEEKLY_REVENUE, CATEGORY_SALES, TOP_MENUS } from '../types';
 interface AnalyticsPanelProps {
   revenueData: { time: string; amount: number }[];
   totalToday: number;
+  orderCount?: number;
+  averageOrderValue?: number;
+  categorySales?: { category: string; revenue: number; count: number }[];
+  topMenuItems?: { name: string; quantity: number; revenue: number }[];
 }
 
 export default function AnalyticsPanel({ revenueData, totalToday }: AnalyticsPanelProps) {

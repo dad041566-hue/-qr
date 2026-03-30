@@ -139,3 +139,124 @@ export async function getDailyRevenue(storeId: string, days: number): Promise<Da
 
   return Object.entries(map).map(([date, amount]) => ({ date, amount }))
 }
+
+// ============================================================
+// Order statistics
+// ============================================================
+
+export interface OrderStats {
+  totalRevenue: number
+  orderCount: number
+  averageOrderValue: number
+}
+
+export async function getOrderStats(storeId: string, days: number): Promise<OrderStats> {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+  const sinceIso = since.toISOString()
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('total_price')
+    .eq('store_id', storeId)
+    .eq('payment_status', 'paid')
+    .gte('created_at', sinceIso)
+
+  if (error) throw error
+
+  const rows = (data ?? []) as { total_price: number | null }[]
+  const totalRevenue = rows.reduce((sum, r) => sum + (r.total_price ?? 0), 0)
+  const orderCount = rows.length
+  const averageOrderValue = orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0
+
+  return { totalRevenue, orderCount, averageOrderValue }
+}
+
+// ============================================================
+// Top menu items
+// ============================================================
+
+export interface TopMenuItem {
+  name: string
+  quantity: number
+  revenue: number
+}
+
+export async function getTopMenuItems(storeId: string, days: number, limit: number): Promise<TopMenuItem[]> {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+  const sinceIso = since.toISOString()
+
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('menu_item_name, quantity, unit_price, orders!inner(store_id, payment_status, created_at)')
+    .eq('orders.store_id', storeId)
+    .eq('orders.payment_status', 'paid')
+    .gte('orders.created_at', sinceIso)
+
+  if (error) throw error
+
+  const map: Record<string, { quantity: number; revenue: number }> = {}
+  for (const row of data ?? []) {
+    const r = row as { menu_item_name: string; quantity: number; unit_price: number }
+    const key = r.menu_item_name
+    if (!map[key]) map[key] = { quantity: 0, revenue: 0 }
+    map[key].quantity += r.quantity ?? 0
+    map[key].revenue += (r.quantity ?? 0) * (r.unit_price ?? 0)
+  }
+
+  return Object.entries(map)
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit)
+}
+
+// ============================================================
+// Category sales
+// ============================================================
+
+export interface CategorySales {
+  category: string
+  revenue: number
+  count: number
+}
+
+export async function getCategorySales(storeId: string, days: number): Promise<CategorySales[]> {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+  const sinceIso = since.toISOString()
+
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('menu_item_name, quantity, unit_price, orders!inner(store_id, payment_status, created_at)')
+    .eq('orders.store_id', storeId)
+    .eq('orders.payment_status', 'paid')
+    .gte('orders.created_at', sinceIso)
+
+  if (error) throw error
+
+  // Get category mapping from menu_items
+  const { data: menuItems } = await supabase
+    .from('menu_items')
+    .select('name, menu_categories(name)')
+    .eq('store_id', storeId)
+
+  const categoryMap: Record<string, string> = {}
+  for (const item of menuItems ?? []) {
+    const mi = item as { name: string; menu_categories: { name: string } | null }
+    categoryMap[mi.name] = mi.menu_categories?.name ?? '기타'
+  }
+
+  const map: Record<string, { revenue: number; count: number }> = {}
+  for (const row of data ?? []) {
+    const r = row as { menu_item_name: string; quantity: number; unit_price: number }
+    const cat = categoryMap[r.menu_item_name] ?? '기타'
+    if (!map[cat]) map[cat] = { revenue: 0, count: 0 }
+    map[cat].revenue += (r.quantity ?? 0) * (r.unit_price ?? 0)
+    map[cat].count += r.quantity ?? 0
+  }
+
+  return Object.entries(map)
+    .map(([category, stats]) => ({ category, ...stats }))
+    .sort((a, b) => b.revenue - a.revenue)
+}
