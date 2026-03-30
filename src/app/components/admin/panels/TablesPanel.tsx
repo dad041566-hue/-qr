@@ -10,6 +10,7 @@ interface TablesPanelProps {
   onTableClick: (table: UITable) => void;
   markTableAvailable: (id: number) => void;
   occupiedTablesCount: number;
+  onAddTable?: () => void;
 }
 
 export default function TablesPanel({
@@ -17,6 +18,7 @@ export default function TablesPanel({
   onTableClick,
   markTableAvailable,
   occupiedTablesCount,
+  onAddTable,
 }: TablesPanelProps) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 md:space-y-6 pb-20 md:pb-0">
@@ -25,10 +27,20 @@ export default function TablesPanel({
           <h2 className="text-xl md:text-2xl font-black text-zinc-900">홀 테이블 현황</h2>
           <p className="text-xs md:text-sm text-zinc-500 mt-0.5 md:mt-1">터치하여 테이블 상세 상태를 변경하세요.</p>
         </div>
-        <div className="flex gap-3 md:gap-4 bg-white p-2 md:p-0 rounded-xl md:bg-transparent shadow-sm md:shadow-none border border-zinc-100 md:border-none">
-          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-orange-500"></div> 이용중 ({occupiedTablesCount})</div>
-          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-zinc-200"></div> 빈자리 ({tables.filter(t=>t.status==='available').length})</div>
-          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-yellow-400"></div> 정리중 ({tables.filter(t=>t.status==='cleaning').length})</div>
+        <div className="flex items-center gap-3 md:gap-4">
+          {onAddTable && (
+            <button
+              onClick={onAddTable}
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              + 테이블 추가
+            </button>
+          )}
+          <div className="flex gap-3 md:gap-4 bg-white p-2 md:p-0 rounded-xl md:bg-transparent shadow-sm md:shadow-none border border-zinc-100 md:border-none">
+            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-orange-500"></div> 이용중 ({occupiedTablesCount})</div>
+            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-zinc-200"></div> 빈자리 ({tables.filter(t=>t.status==='available').length})</div>
+            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-bold text-zinc-600"><div className="w-2.5 md:w-3 h-2.5 md:h-3 rounded-full bg-yellow-400"></div> 정리중 ({tables.filter(t=>t.status==='cleaning').length})</div>
+          </div>
         </div>
       </div>
 
