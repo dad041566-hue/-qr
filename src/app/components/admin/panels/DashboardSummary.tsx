@@ -24,17 +24,20 @@ export default function DashboardSummary({
   pendingOrdersCount,
   occupiedTablesCount,
   totalToday,
+  orderCount,
 }: DashboardSummaryProps) {
+  const kpis = [
+    { title: '오늘 매출', value: `₩${(totalToday / 10000).toLocaleString()}만`, icon: TrendingUp, color: 'blue', data: [{v:10},{v:20},{v:15},{v:30},{v:25},{v:45}] },
+    { title: '주문 건수', value: String(orderCount ?? 0), unit: '건', icon: Receipt, color: 'orange', data: [{v:20},{v:15},{v:25},{v:20},{v:35},{v:40}] },
+    { title: '대기 주문', value: String(pendingOrdersCount), unit: '건', icon: Clock, color: 'purple', data: [{v:12},{v:10},{v:11},{v:9},{v:8},{v:8}] },
+    { title: '테이블 점유', value: `${Math.round((occupiedTablesCount / (tables.length || 1)) * 100)}%`, icon: Users, color: 'green', data: [{v:30},{v:40},{v:35},{v:60},{v:50},{v:70}] },
+  ];
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 md:space-y-6 pb-20 md:pb-0">
       {/* Premium KPI Widgets with Micro-charts */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-5">
-        {[
-          { title: '오늘 매출', value: `₩${(totalToday/10000).toLocaleString()}만`, trend: '+18.2%', isUp: true, icon: TrendingUp, color: 'blue', data: [{v:10},{v:20},{v:15},{v:30},{v:25},{v:45}] },
-          { title: '주문 건수', value: '128', unit: '건', trend: '+5.4%', isUp: true, icon: Receipt, color: 'orange', data: [{v:20},{v:15},{v:25},{v:20},{v:35},{v:40}] },
-          { title: '평균 조리 시간', value: '8', unit: '분', trend: '-2.1%', isUp: true, icon: Clock, color: 'purple', data: [{v:12},{v:10},{v:11},{v:9},{v:8},{v:8}] },
-          { title: '테이블 점유', value: `${Math.round((occupiedTablesCount/(tables.length || 1))*100)}%`, trend: '여유', isUp: true, icon: Users, color: 'green', data: [{v:30},{v:40},{v:35},{v:60},{v:50},{v:70}] }
-        ].map((kpi, idx) => {
+        {kpis.map((kpi, idx) => {
           const colorMap: Record<string, { bg: string, text: string, chart: string, grad: string }> = {
             blue: { bg: 'bg-blue-50', text: 'text-blue-600', chart: '#3b82f6', grad: 'from-blue-500/20' },
             orange: { bg: 'bg-orange-50', text: 'text-orange-600', chart: '#f97316', grad: 'from-orange-500/20' },
@@ -49,9 +52,6 @@ export default function DashboardSummary({
                 <div className={`${colors.bg} p-3 md:p-3.5 rounded-2xl`}>
                   <kpi.icon className={`w-5 h-5 md:w-6 md:h-6 ${colors.text}`} />
                 </div>
-                <span className={`text-[10px] md:text-xs font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 ${kpi.isUp ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                  {kpi.trend}
-                </span>
               </div>
               <div className="relative z-10">
                 <p className="text-zinc-400 text-xs md:text-sm font-bold mb-1">{kpi.title}</p>

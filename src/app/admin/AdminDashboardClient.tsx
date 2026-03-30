@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Bell, ChefHat, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid,
-  UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, Home,
+  UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, LogOut,
   QrCode, Gift, Volume2, X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -56,7 +56,7 @@ import type { StaffCallOption } from '@/app/components/admin/panels/SettingsPane
 export default function AdminDashboardClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isFirstLogin } = useAuth()
+  const { user, isFirstLogin, signOut } = useAuth()
   // super_admin can override storeId via ?storeId= query param
   const queryStoreId = searchParams.get('storeId')
   const storeId = queryStoreId || user?.storeId || ''
@@ -756,10 +756,10 @@ export default function AdminDashboardClient() {
             </button>
           </div>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => signOut()}
             className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors text-sm font-bold border border-zinc-800"
           >
-            <Home className="w-4 h-4" /> 홈으로 나가기
+            <LogOut className="w-4 h-4" /> 로그아웃
           </button>
         </div>
       </aside>
@@ -769,8 +769,8 @@ export default function AdminDashboardClient() {
         {/* Header */}
         <header className="h-14 md:h-20 bg-white border-b border-zinc-200/80 px-4 md:px-8 flex items-center justify-between shrink-0 shadow-sm z-10 sticky top-0">
           <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
-            <button onClick={() => router.push('/')} className="md:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
-              <Home className="w-5 h-5" />
+            <button onClick={() => signOut()} className="md:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
+              <LogOut className="w-5 h-5" />
             </button>
             <div className="md:hidden flex bg-zinc-100/80 p-1 rounded-xl mx-auto border border-zinc-200/50 shadow-inner">
               <button
