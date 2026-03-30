@@ -96,6 +96,7 @@ export default function AdminDashboardClient() {
   const {
     tables: rawTables,
     updateTableStatus: apiUpdateTableStatus,
+    refetch: refetchTables,
   } = useRealtimeTables(storeId || null)
 
   const {
@@ -497,9 +498,12 @@ export default function AdminDashboardClient() {
     try {
       const nextNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.id)) + 1 : 1
       await addTable(storeId, nextNumber)
+      await refetchTables()
       toast.success('테이블이 추가되었습니다.')
-    } catch {
-      toast.error('테이블 추가에 실패했습니다.')
+    } catch (err: unknown) {
+      const e = err as { message?: string; code?: string; details?: string }
+      console.error('테이블 추가 실패:', e)
+      toast.error(`테이블 추가 실패: ${e?.message ?? '알 수 없는 오류'}`)
     }
   }
 
