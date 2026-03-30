@@ -58,7 +58,7 @@ export default function WaitingPanel({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-black text-lg md:text-xl text-zinc-900">{w.phone}</h4>
+                        <h4 className="font-black text-lg md:text-xl text-zinc-900">{w.phone.replace(/(\d{3}[-]?)\d{4}([-]?\d{4})/, '$1****$2')}</h4>
                         <span className="bg-zinc-100 text-zinc-600 text-xs font-bold px-2 py-1 rounded-md">{minutesAgo(w.created_at)}분 전 등록</span>
                       </div>
                       <p className="text-sm font-bold text-zinc-500 flex items-center gap-1"><Users className="w-4 h-4"/> 인원: {w.party_size}명</p>

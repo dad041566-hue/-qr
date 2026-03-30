@@ -1,9 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Clock, Users, Check, Trash2, CheckCircle2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import type { UIOrder, UITable } from '../types';
 
 interface KDSPanelProps {
@@ -23,6 +33,15 @@ export default function KDSPanel({
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const completedOrders = orders.filter(o => o.status === 'completed');
+
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  const handleDeleteConfirm = () => {
+    if (deleteTargetId) {
+      deleteOrder(deleteTargetId);
+      setDeleteTargetId(null);
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full flex flex-col md:overflow-hidden pb-20 md:pb-0">
@@ -89,7 +108,7 @@ export default function KDSPanel({
                             <option value="completed">서빙 대기</option>
                             <option value="served">서빙 완료</option>
                           </select>
-                          <button onClick={() => deleteOrder(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
+                          <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -250,7 +269,7 @@ export default function KDSPanel({
                             <option value="completed">서빙 대기</option>
                             <option value="served">서빙 완료</option>
                           </select>
-                          <button onClick={() => deleteOrder(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
+                          <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -280,6 +299,23 @@ export default function KDSPanel({
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>주문 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 주문을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600 text-white">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

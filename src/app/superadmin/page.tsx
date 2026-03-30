@@ -682,7 +682,7 @@ function StoreDetailDialog({ store, onClose, onSaved }: StoreDetailDialogProps) 
             <DialogTitle>비밀번호 초기화</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-zinc-600 py-2">
-            이 사용자의 비밀번호를 임시 비밀번호로 초기화하시겠습니까?
+            <strong>{members.find((m) => m.userId === resetConfirmUserId)?.email}</strong>의 비밀번호를 임시 비밀번호로 초기화하시겠습니까?
             <br />
             사용자는 다음 로그인 시 비밀번호를 변경해야 합니다.
           </p>
