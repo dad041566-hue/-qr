@@ -199,7 +199,7 @@ export default function WaitingClient({ store }: Props) {
                 className="flex-1 flex flex-col p-8 md:p-12 items-center justify-center w-full"
               >
                 <h2 className="text-3xl font-extrabold text-zinc-900 mb-2">연락처를 입력해주세요</h2>
-                <p className="text-zinc-500 mb-8 font-medium">카카오톡으로 대기 순서를 안내해 드립니다.</p>
+                <p className="text-zinc-500 mb-8 font-medium">매장에서 직접 순서를 안내해 드립니다.</p>
 
                 <div className="text-4xl font-black tracking-widest text-zinc-800 mb-10 h-12 flex items-center justify-center border-b-2 border-zinc-900 pb-2 w-64 text-center">
                   {phone}
@@ -291,8 +291,8 @@ export default function WaitingClient({ store }: Props) {
                   </div>
                 ) : (
                   <p className="text-zinc-500 font-medium leading-relaxed">
-                    카카오톡 알림톡으로 안내 메시지를 발송해 드렸습니다.<br/>
-                    입장 순서가 되면 카카오톡으로 알려드립니다.
+                    매장에서 직접 호출해 드립니다.<br/>
+                    잠시만 기다려 주세요.
                   </p>
                 )}
                 <button
