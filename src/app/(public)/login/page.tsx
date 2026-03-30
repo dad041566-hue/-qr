@@ -173,6 +173,7 @@ export default function LoginPage() {
             <div className="flex flex-col gap-1.5">
               {[
                 { label: 'Superadmin', email: 'dksk0359@gmail.com', pw: 'TestAdmin1234!' },
+                { label: 'Owner (강남지점)', email: 'owner@flow.com', pw: '12341234!' },
               ].map((preset) => (
                 <button
                   key={preset.label}
