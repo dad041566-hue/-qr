@@ -33,6 +33,11 @@ const SLUG_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_REGEX = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]).{8,}$/
 
+function generateSlug(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789'
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
 function randomIndex(max: number): number {
   if (max <= 0) throw new RangeError('randomIndex: max must be > 0')
   const limit = Math.floor(256 / max) * max
@@ -839,14 +844,10 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const slug = normalizeSlug(form.slug)
+    const slug = generateSlug()
 
-    if (!form.name || !slug) {
-      toast.error('매장명과 Slug는 필수입니다.')
-      return
-    }
-    if (!SLUG_REGEX.test(slug)) {
-      toast.error('Slug는 영문 소문자/숫자/하이픈만 허용됩니다.')
+    if (!form.name) {
+      toast.error('매장명은 필수입니다.')
       return
     }
 
@@ -911,15 +912,6 @@ function AddStoreTab({ onCreated, onTabChange }: AddStoreTabProps) {
               placeholder="예) 맛있는 식당"
               value={form.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-zinc-600">Slug * (URL 식별자)</label>
-            <Input
-              placeholder="예) tasty-restaurant"
-              value={form.slug}
-              onChange={(e) => handleChange('slug', normalizeSlug(e.target.value))}
               required
             />
           </div>
