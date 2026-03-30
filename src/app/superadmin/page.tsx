@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Building2, Plus, Pencil, LogOut, Utensils, RefreshCw, Copy } from 'lucide-react'
+import { Building2, Plus, Pencil, LogOut, Utensils, RefreshCw, Copy, KeyRound, Users, Info, CreditCard } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
@@ -157,37 +157,117 @@ async function createStoreWithOwner(params: CreateStoreWithOwnerParams): Promise
   return (j.store ?? json) as StoreRow
 }
 
+async function updateStoreInfo(storeId: string, data: { name?: string; address?: string; phone?: string }): Promise<StoreRow> {
+  return callSuperadmin<StoreRow>('update-store-info', { storeId, ...data })
+}
+
+async function resetUserPassword(userId: string): Promise<{ tempPassword: string }> {
+  return callSuperadmin<{ tempPassword: string }>('reset-password', { userId })
+}
+
+interface StoreMember {
+  userId: string
+  email: string
+  role: string
+  isFirstLogin: boolean
+}
+
+async function getStoreMembers(storeId: string): Promise<StoreMember[]> {
+  return callSuperadmin<StoreMember[]>(`list-store-members&storeId=${storeId}`)
+}
+
 // ============================================================
-// Subscription edit dialog
+// Store detail dialog (tabbed: info, subscription, members)
 // ============================================================
 
-interface SubEditDialogProps {
+interface StoreDetailDialogProps {
   store: StoreRow | null
   onClose: () => void
   onSaved: () => void
 }
 
-function SubEditDialog({ store, onClose, onSaved }: SubEditDialogProps) {
-  const [start, setStart] = useState(store?.subscription_start?.slice(0, 10) ?? '')
-  const [end, setEnd] = useState(store?.subscription_end?.slice(0, 10) ?? '')
-  const [isActive, setIsActive] = useState(store?.is_active ?? true)
-  const [loading, setLoading] = useState(false)
+function StoreDetailDialog({ store, onClose, onSaved }: StoreDetailDialogProps) {
+  const [dialogTab, setDialogTab] = useState('info')
+
+  // --- Info tab state ---
+  const [infoName, setInfoName] = useState('')
+  const [infoAddress, setInfoAddress] = useState('')
+  const [infoPhone, setInfoPhone] = useState('')
+  const [infoLoading, setInfoLoading] = useState(false)
+
+  // --- Subscription tab state ---
+  const [start, setStart] = useState('')
+  const [end, setEnd] = useState('')
+  const [isActive, setIsActive] = useState(true)
+  const [subLoading, setSubLoading] = useState(false)
+
+  // --- Members tab state ---
+  const [members, setMembers] = useState<StoreMember[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [resetConfirmUserId, setResetConfirmUserId] = useState<string | null>(null)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+
+  const loadMembers = useCallback(async (storeId: string) => {
+    setMembersLoading(true)
+    try {
+      const data = await getStoreMembers(storeId)
+      setMembers(data)
+    } catch (err: unknown) {
+      const e = err as { message?: string }
+      toast.error(e?.message ?? '멤버 목록을 불러오지 못했습니다.')
+    } finally {
+      setMembersLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (store) {
+      setInfoName(store.name ?? '')
+      setInfoAddress(store.address ?? '')
+      setInfoPhone(store.phone ?? '')
       setStart(store.subscription_start?.slice(0, 10) ?? '')
       setEnd(store.subscription_end?.slice(0, 10) ?? '')
       setIsActive(store.is_active ?? true)
+      setDialogTab('info')
+      setGeneratedPassword(null)
+      setResetConfirmUserId(null)
+      loadMembers(store.id)
     }
-  }, [store])
+  }, [store, loadMembers])
 
-  async function handleSave() {
+  // --- Info save ---
+  async function handleInfoSave() {
+    if (!store) return
+    if (!infoName.trim()) {
+      toast.error('매장명은 필수입니다.')
+      return
+    }
+    setInfoLoading(true)
+    try {
+      await updateStoreInfo(store.id, {
+        name: infoName.trim(),
+        address: infoAddress.trim(),
+        phone: infoPhone.trim(),
+      })
+      toast.success('매장 정보가 업데이트되었습니다.')
+      onSaved()
+    } catch (err: unknown) {
+      const e = err as { message?: string }
+      toast.error(e?.message ?? '저장에 실패했습니다.')
+    } finally {
+      setInfoLoading(false)
+    }
+  }
+
+  // --- Subscription save ---
+  async function handleSubSave() {
     if (!store) return
     if (!start || !end) {
       toast.error('이용 시작일과 종료일을 모두 입력하세요.')
       return
     }
-    setLoading(true)
+    setSubLoading(true)
     try {
       await updateStoreSubscription({
         storeId: store.id,
@@ -197,57 +277,234 @@ function SubEditDialog({ store, onClose, onSaved }: SubEditDialogProps) {
       })
       toast.success('이용기간이 업데이트되었습니다.')
       onSaved()
-      onClose()
     } catch (err: unknown) {
       const e = err as { message?: string }
       toast.error(e?.message ?? '저장에 실패했습니다.')
     } finally {
-      setLoading(false)
+      setSubLoading(false)
     }
   }
 
+  // --- Password reset ---
+  async function handleResetPassword() {
+    if (!resetConfirmUserId) return
+    setResetLoading(true)
+    try {
+      const { tempPassword } = await resetUserPassword(resetConfirmUserId)
+      setGeneratedPassword(tempPassword)
+      setResetConfirmUserId(null)
+      toast.success('비밀번호가 초기화되었습니다.')
+      if (store) loadMembers(store.id)
+    } catch (err: unknown) {
+      const e = err as { message?: string }
+      toast.error(e?.message ?? '비밀번호 초기화에 실패했습니다.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const ROLE_LABEL: Record<string, string> = {
+    owner: '점주',
+    manager: '매니저',
+    staff: '직원',
+  }
+
   return (
-    <Dialog open={!!store} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>이용기간 수정</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-3 py-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-zinc-600">매장명</label>
-            <p className="text-sm text-zinc-900 font-semibold">{store?.name}</p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-zinc-600">이용 시작일</label>
-            <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-zinc-600">이용 종료일</label>
-            <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="is_active"
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="w-4 h-4 accent-orange-500"
-            />
-            <label htmlFor="is_active" className="text-sm text-zinc-700">활성 상태</label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>취소</Button>
-          <Button
-            onClick={handleSave}
-            disabled={loading}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-          >
-            {loading ? '저장 중...' : '저장'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={!!store} onOpenChange={(open) => { if (!open) onClose() }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>매장 상세 — {store?.name}</DialogTitle>
+          </DialogHeader>
+
+          <Tabs value={dialogTab} onValueChange={setDialogTab}>
+            <TabsList className="w-full">
+              <TabsTrigger value="info" className="gap-1 flex-1">
+                <Info className="w-3.5 h-3.5" />
+                기본 정보
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="gap-1 flex-1">
+                <CreditCard className="w-3.5 h-3.5" />
+                구독
+              </TabsTrigger>
+              <TabsTrigger value="members" className="gap-1 flex-1">
+                <Users className="w-3.5 h-3.5" />
+                멤버
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Info tab */}
+            <TabsContent value="info">
+              <div className="flex flex-col gap-3 py-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-600">매장명 *</label>
+                  <Input value={infoName} onChange={(e) => setInfoName(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-600">주소</label>
+                  <Input value={infoAddress} onChange={(e) => setInfoAddress(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-600">전화번호</label>
+                  <Input value={infoPhone} onChange={(e) => setInfoPhone(e.target.value)} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={onClose} disabled={infoLoading}>취소</Button>
+                <Button
+                  onClick={handleInfoSave}
+                  disabled={infoLoading}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {infoLoading ? '저장 중...' : '저장'}
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+
+            {/* Subscription tab */}
+            <TabsContent value="subscription">
+              <div className="flex flex-col gap-3 py-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-600">이용 시작일</label>
+                  <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-zinc-600">이용 종료일</label>
+                  <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="is_active"
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <label htmlFor="is_active" className="text-sm text-zinc-700">활성 상태</label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={onClose} disabled={subLoading}>취소</Button>
+                <Button
+                  onClick={handleSubSave}
+                  disabled={subLoading}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {subLoading ? '저장 중...' : '저장'}
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+
+            {/* Members tab */}
+            <TabsContent value="members">
+              <div className="flex flex-col gap-3 py-2">
+                {/* Generated password display */}
+                {generatedPassword && (
+                  <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 flex flex-col gap-1.5">
+                    <p className="text-xs font-medium text-orange-700">임시 비밀번호가 생성되었습니다</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm font-mono bg-white px-2 py-1 rounded border border-orange-200">
+                        {generatedPassword}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 px-2"
+                        title="복사"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(generatedPassword)
+                            toast.success('임시 비밀번호가 복사되었습니다.')
+                          } catch {
+                            toast.error('클립보드 복사에 실패했습니다.')
+                          }
+                        }}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-orange-600">이 비밀번호는 다시 확인할 수 없습니다. 지금 복사하세요.</p>
+                  </div>
+                )}
+
+                {membersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : members.length === 0 ? (
+                  <p className="text-sm text-zinc-400 text-center py-6">멤버가 없습니다.</p>
+                ) : (
+                  <div className="rounded-lg border border-zinc-200 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-zinc-50">
+                          <TableHead className="text-xs font-semibold text-zinc-700">이메일</TableHead>
+                          <TableHead className="text-xs font-semibold text-zinc-700">역할</TableHead>
+                          <TableHead className="text-xs font-semibold text-zinc-700">상태</TableHead>
+                          <TableHead className="text-xs font-semibold text-zinc-700 w-24">작업</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {members.map((member) => (
+                          <TableRow key={member.userId}>
+                            <TableCell className="text-sm text-zinc-900">{member.email}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{ROLE_LABEL[member.role] ?? member.role}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {member.isFirstLogin ? (
+                                <Badge variant="secondary">첫 로그인 대기</Badge>
+                              ) : (
+                                <Badge variant="default">활성</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 gap-1 text-zinc-600 hover:text-orange-600 text-xs"
+                                onClick={() => setResetConfirmUserId(member.userId)}
+                              >
+                                <KeyRound className="w-3.5 h-3.5" />
+                                비밀번호 초기화
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password reset confirmation dialog */}
+      <Dialog open={!!resetConfirmUserId} onOpenChange={(open) => { if (!open) setResetConfirmUserId(null) }}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>비밀번호 초기화</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-zinc-600 py-2">
+            이 사용자의 비밀번호를 임시 비밀번호로 초기화하시겠습니까?
+            <br />
+            사용자는 다음 로그인 시 비밀번호를 변경해야 합니다.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetConfirmUserId(null)} disabled={resetLoading}>취소</Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetLoading}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              {resetLoading ? '초기화 중...' : '초기화'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -659,8 +916,8 @@ export default function SuperAdminPage() {
         </Tabs>
       </main>
 
-      {/* Subscription edit dialog */}
-      <SubEditDialog
+      {/* Store detail dialog */}
+      <StoreDetailDialog
         store={editingStore}
         onClose={() => setEditingStore(null)}
         onSaved={loadStores}

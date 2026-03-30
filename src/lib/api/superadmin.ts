@@ -109,3 +109,25 @@ export async function updateStoreSubscription(params: {
 }): Promise<void> {
   await callSuperadmin('update-subscription', params)
 }
+
+export async function updateStoreInfo(
+  storeId: string,
+  data: { name?: string; address?: string; phone?: string },
+): Promise<StoreRow> {
+  return callSuperadmin<StoreRow>('update-store-info', { storeId, ...data })
+}
+
+export async function resetUserPassword(userId: string): Promise<{ tempPassword: string }> {
+  return callSuperadmin<{ tempPassword: string }>('reset-password', { userId })
+}
+
+export interface StoreMember {
+  userId: string
+  email: string
+  role: string
+  isFirstLogin: boolean
+}
+
+export async function getStoreMembers(storeId: string): Promise<StoreMember[]> {
+  return callSuperadmin<StoreMember[]>(`list-store-members&storeId=${storeId}`)
+}
