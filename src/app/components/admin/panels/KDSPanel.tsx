@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Clock, Users, Check, Trash2, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Users, Check, Trash2, CheckCircle2, Maximize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { UIOrder, UITable } from '../types';
 
@@ -30,6 +31,13 @@ export default function KDSPanel({
           <h2 className="text-xl md:text-2xl font-black text-zinc-900">주방 KDS</h2>
           <p className="text-xs md:text-sm text-zinc-500 mt-0.5 md:mt-1">주방 작업에 최적화된 큰 글씨와 고대비 UI입니다.</p>
         </div>
+        <Link
+          href="/admin/kds"
+          target="_blank"
+          className="flex items-center gap-1.5 bg-zinc-900 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors shadow-sm"
+        >
+          <Maximize2 className="w-4 h-4" /> 전체화면
+        </Link>
       </div>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:overflow-hidden pb-4 overflow-y-auto">

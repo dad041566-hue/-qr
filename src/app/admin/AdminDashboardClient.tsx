@@ -13,7 +13,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useAuth } from '@/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { isStoreSubscriptionActive } from '@/lib/utils/subscription'
-import { getDailyRevenue, addTable } from '@/lib/api/admin'
+import { getDailyRevenue, addTable, getOrderStats, getTopMenuItems, getCategorySales } from '@/lib/api/admin'
+import type { OrderStats, TopMenuItem, CategorySales } from '@/lib/api/admin'
 import { createOrder } from '@/lib/api/order'
 import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting'
 
@@ -55,6 +56,14 @@ export default function AdminDashboardClient() {
   const router = useRouter()
   const { user, isFirstLogin } = useAuth()
   const storeId = user?.storeId ?? ''
+
+  // --- Store slug for QR URLs ---
+  const [storeSlug, setStoreSlug] = useState('')
+  useEffect(() => {
+    if (!storeId) return
+    supabase.from('stores').select('slug').eq('id', storeId).single()
+      .then(({ data }) => { if (data) setStoreSlug((data as { slug: string }).slug) })
+  }, [storeId])
 
   // --- Notification permission ---
   const { showBanner, dismissBanner, requestPermission } = useNotificationPermission()
@@ -120,6 +129,7 @@ export default function AdminDashboardClient() {
     () => rawTables.map((t) => ({
       id: t.table_number,
       _realId: t.id,
+      qrToken: t.qr_token,
       status: t.status,
       time: '',
       amount: 0,
@@ -145,6 +155,10 @@ export default function AdminDashboardClient() {
 
   // --- Revenue data ---
   const [revenueData, setRevenueData] = useState<{ time: string; amount: number }[]>([])
+  const [orderStats, setOrderStats] = useState<OrderStats>({ totalRevenue: 0, orderCount: 0, averageOrderValue: 0 })
+  const [topMenuItems, setTopMenuItems] = useState<TopMenuItem[]>([])
+  const [categorySales, setCategorySales] = useState<CategorySales[]>([])
+
   useEffect(() => {
     if (!storeId) return
     getDailyRevenue(storeId, 7)
@@ -152,25 +166,53 @@ export default function AdminDashboardClient() {
         setRevenueData(rows.map((r) => ({ time: r.date.slice(5), amount: Math.round(r.amount / 10000) }))),
       )
       .catch(() => {})
+    getOrderStats(storeId, 7).then(setOrderStats).catch(() => {})
+    getTopMenuItems(storeId, 7, 5).then(setTopMenuItems).catch(() => {})
+    getCategorySales(storeId, 7).then(setCategorySales).catch(() => {})
   }, [storeId])
 
-  // --- Local UI state synced from hooks ---
-  const [orders, setOrders] = useState<UIOrder[]>([])
-  const [tables, setTables] = useState<UITable[]>([])
-  const [menus, setMenus] = useState<UIMenu[]>([])
+  // --- Optimistic overlay pattern ---
+  // Realtime data = source of truth. Local modifications in overlay Maps.
+  // Merged via useMemo. Overlays cleared when Realtime confirms the change.
 
-  useEffect(() => { setOrders(adaptedOrders) }, [adaptedOrders])
+  // Orders: only pax is local-only
+  const [orderPaxMap, setOrderPaxMap] = useState<Map<string, number>>(new Map())
+  const orders = useMemo<UIOrder[]>(
+    () => adaptedOrders.map((o) => {
+      const pax = orderPaxMap.get(o.id)
+      return pax !== undefined ? { ...o, pax } : o
+    }),
+    [adaptedOrders, orderPaxMap],
+  )
+
+  // Tables: status (optimistic), amount/pax/time (local-only)
+  const [tableOverrides, setTableOverrides] = useState<Map<number, Partial<UITable>>>(new Map())
+  const tables = useMemo<UITable[]>(
+    () => adaptedTables.map((t) => {
+      const override = tableOverrides.get(t.id)
+      return override ? { ...t, ...override } : t
+    }),
+    [adaptedTables, tableOverrides],
+  )
+
+  // Clear table overrides when Realtime confirms the status change
   useEffect(() => {
-    setTables((prev) => {
-      const prevMap = new Map(prev.map((t) => [t.id, t]))
-      return adaptedTables.map((t) => {
-        const existing = prevMap.get(t.id)
-        if (existing) return { ...t, amount: existing.amount, pax: existing.pax, time: existing.time }
-        return t
-      })
+    setTableOverrides((prev) => {
+      const next = new Map(prev)
+      let changed = false
+      for (const t of adaptedTables) {
+        const override = next.get(t.id)
+        if (override?.status && override.status === t.status) {
+          next.delete(t.id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
     })
   }, [adaptedTables])
-  useEffect(() => { setMenus(adaptedMenus) }, [adaptedMenus])
+
+  // Menus: no local state — Realtime is single source of truth
+  const menus = adaptedMenus
 
   // --- App mode / tab ---
   const [appMode, setAppMode] = useState<'pos' | 'admin'>('pos')
@@ -239,7 +281,7 @@ export default function AdminDashboardClient() {
   }
 
   const updateOrderPax = (id: string, pax: number) => {
-    setOrders((prev) => prev.map((o) => o.id === id ? { ...o, pax } : o))
+    setOrderPaxMap((prev) => new Map(prev).set(id, pax))
   }
 
   const deleteOrder = async (id: string) => {
@@ -260,14 +302,14 @@ export default function AdminDashboardClient() {
   const markTableAvailable = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'available')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'available', amount: 0, time: '', pax: 0 }))
     toast.info(`${id}번 테이블 정리가 완료되었습니다.`)
   }
 
   const handleCheckoutTable = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'cleaning')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'cleaning', amount: 0, time: '', pax: 0 }))
     toast.success(`${id}번 테이블 정산이 완료되었습니다. 정리 대기 중입니다.`)
     setIsTableModalOpen(false)
   }
@@ -275,40 +317,35 @@ export default function AdminDashboardClient() {
   const cancelTableOrder = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'available')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'available', amount: 0, time: '', pax: 0 }))
     toast.success(`${id}번 테이블 주문이 전체 취소되었습니다.`)
     setIsTableModalOpen(false)
   }
 
+  // TODO: cancelTableMenuItem is local-only (no API call) — should call order item delete API
   const cancelTableMenuItem = (tableId: number, orderId: string, itemIndex: number) => {
     const order = orders.find((o) => o.id === orderId)
     if (!order) return
     const removedItem = order.items[itemIndex]
     const removedPrice = (removedItem.price || 0) * removedItem.qty
 
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o
-        const updatedItems = o.items.filter((_, idx) => idx !== itemIndex)
-        if (updatedItems.length === 0) return null as unknown as UIOrder
-        return { ...o, items: updatedItems, total: o.total - removedPrice }
-      }).filter((o): o is UIOrder => o !== null),
-    )
+    const currentTable = tables.find((t) => t.id === tableId)
+    if (!currentTable) return
+    const newAmount = Math.max(0, currentTable.amount - removedPrice)
+    const tableOrders = orders.filter((o) => o.table === tableId && o.id !== orderId)
+    const isLastItem = order.items.length === 1 && tableOrders.length === 0
 
-    setTables((prev) =>
-      prev.map((t) => {
-        if (t.id !== tableId) return t
-        const newAmount = Math.max(0, t.amount - removedPrice)
-        const tableOrders = orders.filter((o) => o.table === tableId && o.id !== orderId)
-        const isLastItem = order.items.length === 1 && tableOrders.length === 0
-        if (isLastItem) return { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 }
-        return { ...t, amount: newAmount }
-      }),
-    )
+    if (isLastItem) {
+      setTableOverrides((prev) => new Map(prev).set(tableId, { status: 'cleaning', amount: 0, time: '', pax: 0 }))
+    } else {
+      setTableOverrides((prev) => {
+        const existing = prev.get(tableId) ?? {}
+        return new Map(prev).set(tableId, { ...existing, amount: newAmount })
+      })
+    }
 
     if (selectedTable && selectedTable.id === tableId) {
-      const newAmount = Math.max(0, selectedTable.amount - removedPrice)
-      setSelectedTable((prev) => prev ? { ...prev, amount: newAmount } : prev)
+      setSelectedTable((prev) => prev ? { ...prev, amount: isLastItem ? 0 : newAmount } : prev)
     }
     toast.success('메뉴가 취소되었습니다.')
   }
@@ -316,13 +353,16 @@ export default function AdminDashboardClient() {
   const markTableOccupied = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'occupied')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'occupied', amount: 0, time: '방금 전', pax: 2 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'occupied', amount: 0, time: '방금 전', pax: 2 }))
     toast.success(`${id}번 테이블 착석 처리되었습니다.`)
     setIsTableModalOpen(false)
   }
 
   const updateTablePax = (id: number, pax: number) => {
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, pax } : t))
+    setTableOverrides((prev) => {
+      const existing = prev.get(id) ?? {}
+      return new Map(prev).set(id, { ...existing, pax })
+    })
     if (selectedTable && selectedTable.id === id) {
       setSelectedTable((prev) => prev ? { ...prev, pax } : prev)
     }
@@ -351,7 +391,7 @@ export default function AdminDashboardClient() {
   const toggleMenuStock = (id: string) => {
     const menu = menus.find((m) => m.id === id)
     if (menu) toggleAvailability(id, menu.stock)
-    setMenus((prev) => prev.map((m) => m.id === id ? { ...m, stock: !m.stock } : m))
+    // No local state update needed — toggleAvailability updates DB, Realtime propagates
   }
 
   const handleSaveMenu = async (e: React.FormEvent<HTMLFormElement>, menuOptions: any[]) => {
@@ -416,13 +456,17 @@ export default function AdminDashboardClient() {
     try {
       await createOrder({ storeId, tableId: tableRealId, items: orderItems })
       await apiUpdateTableStatus(tableRealId, 'occupied')
-      setTables((prev) =>
-        prev.map((t) =>
-          t.id === orderTableId
-            ? { ...t, status: 'occupied', amount: t.amount + totalAmount, time: t.time || '방금 전', pax: t.pax || 2 }
-            : t,
-        ),
-      )
+      setTableOverrides((prev) => {
+        const existing = prev.get(orderTableId!) ?? {}
+        const currentTable = tables.find((t) => t.id === orderTableId)
+        return new Map(prev).set(orderTableId!, {
+          ...existing,
+          status: 'occupied',
+          amount: (currentTable?.amount ?? 0) + totalAmount,
+          time: existing.time || currentTable?.time || '방금 전',
+          pax: existing.pax || currentTable?.pax || 2,
+        })
+      })
       if (selectedTable && selectedTable.id === orderTableId) {
         setSelectedTable((prev) => prev ? ({
           ...prev, status: 'occupied', amount: (prev.amount || 0) + totalAmount,
@@ -771,13 +815,13 @@ export default function AdminDashboardClient() {
             {activeTab === 'dashboard' && (
               <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <DashboardSummary
-                  orders={orders}
                   tables={tables}
                   revenueData={revenueData}
                   recentActivities={recentActivities}
                   pendingOrdersCount={pendingOrders.length}
                   occupiedTablesCount={occupiedTablesCount}
                   totalToday={totalToday}
+                  orderCount={orderStats.orderCount}
                 />
               </motion.div>
             )}
@@ -814,7 +858,14 @@ export default function AdminDashboardClient() {
             )}
             {activeTab === 'analytics' && (
               <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <AnalyticsPanel revenueData={revenueData} totalToday={totalToday} />
+                <AnalyticsPanel
+                  revenueData={revenueData}
+                  totalToday={totalToday}
+                  orderCount={orderStats.orderCount}
+                  averageOrderValue={orderStats.averageOrderValue}
+                  categorySales={categorySales}
+                  topMenuItems={topMenuItems}
+                />
               </motion.div>
             )}
             {activeTab === 'menu' && (
@@ -833,7 +884,7 @@ export default function AdminDashboardClient() {
               <motion.div key="qr" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <QRPanel
                   tables={tables}
-                  storeSlug={storeId}
+                  storeSlug={storeSlug}
                   onAddTable={handleAddTable}
                 />
               </motion.div>
