@@ -192,16 +192,7 @@ serve(async (req) => {
         return json({ error: 'userId is required' }, { status: 400 }, req)
       }
 
-      // Generate temp password (same logic as client-side generateTempPassword)
-      const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
-      const specials = '!@#$%&*'
-      const pwArr: string[] = []
-      for (let i = 0; i < 7; i++) {
-        pwArr.push(chars[Math.floor(Math.random() * chars.length)])
-      }
-      const special = specials[Math.floor(Math.random() * specials.length)]
-      const insertAt = Math.floor(Math.random() * (pwArr.length + 1))
-      const tempPassword = pwArr.slice(0, insertAt).join('') + special + pwArr.slice(insertAt).join('')
+      const tempPassword = '12341234!'
 
       const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
         password: tempPassword,

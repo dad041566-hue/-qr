@@ -778,6 +778,15 @@ function StoreListTab({ stores, loading, onEdit, onMenuView, onAddClick }: Store
                           size="sm"
                           variant="ghost"
                           className="h-8 px-2 gap-1 text-zinc-600 hover:text-orange-600"
+                          onClick={() => window.open(`/admin?storeId=${store.id}`, '_blank')}
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          관리자
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 gap-1 text-zinc-600 hover:text-orange-600"
                           onClick={() => onMenuView(store)}
                         >
                           <UtensilsCrossed className="w-3.5 h-3.5" />

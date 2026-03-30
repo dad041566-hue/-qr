@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Bell, ChefHat, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid,
   UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, Home,
@@ -55,8 +55,11 @@ import type { StaffCallOption } from '@/app/components/admin/panels/SettingsPane
 
 export default function AdminDashboardClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isFirstLogin } = useAuth()
-  const storeId = user?.storeId ?? ''
+  // super_admin can override storeId via ?storeId= query param
+  const queryStoreId = searchParams.get('storeId')
+  const storeId = queryStoreId || user?.storeId || ''
 
   // --- Store slug for QR URLs ---
   const [storeSlug, setStoreSlug] = useState('')
