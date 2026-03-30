@@ -119,7 +119,7 @@ export function MenuEditModal({
     onSave(e, menuOptions);
   };
 
-  const displayCategories = categories.length > 0 ? categories : ['브런치', '커피', '음료', '디저트', '주류'];
+  const hasCategories = categories.length > 0;
 
   return (
     <AnimatePresence>
@@ -193,18 +193,24 @@ export function MenuEditModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-zinc-900 mb-2">카테고리 <span className="text-orange-500">*</span></label>
-                      <div className="relative">
-                        <select
-                          name="category"
-                          defaultValue={editingMenu?.category ?? displayCategories[0]}
-                          className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none"
-                        >
-                          {displayCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                        <ChevronRight className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-                      </div>
+                      {hasCategories ? (
+                        <div className="relative">
+                          <select
+                            name="category"
+                            defaultValue={editingMenu?.category ?? categories[0]}
+                            className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-zinc-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none"
+                          >
+                            {categories.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          <ChevronRight className="w-4 h-4 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-orange-500 font-medium bg-orange-50 px-3 py-2.5 rounded-xl">
+                          카테고리를 먼저 추가하세요.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-zinc-900 mb-2">가격 (원) <span className="text-orange-500">*</span></label>

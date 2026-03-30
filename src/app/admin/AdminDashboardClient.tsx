@@ -39,6 +39,7 @@ import TablesPanel from '@/app/components/admin/panels/TablesPanel'
 import WaitingPanel from '@/app/components/admin/panels/WaitingPanel'
 import AnalyticsPanel from '@/app/components/admin/panels/AnalyticsPanel'
 import MenuPanel from '@/app/components/admin/panels/MenuPanel'
+import CategoryManagePanel from '@/app/components/admin/panels/CategoryManagePanel'
 import QRPanel from '@/app/components/admin/panels/QRPanel'
 import EventPanel from '@/app/components/admin/panels/EventPanel'
 import CustomersPanel from '@/app/components/admin/panels/CustomersPanel'
@@ -102,6 +103,10 @@ export default function AdminDashboardClient() {
     toggleAvailability,
     uploadImage,
     removeMenuItem: apiRemoveMenuItem,
+    addCategory,
+    removeCategory,
+    updateCategoryName,
+    reorderCategories,
   } = useMenuAdmin(storeId || null)
 
   const { waitings: rawWaitings } = useWaitingQueue(storeId || null)
@@ -869,7 +874,15 @@ export default function AdminDashboardClient() {
               </motion.div>
             )}
             {activeTab === 'menu' && (
-              <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                <CategoryManagePanel
+                  categories={rawCategories}
+                  menuItems={rawMenuItems}
+                  onAdd={addCategory}
+                  onRemove={removeCategory}
+                  onUpdateName={updateCategoryName}
+                  onReorder={reorderCategories}
+                />
                 <MenuPanel
                   menus={menus}
                   categories={Array.from(new Set(menus.map((m) => m.category)))}
@@ -952,7 +965,7 @@ export default function AdminDashboardClient() {
         isOpen={isMenuModalOpen}
         onClose={() => setIsMenuModalOpen(false)}
         editingMenu={editingMenu}
-        categories={Array.from(new Set(menus.map((m) => m.category)))}
+        categories={rawCategories.map((c) => c.name)}
         onSave={handleSaveMenu}
         onImageUpload={uploadImage}
       />

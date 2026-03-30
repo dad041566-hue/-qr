@@ -7,6 +7,9 @@ import {
   updateMenuItem,
   deleteMenuItem,
   uploadMenuImage,
+  createMenuCategory,
+  updateMenuCategory,
+  deleteMenuCategory,
   type MenuItemInput,
 } from '@/lib/api/menuAdmin'
 import type { MenuItemRow, MenuCategoryRow, MenuItemUpdate } from '@/types/database'
@@ -101,6 +104,67 @@ export function useMenuAdmin(storeId: string | null) {
     }
   }, [storeId])
 
+  const addCategory = useCallback(async (name: string) => {
+    if (!storeId) throw new Error('storeId is required')
+    try {
+      const created = await createMenuCategory(storeId, name)
+      setCategories((prev) => [...prev, created])
+      toast.success('카테고리가 추가되었습니다.')
+      return created
+    } catch (err) {
+      console.error('useMenuAdmin addCategory:', err)
+      toast.error('카테고리 추가에 실패했습니다.')
+      throw err
+    }
+  }, [storeId])
+
+  const removeCategory = useCallback(async (id: string) => {
+    try {
+      await deleteMenuCategory(id)
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      toast.success('카테고리가 삭제되었습니다.')
+    } catch (err) {
+      console.error('useMenuAdmin removeCategory:', err)
+      toast.error('카테고리 삭제에 실패했습니다.')
+      throw err
+    }
+  }, [])
+
+  const updateCategoryName = useCallback(async (id: string, name: string) => {
+    try {
+      const updated = await updateMenuCategory(id, { name })
+      setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)))
+      toast.success('카테고리 이름이 변경되었습니다.')
+      return updated
+    } catch (err) {
+      console.error('useMenuAdmin updateCategoryName:', err)
+      toast.error('카테고리 수정에 실패했습니다.')
+      throw err
+    }
+  }, [])
+
+  const reorderCategories = useCallback(async (orderedIds: string[]) => {
+    try {
+      await Promise.all(
+        orderedIds.map((id, index) => updateMenuCategory(id, { sort_order: index }))
+      )
+      setCategories((prev) => {
+        const map = new Map(prev.map((c) => [c.id, c]))
+        return orderedIds
+          .map((id, index) => {
+            const cat = map.get(id)
+            return cat ? { ...cat, sort_order: index } : undefined
+          })
+          .filter((c): c is MenuCategoryRow => c !== undefined)
+      })
+      toast.success('카테고리 순서가 변경되었습니다.')
+    } catch (err) {
+      console.error('useMenuAdmin reorderCategories:', err)
+      toast.error('순서 변경에 실패했습니다.')
+      throw err
+    }
+  }, [])
+
   return {
     menuItems,
     categories,
@@ -111,6 +175,10 @@ export function useMenuAdmin(storeId: string | null) {
     removeMenuItem,
     toggleAvailability,
     uploadImage,
+    addCategory,
+    removeCategory,
+    updateCategoryName,
+    reorderCategories,
     refetch: fetchAll,
   }
 }
