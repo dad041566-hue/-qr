@@ -13,7 +13,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useAuth } from '@/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { isStoreSubscriptionActive } from '@/lib/utils/subscription'
-import { getDailyRevenue, addTable, getOrderStats, getTopMenuItems, getCategorySales } from '@/lib/api/admin'
+import { getDailyRevenue, getOrderStats, getTopMenuItems, getCategorySales } from '@/lib/api/admin'
+import { addTableAction } from '@/app/actions/admin'
 import type { OrderStats, TopMenuItem, CategorySales } from '@/lib/api/admin'
 import { createOrder } from '@/lib/api/order'
 import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting'
@@ -497,7 +498,7 @@ export default function AdminDashboardClient() {
   const handleAddTable = async () => {
     try {
       const nextNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.id)) + 1 : 1
-      await addTable(storeId, nextNumber)
+      await addTableAction(storeId, nextNumber)
       await refetchTables()
       toast.success('테이블이 추가되었습니다.')
     } catch (err: unknown) {
