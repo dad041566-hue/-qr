@@ -91,3 +91,56 @@ export async function updateSubscriptionAction(
   }
   if (!res.ok) throw new Error(json.error ?? json.message ?? `요청 실패 (${res.status})`)
 }
+
+export async function updateStoreInfoAction(
+  storeId: string,
+  data: { name?: string; address?: string; phone?: string },
+): Promise<void> {
+  const { supabaseUrl, anonKey, accessToken } = await getSuperadminHeaders()
+
+  const url = `${supabaseUrl}/functions/v1/superadmin?action=update-store-info`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+    body: JSON.stringify({ storeId, ...data }),
+  })
+
+  let json: { error?: string; message?: string }
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`서버 응답 오류 (HTTP ${res.status})`)
+  }
+  if (!res.ok) throw new Error(json.error ?? json.message ?? `요청 실패 (${res.status})`)
+}
+
+export async function resetPasswordAction(
+  userId: string,
+): Promise<{ tempPassword: string }> {
+  const { supabaseUrl, anonKey, accessToken } = await getSuperadminHeaders()
+
+  const url = `${supabaseUrl}/functions/v1/superadmin?action=reset-password`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+    body: JSON.stringify({ userId }),
+  })
+
+  let json: { tempPassword?: string; error?: string; message?: string }
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error(`서버 응답 오류 (HTTP ${res.status})`)
+  }
+  if (!res.ok) throw new Error(json.error ?? json.message ?? `요청 실패 (${res.status})`)
+  if (!json.tempPassword) throw new Error('임시 비밀번호 생성 응답이 올바르지 않습니다.')
+  return { tempPassword: json.tempPassword }
+}
