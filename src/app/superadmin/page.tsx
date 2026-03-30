@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { Building2, Plus, Pencil, LogOut, Utensils, RefreshCw, Copy } from 'lucide-react'
+import { Building2, Plus, Pencil, LogOut, Utensils, RefreshCw, Copy, UtensilsCrossed } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
@@ -22,9 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/app/components/ui/table'
+import { Switch } from '@/app/components/ui/switch'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
-import type { StoreRow } from '@/types/database'
+import type { StoreRow, MenuCategoryRow, MenuItemRow } from '@/types/database'
 import { getKstDateString } from '@/lib/utils/subscription'
 
 
@@ -157,6 +158,199 @@ async function createStoreWithOwner(params: CreateStoreWithOwnerParams): Promise
   return (j.store ?? json) as StoreRow
 }
 
+async function getStoreMenuData(storeId: string): Promise<{ categories: MenuCategoryRow[]; items: MenuItemRow[] }> {
+  return callSuperadmin<{ categories: MenuCategoryRow[]; items: MenuItemRow[] }>('get-store-menu', { storeId })
+}
+
+async function updateMenuItem(
+  itemId: string,
+  updates: { name?: string; price?: number; is_available?: boolean },
+): Promise<MenuItemRow> {
+  return callSuperadmin<MenuItemRow>('update-menu-item', { itemId, ...updates })
+}
+
+// ============================================================
+// Inline editable cell
+// ============================================================
+
+interface InlineEditCellProps {
+  value: string
+  onSave: (newValue: string) => void
+  type?: 'text' | 'number'
+  className?: string
+}
+
+function InlineEditCell({ value, onSave, type = 'text', className = '' }: InlineEditCellProps) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setDraft(value) }, [value])
+  useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
+
+  function commit() {
+    setEditing(false)
+    const trimmed = draft.trim()
+    if (trimmed === '' || trimmed === value) {
+      setDraft(value)
+      return
+    }
+    onSave(trimmed)
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        className={`text-left hover:bg-zinc-100 rounded px-1.5 py-0.5 cursor-pointer transition-colors ${className}`}
+        onClick={() => setEditing(true)}
+      >
+        {type === 'number' ? `${Number(value).toLocaleString()}원` : value}
+      </button>
+    )
+  }
+
+  return (
+    <Input
+      ref={inputRef}
+      type={type}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+        if (e.key === 'Escape') { setDraft(value); setEditing(false) }
+      }}
+      className={`h-7 px-1.5 text-sm ${className}`}
+    />
+  )
+}
+
+// ============================================================
+// Store menu dialog
+// ============================================================
+
+interface StoreMenuDialogProps {
+  store: StoreRow | null
+  onClose: () => void
+}
+
+function StoreMenuDialog({ store, onClose }: StoreMenuDialogProps) {
+  const [categories, setCategories] = useState<MenuCategoryRow[]>([])
+  const [items, setItems] = useState<MenuItemRow[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!store) return
+    setLoading(true)
+    getStoreMenuData(store.id)
+      .then((data) => { setCategories(data.categories); setItems(data.items) })
+      .catch((err: unknown) => {
+        const e = err as { message?: string }
+        toast.error(e?.message ?? '메뉴를 불러오지 못했습니다.')
+      })
+      .finally(() => setLoading(false))
+  }, [store])
+
+  async function handleUpdateItem(
+    itemId: string,
+    updates: { name?: string; price?: number; is_available?: boolean },
+  ) {
+    try {
+      const updated = await updateMenuItem(itemId, updates)
+      setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, ...updated } : it)))
+      toast.success('메뉴가 수정되었습니다.')
+    } catch (err: unknown) {
+      const e = err as { message?: string }
+      toast.error(e?.message ?? '메뉴 수정에 실패했습니다.')
+    }
+  }
+
+  function itemsForCategory(categoryId: string): MenuItemRow[] {
+    return items.filter((item) => item.category_id === categoryId)
+  }
+
+  return (
+    <Dialog open={!!store} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{store?.name} — 메뉴 관리</DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
+            <UtensilsCrossed className="w-10 h-10 opacity-40" />
+            <p className="text-sm">등록된 메뉴가 없습니다.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6 py-2">
+            {categories.map((cat) => {
+              const catItems = itemsForCategory(cat.id)
+              if (catItems.length === 0) return null
+              return (
+                <div key={cat.id}>
+                  <h3 className="text-sm font-semibold text-zinc-700 border-b border-zinc-200 pb-1 mb-3">
+                    {cat.name}
+                  </h3>
+                  <div className="flex flex-col gap-2">
+                    {catItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 rounded-lg border border-zinc-100 px-3 py-2 hover:bg-zinc-50/60"
+                      >
+                        {item.image_url && (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-10 h-10 rounded-md object-cover shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0 flex items-center gap-3">
+                          <InlineEditCell
+                            value={item.name}
+                            onSave={(name) => handleUpdateItem(item.id, { name })}
+                            className="font-medium text-zinc-900 text-sm"
+                          />
+                          <InlineEditCell
+                            value={String(item.price)}
+                            type="number"
+                            onSave={(v) => handleUpdateItem(item.id, { price: Number(v) })}
+                            className="text-zinc-600 text-sm shrink-0"
+                          />
+                          {item.badge && (
+                            <Badge variant="outline" className="shrink-0 text-xs">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-zinc-400">
+                            {item.is_available ? '판매중' : '품절'}
+                          </span>
+                          <Switch
+                            checked={item.is_available}
+                            onCheckedChange={(checked) =>
+                              handleUpdateItem(item.id, { is_available: checked })
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ============================================================
 // Subscription edit dialog
 // ============================================================
@@ -259,10 +453,11 @@ interface StoreListTabProps {
   stores: StoreRow[]
   loading: boolean
   onEdit: (store: StoreRow) => void
+  onMenuView: (store: StoreRow) => void
   onAddClick: () => void
 }
 
-function StoreListTab({ stores, loading, onEdit, onAddClick }: StoreListTabProps) {
+function StoreListTab({ stores, loading, onEdit, onMenuView, onAddClick }: StoreListTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -295,7 +490,7 @@ function StoreListTab({ stores, loading, onEdit, onAddClick }: StoreListTabProps
                 <TableHead className="font-semibold text-zinc-700">Slug</TableHead>
                 <TableHead className="font-semibold text-zinc-700">이용기간</TableHead>
                 <TableHead className="font-semibold text-zinc-700">상태</TableHead>
-                <TableHead className="font-semibold text-zinc-700 w-20">관리</TableHead>
+                <TableHead className="font-semibold text-zinc-700 w-36">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -316,15 +511,26 @@ function StoreListTab({ stores, loading, onEdit, onAddClick }: StoreListTabProps
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 gap-1 text-zinc-600 hover:text-orange-600"
-                        onClick={() => onEdit(store)}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        수정
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 gap-1 text-zinc-600 hover:text-orange-600"
+                          onClick={() => onMenuView(store)}
+                        >
+                          <UtensilsCrossed className="w-3.5 h-3.5" />
+                          메뉴
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 gap-1 text-zinc-600 hover:text-orange-600"
+                          onClick={() => onEdit(store)}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          수정
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -579,6 +785,7 @@ export default function SuperAdminPage() {
   const [stores, setStores] = useState<StoreRow[]>([])
   const [listLoading, setListLoading] = useState(true)
   const [editingStore, setEditingStore] = useState<StoreRow | null>(null)
+  const [menuViewStore, setMenuViewStore] = useState<StoreRow | null>(null)
   const [activeTab, setActiveTab] = useState('stores')
 
   async function loadStores() {
@@ -646,6 +853,7 @@ export default function SuperAdminPage() {
               stores={stores}
               loading={listLoading}
               onEdit={setEditingStore}
+              onMenuView={setMenuViewStore}
               onAddClick={() => setActiveTab('add')}
             />
           </TabsContent>
@@ -664,6 +872,12 @@ export default function SuperAdminPage() {
         store={editingStore}
         onClose={() => setEditingStore(null)}
         onSaved={loadStores}
+      />
+
+      {/* Store menu dialog */}
+      <StoreMenuDialog
+        store={menuViewStore}
+        onClose={() => setMenuViewStore(null)}
       />
     </div>
   )

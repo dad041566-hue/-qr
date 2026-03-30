@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { StoreRow } from '@/types/database'
+import type { StoreRow, MenuCategoryRow, MenuItemRow } from '@/types/database'
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY as ANON_KEY } from '@/lib/env'
 
@@ -108,4 +108,15 @@ export async function updateStoreSubscription(params: {
   isActive: boolean
 }): Promise<void> {
   await callSuperadmin('update-subscription', params)
+}
+
+export async function getStoreMenu(storeId: string): Promise<{ categories: MenuCategoryRow[]; items: MenuItemRow[] }> {
+  return callSuperadmin<{ categories: MenuCategoryRow[]; items: MenuItemRow[] }>('get-store-menu', { storeId })
+}
+
+export async function updateStoreMenuItem(
+  itemId: string,
+  updates: { name?: string; price?: number; is_available?: boolean },
+): Promise<MenuItemRow> {
+  return callSuperadmin<MenuItemRow>('update-menu-item', { itemId, ...updates })
 }
