@@ -35,7 +35,7 @@ export default function QRPanel({ tables, storeSlug, onAddTable }: QRPanelProps)
           <div key={table.id} className="bg-white rounded-2xl md:rounded-3xl border border-zinc-200 p-4 md:p-6 shadow-sm flex flex-col items-center text-center hover:border-orange-500 transition-colors group">
             <h3 className="font-black text-lg md:text-xl text-zinc-900 mb-1">테이블 {table.id}</h3>
             <p className="text-[10px] md:text-xs font-medium text-zinc-400 mb-4 md:mb-6 flex items-center gap-1">
-              <Link2 className="w-3 h-3" /> .../m/{storeSlug}/{table.id}
+              <Link2 className="w-3 h-3" /> .../m/{storeSlug}/{table.qrToken?.slice(0, 8)}...
             </p>
 
             <div className="w-24 h-24 md:w-32 md:h-32 bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-2xl flex items-center justify-center mb-4 md:mb-6 group-hover:bg-orange-50 group-hover:border-orange-200 transition-colors">
