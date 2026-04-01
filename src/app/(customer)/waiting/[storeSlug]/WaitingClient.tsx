@@ -4,30 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { ChevronLeft, Users, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { createClient } from '@/lib/supabase/client'
+import { createWaitingAction } from '@/app/actions/waiting'
 import type { StoreRow, WaitingStatus } from '@/types/database'
 
-// Inline helpers to avoid pulling in @/lib/api/waiting (uses Vite supabase client)
 async function createWaiting(params: { storeId: string; phone: string; partySize: number }) {
-  const supabase = createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: queueNumber, error: rpcError } = await (supabase as any).rpc('next_queue_number', {
-    p_store_id: params.storeId,
-  })
-  if (rpcError) throw new Error(rpcError.message)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('waitings')
-    .insert({
-      store_id: params.storeId,
-      queue_number: queueNumber as number,
-      phone: params.phone,
-      party_size: params.partySize,
-      status: 'waiting',
-    })
-    .select('id')
-    .single()
-  if (error) throw new Error(error.message)
-  return { queueNumber: queueNumber as number, waitingId: data.id }
+  return createWaitingAction(params.storeId, params.phone, params.partySize)
 }
 
 async function getWaitingStatus(storeId: string, waitingId: string) {
@@ -74,13 +55,26 @@ export default function WaitingClient({ store }: Props) {
     }
   }
 
-  const saved = readSaved()
-  const [step, setStep] = useState(() => (saved?.step === 2 || saved?.step === 3) ? saved.step : 1)
-  const [phone, setPhone] = useState(() => typeof saved?.phone === 'string' ? saved.phone : '010')
-  const [pax, setPax] = useState(() => typeof saved?.pax === 'number' ? saved.pax : 2)
-  const [queueNumber, setQueueNumber] = useState(() => typeof saved?.queueNumber === 'number' ? saved.queueNumber : 0)
-  const [waitingId, setWaitingId] = useState(() => typeof saved?.waitingId === 'string' ? saved.waitingId : '')
-  const [waitingCount, setWaitingCount] = useState(() => typeof saved?.waitingCount === 'number' ? saved.waitingCount : 0)
+  // 서버/클라이언트 동일한 초기값으로 hydration mismatch 방지
+  const [step, setStep] = useState(1)
+  const [phone, setPhone] = useState('010')
+  const [pax, setPax] = useState(2)
+  const [queueNumber, setQueueNumber] = useState(0)
+  const [waitingId, setWaitingId] = useState('')
+  const [waitingCount, setWaitingCount] = useState(0)
+
+  // hydration 완료 후 sessionStorage에서 복원
+  useEffect(() => {
+    const saved = readSaved()
+    if (!saved) return
+    if (saved.step === 2 || saved.step === 3) setStep(saved.step)
+    if (typeof saved.phone === 'string') setPhone(saved.phone)
+    if (typeof saved.pax === 'number') setPax(saved.pax)
+    if (typeof saved.queueNumber === 'number') setQueueNumber(saved.queueNumber)
+    if (typeof saved.waitingId === 'string') setWaitingId(saved.waitingId)
+    if (typeof saved.waitingCount === 'number') setWaitingCount(saved.waitingCount)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -201,7 +195,7 @@ export default function WaitingClient({ store }: Props) {
                 <h2 className="text-3xl font-extrabold text-zinc-900 mb-2">연락처를 입력해주세요</h2>
                 <p className="text-zinc-500 mb-8 font-medium">매장에서 직접 순서를 안내해 드립니다.</p>
 
-                <div className="text-4xl font-black tracking-widest text-zinc-800 mb-10 h-12 flex items-center justify-center border-b-2 border-zinc-900 pb-2 w-64 text-center">
+                <div className="text-2xl font-black tracking-wider text-zinc-800 mb-10 h-12 flex items-center justify-center border-b-2 border-zinc-900 pb-2 w-72 text-center">
                   {phone}
                   <span className="w-1 h-8 bg-orange-500 animate-pulse ml-1"></span>
                 </div>

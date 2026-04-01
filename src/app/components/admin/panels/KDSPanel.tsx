@@ -35,6 +35,7 @@ export default function KDSPanel({
   const completedOrders = orders.filter(o => o.status === 'completed');
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<'pending' | 'preparing' | 'completed'>('pending');
 
   const handleDeleteConfirm = () => {
     if (deleteTargetId) {
@@ -59,9 +60,19 @@ export default function KDSPanel({
         </Link>
       </div>
 
+      {/* 모바일 탭 전환 */}
+      <div className="flex md:hidden gap-1 mb-4 p-1 bg-zinc-100 rounded-2xl shrink-0">
+        {([['pending', '신규 주문', pendingOrders.length, 'text-red-500'], ['preparing', '조리중', preparingOrders.length, 'text-orange-500'], ['completed', '서빙 대기', completedOrders.length, 'text-green-500']] as const).map(([tab, label, count, color]) => (
+          <button key={tab} onClick={() => setMobileTab(tab)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${mobileTab === tab ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500'}`}>
+            {label}
+            {count > 0 && <span className={`font-black text-xs ${color}`}>{count}</span>}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:overflow-hidden pb-4 overflow-y-auto">
         {/* Column 1: Pending */}
-        <div className="flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0">
+        <div className={`${mobileTab === 'pending' ? 'flex' : 'hidden'} md:flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0`}>
           <div className="flex justify-between items-center mb-4 px-2 shrink-0">
             <h3 className="font-black text-lg text-zinc-800 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> 신규 주문
@@ -85,8 +96,9 @@ export default function KDSPanel({
                           <div className="flex items-center gap-1 mt-1">
                             <Users className="w-3.5 h-3.5 text-zinc-400" />
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={order.pax || 0}
                               onChange={(e) => updateOrderPax(order.id, parseInt(e.target.value) || 0)}
                               className="w-12 text-xs font-bold text-zinc-700 bg-zinc-100 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-red-400"
@@ -97,21 +109,9 @@ export default function KDSPanel({
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <p className="text-sm font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> {order.time}분 전</p>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <select
-                            value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                            className="text-xs font-bold text-zinc-600 bg-white border border-zinc-200 rounded px-1.5 py-1 outline-none"
-                          >
-                            <option value="pending">신규 주문</option>
-                            <option value="preparing">조리중</option>
-                            <option value="completed">서빙 대기</option>
-                            <option value="served">서빙 완료</option>
-                          </select>
-                          <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
+                        <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1 mt-1" title="주문 삭제">
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </div>
                       </div>
                     </div>
                     <ul className="space-y-4">
@@ -139,7 +139,7 @@ export default function KDSPanel({
         </div>
 
         {/* Column 2: Preparing */}
-        <div className="flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0">
+        <div className={`${mobileTab === 'preparing' ? 'flex' : 'hidden'} md:flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0`}>
           <div className="flex justify-between items-center mb-4 px-2 shrink-0">
             <h3 className="font-black text-lg text-zinc-800 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-orange-500"></span> 조리중
@@ -179,21 +179,9 @@ export default function KDSPanel({
                           <p className={`text-sm font-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${isUrgent ? 'text-red-600 bg-red-50 animate-pulse' : 'text-orange-600 bg-orange-50'}`}>
                             <Clock className="w-3.5 h-3.5"/> {order.time}분 전
                           </p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <select
-                              value={order.status}
-                              onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                              className="text-xs font-bold text-zinc-600 bg-white border border-zinc-200 rounded px-1.5 py-1 outline-none"
-                            >
-                              <option value="pending">신규 주문</option>
-                              <option value="preparing">조리중</option>
-                              <option value="completed">서빙 대기</option>
-                              <option value="served">서빙 완료</option>
-                            </select>
-                            <button onClick={() => deleteOrder(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
+                          <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1 mt-1" title="주문 삭제">
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          </div>
                         </div>
                       </div>
                       <ul className="space-y-4">
@@ -222,7 +210,7 @@ export default function KDSPanel({
         </div>
 
         {/* Column 3: Completed/Serving */}
-        <div className="flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0 opacity-80 hover:opacity-100 transition-opacity">
+        <div className={`${mobileTab === 'completed' ? 'flex' : 'hidden'} md:flex flex-col bg-zinc-100/50 rounded-3xl p-4 md:overflow-hidden border border-zinc-200/50 min-h-[300px] md:min-h-0 shrink-0`}>
           <div className="flex justify-between items-center mb-4 px-2 shrink-0">
             <h3 className="font-black text-lg text-zinc-500 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500"></span> 서빙 대기
@@ -246,8 +234,9 @@ export default function KDSPanel({
                           <div className="flex items-center gap-1 mt-1">
                             <Users className="w-3.5 h-3.5 text-zinc-400" />
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={order.pax || 0}
                               onChange={(e) => updateOrderPax(order.id, parseInt(e.target.value) || 0)}
                               className="w-12 text-xs font-bold text-zinc-700 bg-zinc-100 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-green-400"
@@ -258,21 +247,9 @@ export default function KDSPanel({
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <p className="text-sm font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> 서빙 대기</p>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <select
-                            value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                            className="text-xs font-bold text-zinc-600 bg-white border border-zinc-200 rounded px-1.5 py-1 outline-none"
-                          >
-                            <option value="pending">신규 주문</option>
-                            <option value="preparing">조리중</option>
-                            <option value="completed">서빙 대기</option>
-                            <option value="served">서빙 완료</option>
-                          </select>
-                          <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1" title="주문 삭제">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button onClick={() => setDeleteTargetId(order.id)} className="text-zinc-400 hover:text-red-500 transition-colors p-1 mt-1" title="주문 삭제">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     <ul className="space-y-4">

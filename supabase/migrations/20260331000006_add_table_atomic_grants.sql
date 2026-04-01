@@ -1,0 +1,4 @@
+DO $$ BEGIN
+  EXECUTE 'REVOKE ALL ON FUNCTION add_table_atomic(UUID) FROM PUBLIC';
+  EXECUTE 'GRANT EXECUTE ON FUNCTION add_table_atomic(UUID) TO service_role';
+END $$;

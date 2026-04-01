@@ -25,6 +25,7 @@ export interface UIOrder {
 export interface UITable {
   id: number;
   _realId: string;
+  name: string;
   qrToken: string;
   status: string;
   time: string;

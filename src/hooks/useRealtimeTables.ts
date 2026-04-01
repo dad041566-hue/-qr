@@ -5,6 +5,7 @@ import { supabase as _supabase } from '@/lib/supabase'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = _supabase as any
 import { getTables, updateTableStatus as apiUpdateTableStatus } from '@/lib/api/admin'
+import { getTablesAction } from '@/app/actions/admin'
 import type { TableRow, TableStatus } from '@/types/database'
 
 export function useRealtimeTables(storeId: string | null) {
@@ -19,9 +20,16 @@ export function useRealtimeTables(storeId: string | null) {
     }
     try {
       const data = await getTables(storeId)
+      // 빈 배열은 정상 (테이블 0개인 신규 매장). 에러 시에만 서버 액션 fallback
       setTables(data ?? [])
-    } catch (err) {
-      console.error('useRealtimeTables fetchTables:', err)
+    } catch {
+      // anon 클라이언트 실패(RLS 차단 등) → service_role 서버 액션으로 재시도
+      try {
+        const serverData = await getTablesAction(storeId)
+        setTables(serverData as TableRow[])
+      } catch (err2) {
+        console.error('useRealtimeTables fetchTables:', err2)
+      }
     } finally {
       setLoading(false)
     }

@@ -32,30 +32,34 @@ CREATE TABLE store_settings (
 -- 동시 요청 시 row lock으로 중복 방지
 -- ============================================================
 CREATE TABLE store_queue_sequences (
-  store_id       uuid PRIMARY KEY REFERENCES stores(id) ON DELETE CASCADE,
-  current_number int NOT NULL DEFAULT 0
+  store_id         uuid PRIMARY KEY REFERENCES stores(id) ON DELETE CASCADE,
+  current_number   int  NOT NULL DEFAULT 0,
+  last_reset_date  date NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Seoul')::date
 );
 
--- 대기번호 채번 함수 (row lock으로 동시성 처리)
+-- 대기번호 채번 함수 (row lock + 당일 자동 리셋)
 CREATE OR REPLACE FUNCTION next_queue_number(p_store_id uuid)
-RETURNS int LANGUAGE plpgsql AS $$
+RETURNS int LANGUAGE plpgsql AS $func$
 DECLARE
-  v_next int;
+  v_next  int;
+  v_today date := (now() AT TIME ZONE 'Asia/Seoul')::date;
 BEGIN
   UPDATE store_queue_sequences
-  SET current_number = current_number + 1
+  SET
+    current_number  = CASE WHEN last_reset_date < v_today THEN 1 ELSE current_number + 1 END,
+    last_reset_date = v_today
   WHERE store_id = p_store_id
   RETURNING current_number INTO v_next;
 
   IF NOT FOUND THEN
-    INSERT INTO store_queue_sequences(store_id, current_number)
-    VALUES (p_store_id, 1)
+    INSERT INTO store_queue_sequences (store_id, current_number, last_reset_date)
+    VALUES (p_store_id, 1, v_today)
     RETURNING current_number INTO v_next;
   END IF;
 
   RETURN v_next;
 END;
-$$;
+$func$;
 
 -- ============================================================
 -- 4. platform_alimtalk_templates — 플랫폼 중앙 알림톡 템플릿
@@ -316,6 +320,36 @@ ALTER TABLE orders                 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waitings               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waiting_notifications  ENABLE ROW LEVEL SECURITY;
+
+-- 테이블 원자적 추가 (SELECT MAX + INSERT 레이스 컨디션 방지, unique_violation 시 자동 재시도)
+CREATE OR REPLACE FUNCTION add_table_atomic(p_store_id UUID)
+RETURNS tables
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $func$
+DECLARE
+  v_result tables;
+BEGIN
+  LOOP
+    BEGIN
+      INSERT INTO tables (store_id, table_number, name, qr_token)
+      SELECT
+        p_store_id,
+        COALESCE(MAX(table_number), 0) + 1,
+        (COALESCE(MAX(table_number), 0) + 1)::text || '번',
+        gen_random_uuid()
+      FROM tables WHERE store_id = p_store_id
+      RETURNING * INTO v_result;
+      RETURN v_result;
+    EXCEPTION WHEN unique_violation THEN
+      NULL;
+    END;
+  END LOOP;
+END;
+$func$;
+REVOKE ALL ON FUNCTION add_table_atomic(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION add_table_atomic(UUID) TO service_role;
 
 -- 헬퍼 함수 (SECURITY DEFINER + 인덱스 탐색)
 CREATE OR REPLACE FUNCTION my_store_ids()

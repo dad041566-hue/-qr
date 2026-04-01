@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['100.80.189.109'],
   experimental: {
     serverActions: { bodySizeLimit: '2mb' },
   },

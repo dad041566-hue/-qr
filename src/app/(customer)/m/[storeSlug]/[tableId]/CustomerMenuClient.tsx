@@ -61,6 +61,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
   const storeSlug = store.slug
   const tableId = table.id
   const orderHistoryKey = `order-history:${storeSlug}:${table.qr_token}`
+  const tableDisplayName = table.name || `테이블 ${table.table_number}번`
 
   const [activeCategory, setActiveCategory] = useState('전체')
   const [cart, setCart] = useState<CartItem[]>([])
@@ -146,6 +147,16 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
 
   const addToCart = () => {
     if (!selectedItem) return
+
+    // 필수 옵션 미선택 검증
+    const missingRequired = selectedItem.options?.find(
+      (opt) => opt.required && !selectedOptions[opt.name]
+    )
+    if (missingRequired) {
+      toast.error(`${missingRequired.name}을(를) 선택해주세요.`)
+      return
+    }
+
     let extraPrice = 0
     const optionStrings: string[] = []
     const optionsForOrder: SelectedOption[] = []
@@ -167,9 +178,12 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
         }
       })
     }
+
+    // 동일 메뉴+옵션 조합은 수량 병합
+    const cartId = [selectedItem.id, ...optionsForOrder.map((o) => o.option_choice_id).sort()].join('_')
     const cartItem: CartItem = {
       id: selectedItem.id,
-      cartId: Math.random().toString(36).substring(7),
+      cartId,
       name: selectedItem.name,
       price: selectedItem.price + extraPrice,
       qty: itemQuantity,
@@ -177,7 +191,15 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       selectedOptions: optionsForOrder,
       image: selectedItem.image,
     }
-    setCart((prev) => [...prev, cartItem])
+    setCart((prev) => {
+      const existing = prev.find((item) => item.cartId === cartId)
+      if (existing) {
+        return prev.map((item) =>
+          item.cartId === cartId ? { ...item, qty: item.qty + itemQuantity } : item
+        )
+      }
+      return [...prev, cartItem]
+    })
     setSelectedItem(null)
     toast.success('장바구니에 담겼습니다.')
   }
@@ -221,7 +243,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       }
 
       setOrderHistory((prev) => [newOrder, ...prev])
-      toast.success(`주문이 성공적으로 접수되었습니다! (${table.table_number}번 테이블)`, {
+      toast.success(`주문이 성공적으로 접수되었습니다! (${tableDisplayName})`, {
         description: '주방으로 주문이 전달되었습니다.',
         duration: 4000,
       })
@@ -269,7 +291,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-center">
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 1, type: 'spring' }} className="bg-orange-500/20 text-orange-400 font-bold px-6 py-2.5 rounded-full text-sm inline-flex items-center gap-2 mb-6 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> 테이블 {table.table_number}번 인식 완료
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> {tableDisplayName} 인식 완료
                 </motion.div>
                 <h2 className="text-3xl font-black mb-3 tracking-tight">메뉴판을 준비하고 있어요</h2>
                 <p className="text-zinc-400 text-sm font-medium">잠시만 기다려주세요...</p>
@@ -305,7 +327,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
 
           <div className="absolute bottom-6 left-6 z-10">
             <p className="text-white/80 text-sm font-bold mb-1.5 drop-shadow-md">환영합니다! 지금 계신 곳은</p>
-            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">테이블 {table.table_number} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
+            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">{tableDisplayName} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
           </div>
         </div>
 
@@ -505,9 +527,9 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                       <div className="flex flex-col items-end justify-between h-20">
                         <button onClick={() => updateCartItemQuantity(item.cartId, -item.qty)} className="text-zinc-300 hover:text-red-500 p-1 transition-colors"><X className="w-4 h-4" /></button>
                         <div className="flex items-center gap-3 bg-zinc-50 rounded-full p-1 border border-zinc-200">
-                          <button onClick={() => updateCartItemQuantity(item.cartId, -1)} className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-zinc-600 shadow-sm"><Minus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartItemQuantity(item.cartId, -1)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-zinc-600 shadow-sm"><Minus className="w-4 h-4" /></button>
                           <span className="text-sm font-bold w-4 text-center text-zinc-900">{item.qty}</span>
-                          <button onClick={() => updateCartItemQuantity(item.cartId, 1)} className="w-7 h-7 bg-zinc-900 text-white rounded-full flex items-center justify-center shadow-sm"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartItemQuantity(item.cartId, 1)} className="w-10 h-10 bg-zinc-900 text-white rounded-full flex items-center justify-center shadow-sm"><Plus className="w-4 h-4" /></button>
                         </div>
                       </div>
                     </div>
@@ -636,7 +658,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                     <div className="bg-zinc-50 rounded-2xl p-4 mb-4 text-left space-y-2 border border-zinc-100">
                       <div className="flex justify-between text-sm">
                         <span className="text-zinc-500 font-medium">테이블</span>
-                        <span className="font-bold text-zinc-900">{table.table_number}번</span>
+                        <span className="font-bold text-zinc-900">{tableDisplayName}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-zinc-500 font-medium">총 수량</span>

@@ -33,7 +33,7 @@ interface MenuEditModalProps {
   onClose: () => void;
   editingMenu: UIMenu | null;
   categories: string[];
-  onSave: (e: React.FormEvent<HTMLFormElement>, menuOptions: MenuOptionGroup[]) => void;
+  onSave: (e: React.FormEvent<HTMLFormElement>, menuOptions: MenuOptionGroup[], imageUrl?: string) => void;
   onImageUpload: (file: File) => Promise<string>;
 }
 
@@ -116,7 +116,7 @@ export function MenuEditModal({
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    onSave(e, menuOptions);
+    onSave(e, menuOptions, localImage);
   };
 
   const hasCategories = categories.length > 0;

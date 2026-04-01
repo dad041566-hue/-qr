@@ -1,0 +1,40 @@
+import { createClient } from '@/lib/supabase/client'
+
+export interface AlimtalkPayload {
+  to: string
+  type: 'POINT_GRANTED' | 'PROMOTION' | 'WAITING_CALLED'
+  customerName?: string
+  points?: number
+  message?: string
+  queueNumber?: number
+  storeName?: string
+}
+
+export async function sendAlimtalk(payload: AlimtalkPayload): Promise<void> {
+  const supabase = createClient()
+  const { data, error } = await supabase.functions.invoke('send-alimtalk', { body: payload })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+}
+
+export async function broadcastPromotion(
+  customers: { phone: string | null; name: string }[],
+  message: string,
+): Promise<{ sent: number; failed: number }> {
+  const targets = customers.filter((c) => c.phone)
+  let sent = 0
+  let failed = 0
+
+  await Promise.allSettled(
+    targets.map(async (c) => {
+      try {
+        await sendAlimtalk({ to: c.phone!, type: 'PROMOTION', customerName: c.name, message })
+        sent++
+      } catch {
+        failed++
+      }
+    }),
+  )
+
+  return { sent, failed }
+}

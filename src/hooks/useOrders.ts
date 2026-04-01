@@ -18,12 +18,12 @@ export function useOrders(storeId: string | null) {
   const [loading, setLoading] = useState(true)
   const knownIdsRef = useRef<Set<string>>(new Set())
 
-  const notifyIfNew = useCallback((order: OrderWithItems | OrderRow) => {
+  const notifyIfNew = useCallback((order: OrderWithItems | OrderRow, tableLabel?: string) => {
     if (knownIdsRef.current.has(order.id)) return
     knownIdsRef.current.add(order.id)
-    const tableLabel = `테이블 ${order.table_id ?? '-'}`
-    toast.success(`새 주문이 들어왔습니다! (${tableLabel})`)
-    notifyNewOrder(tableLabel, order.id)
+    const label = tableLabel ?? `테이블 ${order.table_id ?? '-'}`
+    toast.success(`새 주문이 들어왔습니다! (${label})`)
+    notifyNewOrder(label, order.id)
   }, [])
 
   const fetchOrders = useCallback(async () => {
@@ -57,20 +57,21 @@ export function useOrders(storeId: string | null) {
       const orderId = incoming?.id
       if (!orderId) return
 
-      // Fire toast immediately from realtime payload — do not wait for SELECT
-      notifyIfNew(incoming)
-
       try {
         const { data, error } = await supabase
           .from('orders')
-          .select('*, order_items(*)')
+          .select('*, order_items(*), tables(table_number, name)')
           .eq('id', orderId)
           .single()
 
         if (error) throw error
         if (!data) return
 
-        const order = data as OrderWithItems
+        const order = data as OrderWithItems & { tables?: { table_number: number; name: string | null } }
+        const t = order.tables
+        const tableLabel = t?.name || (t?.table_number ? `테이블 ${t.table_number}번` : undefined)
+        notifyIfNew(order, tableLabel)
+
         setOrders((prev) => {
           if (prev.some((item) => item.id === order.id)) return prev
           return [order, ...prev]
@@ -135,7 +136,7 @@ export function useOrders(storeId: string | null) {
         if (err?.status === 401 || err?.status === 403 || err?.message?.includes('JWT')) {
           await supabase.auth.refreshSession()
         }
-        console.error('useOrders poll:', err)
+        console.error('useOrders poll:', err instanceof Error ? err.message : JSON.stringify(err))
       }
     }, 30000)
 

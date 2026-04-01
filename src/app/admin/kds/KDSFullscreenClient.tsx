@@ -74,6 +74,7 @@ export default function KDSFullscreenClient() {
     () => rawTables.map((t) => ({
       id: t.table_number,
       _realId: t.id,
+      name: t.name ?? '',
       qrToken: t.qr_token,
       status: t.status,
       time: '',

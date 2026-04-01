@@ -8,15 +8,29 @@ interface CustomerEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   customer: {
-    id: string | number;
+    id: string;
     name: string;
-    phone: string;
+    phone?: string | null;
+    kakaoFriend?: boolean;
     points: number;
   } | null;
   onSave: (e: React.FormEvent<HTMLFormElement>) => void;
+  onKakaoFriendConfirm?: () => Promise<void>;
 }
 
-export function CustomerEditModal({ isOpen, onClose, customer, onSave }: CustomerEditModalProps) {
+export function CustomerEditModal({ isOpen, onClose, customer, onSave, onKakaoFriendConfirm }: CustomerEditModalProps) {
+  const [isConfirming, setIsConfirming] = React.useState(false);
+
+  const handleKakaoConfirm = async () => {
+    if (!onKakaoFriendConfirm) return;
+    setIsConfirming(true);
+    try {
+      await onKakaoFriendConfirm();
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && customer && (
@@ -33,23 +47,25 @@ export function CustomerEditModal({ isOpen, onClose, customer, onSave }: Custome
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-extrabold text-zinc-900">고객 정보 수정</h2>
-                <p className="text-sm font-medium text-zinc-500 mt-0.5">{customer.name} 고객님의 포인트를 조정합니다.</p>
+                <p className="text-sm font-medium text-zinc-500 mt-0.5">{customer.name} 고객님의 정보를 수정합니다.</p>
               </div>
               <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form id="customer-edit-form" onSubmit={onSave} className="space-y-6">
+            <form id="customer-edit-form" onSubmit={onSave} className="space-y-5">
               <div className="bg-zinc-50 p-5 rounded-2xl border border-zinc-100 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-500 mb-1">고객명</label>
                   <p className="font-bold text-zinc-900">{customer.name}</p>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-1">연락처</label>
-                  <p className="font-bold text-zinc-900">{customer.phone}</p>
-                </div>
+                {customer.phone && (
+                  <div className="pt-2 border-t border-zinc-200/50">
+                    <label className="block text-xs font-bold text-zinc-500 mb-1">전화번호</label>
+                    <p className="font-bold text-zinc-900">{customer.phone}</p>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-zinc-200/50">
                   <label className="block text-sm font-bold text-zinc-900 mb-2">보유 포인트</label>
                   <div className="flex items-center gap-3">
@@ -65,6 +81,22 @@ export function CustomerEditModal({ isOpen, onClose, customer, onSave }: Custome
                   </div>
                 </div>
               </div>
+
+              {onKakaoFriendConfirm && !customer.kakaoFriend && (
+                <button
+                  type="button"
+                  onClick={handleKakaoConfirm}
+                  disabled={isConfirming}
+                  className="w-full py-3.5 bg-yellow-400 text-yellow-900 font-bold rounded-2xl hover:bg-yellow-500 transition-colors text-sm disabled:opacity-50"
+                >
+                  {isConfirming ? '처리 중...' : '카카오 채널 친구 추가 확인 → 포인트 지급'}
+                </button>
+              )}
+              {customer.kakaoFriend && (
+                <div className="w-full py-3 bg-yellow-50 border border-yellow-200 text-yellow-700 font-bold rounded-2xl text-sm text-center">
+                  ✓ 카카오 채널 친구
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button

@@ -534,6 +534,99 @@ export interface WaitingNotificationUpdate {
 }
 
 // ============================================================
+// Customers & Points
+// ============================================================
+
+export type PointReason = 'manual_grant' | 'event_grant' | 'order_use'
+
+export interface CustomerRow {
+  id: string
+  store_id: string
+  auth_user_id: string | null
+  name: string
+  profile_image: string | null
+  phone: string | null
+  kakao_friend: boolean
+  total_points: number
+  visit_count: number
+  last_visited_at: string | null
+  created_at: string
+}
+
+export interface CustomerInsert {
+  id?: string
+  store_id: string
+  auth_user_id?: string | null
+  name?: string
+  profile_image?: string | null
+  phone?: string | null
+  kakao_friend?: boolean
+  total_points?: number
+  visit_count?: number
+  last_visited_at?: string | null
+  created_at?: string
+}
+
+export interface CustomerUpdate {
+  name?: string
+  profile_image?: string | null
+  phone?: string | null
+  kakao_friend?: boolean
+}
+
+// ------------------------------------------------------------
+
+export interface CustomerPointHistoryRow {
+  id: string
+  store_id: string
+  customer_id: string
+  order_id: string | null
+  delta: number
+  reason: PointReason
+  memo: string | null
+  granted_by: string | null
+  created_at: string
+}
+
+export interface CustomerPointHistoryInsert {
+  id?: string
+  store_id: string
+  customer_id: string
+  order_id?: string | null
+  delta: number
+  reason?: PointReason
+  memo?: string | null
+  granted_by?: string | null
+  created_at?: string
+}
+
+// ------------------------------------------------------------
+
+export interface StorePointEventRow {
+  id: string
+  store_id: string
+  name: string
+  points: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface StorePointEventInsert {
+  id?: string
+  store_id: string
+  name: string
+  points: number
+  is_active?: boolean
+  created_at?: string
+}
+
+export interface StorePointEventUpdate {
+  name?: string
+  points?: number
+  is_active?: boolean
+}
+
+// ============================================================
 // Supabase Database type (for createClient<Database>)
 // ============================================================
 
@@ -624,11 +717,39 @@ export interface Database {
         Update: WaitingNotificationUpdate
         Relationships: never[]
       }
+      customers: {
+        Row: CustomerRow
+        Insert: CustomerInsert
+        Update: CustomerUpdate
+        Relationships: never[]
+      }
+      customer_point_history: {
+        Row: CustomerPointHistoryRow
+        Insert: CustomerPointHistoryInsert
+        Update: never
+        Relationships: never[]
+      }
+      store_point_events: {
+        Row: StorePointEventRow
+        Insert: StorePointEventInsert
+        Update: StorePointEventUpdate
+        Relationships: never[]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      grant_points: {
+        Args: {
+          p_customer_id: string
+          p_delta: number
+          p_reason?: PointReason
+          p_memo?: string | null
+          p_order_id?: string | null
+        }
+        Returns: void
+      }
       create_order_atomic: {
         Args: {
           p_store_id: string
@@ -639,6 +760,19 @@ export interface Database {
           p_payment_method?: PaymentMethod | null
         }
         Returns: string
+      }
+      add_table_atomic: {
+        Args: { p_store_id: string }
+        Returns: {
+          id: string
+          store_id: string
+          table_number: number
+          name: string | null
+          capacity: number | null
+          status: TableStatus
+          qr_token: string
+          created_at: string
+        }
       }
       next_queue_number: {
         Args: { p_store_id: string }
@@ -660,6 +794,7 @@ export interface Database {
       waiting_status: WaitingStatus
       notification_status: NotificationStatus
       notification_provider: NotificationProvider
+      point_reason: PointReason
     }
   }
 }

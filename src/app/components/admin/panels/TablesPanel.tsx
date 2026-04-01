@@ -78,7 +78,7 @@ export default function TablesPanel({
                       <Clock className="w-3 h-3 md:w-4 md:h-4" /> {table.time}
                     </div>
                     <div className="text-right">
-                      <p className="text-[8px] md:text-[10px] text-orange-800/60 font-bold mb-0.5">주문금액</p>
+                      <p className="text-[10px] text-orange-800/60 font-bold mb-0.5">주문금액</p>
                       <p className="text-sm md:text-lg font-black text-orange-700 leading-none truncate">
                         ₩{(table.amount/10000).toFixed(1)}만
                       </p>
