@@ -247,6 +247,9 @@ waiting → called → seated → completed (식사 종료)
 ## 주요 함수
 
 ```sql
+-- 테이블 원자적 추가 (레이스 컨디션 없이 다음 번호 자동 채번)
+SELECT * FROM add_table_atomic('store-uuid');
+
 -- 대기번호 채번 (row lock으로 동시성 보장)
 SELECT next_queue_number('store-uuid');  -- 1, 2, 3, ...
 

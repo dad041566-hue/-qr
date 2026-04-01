@@ -123,6 +123,184 @@ serve(async (req) => {
       return json({ success: true }, 200, req)
     }
 
+    if (action === 'update-store-info') {
+      if (req.method !== 'POST') {
+        return json({ error: 'Method not allowed' }, { status: 405 }, req)
+      }
+
+      let body: { storeId?: unknown; name?: unknown; address?: unknown; phone?: unknown }
+      try {
+        body = await req.json()
+      } catch {
+        return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
+      }
+
+      const { storeId, name, address, phone } = body
+      if (typeof storeId !== 'string' || storeId.trim() === '') {
+        return json({ error: 'storeId is required' }, { status: 400 }, req)
+      }
+
+      const updateData: Record<string, unknown> = {}
+      if (name !== undefined) {
+        if (typeof name !== 'string' || name.trim() === '') {
+          return json({ error: 'name must be a non-empty string' }, { status: 400 }, req)
+        }
+        updateData.name = name
+      }
+      if (address !== undefined) {
+        if (typeof address !== 'string') {
+          return json({ error: 'address must be a string' }, { status: 400 }, req)
+        }
+        updateData.address = address
+      }
+      if (phone !== undefined) {
+        if (typeof phone !== 'string') {
+          return json({ error: 'phone must be a string' }, { status: 400 }, req)
+        }
+        updateData.phone = phone
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return json({ error: 'At least one field (name, address, phone) is required' }, { status: 400 }, req)
+      }
+
+      const { data, error } = await adminClient
+        .from('stores')
+        .update(updateData)
+        .eq('id', storeId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return json(data, 200, req)
+    }
+
+    if (action === 'reset-password') {
+      if (req.method !== 'POST') {
+        return json({ error: 'Method not allowed' }, { status: 405 }, req)
+      }
+
+      let body: { userId?: unknown }
+      try {
+        body = await req.json()
+      } catch {
+        return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
+      }
+
+      const { userId } = body
+      if (typeof userId !== 'string' || userId.trim() === '') {
+        return json({ error: 'userId is required' }, { status: 400 }, req)
+      }
+
+      const tempPassword = '12341234!'
+
+      const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
+        password: tempPassword,
+      })
+      if (authError) throw authError
+
+      const { error: memberError } = await adminClient
+        .from('store_members')
+        .update({ is_first_login: true })
+        .eq('user_id', userId)
+
+      if (memberError) throw memberError
+
+      return json({ tempPassword }, 200, req)
+    }
+
+    if (action === 'list-store-members') {
+      const storeId = url.searchParams.get('storeId')
+      if (!storeId) {
+        return json({ error: 'storeId query param is required' }, { status: 400 }, req)
+      }
+
+      const { data: members, error: membersError } = await adminClient
+        .from('store_members')
+        .select('id, user_id, role, is_first_login')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: true })
+
+      if (membersError) throw membersError
+
+      // Fetch emails from auth.users via admin API
+      const membersWithEmail = await Promise.all(
+        (members ?? []).map(async (m: { id: string; user_id: string; role: string; is_first_login: boolean }) => {
+          const { data: { user } } = await adminClient.auth.admin.getUserById(m.user_id)
+          return {
+            userId: m.user_id,
+            email: user?.email ?? '',
+            role: m.role,
+            isFirstLogin: m.is_first_login,
+          }
+        })
+      )
+
+      return json(membersWithEmail, 200, req)
+    }
+
+    if (action === 'get-store-menu') {
+      const body = await req.json().catch(() => ({})) as { storeId?: unknown }
+      const { storeId } = body
+      if (typeof storeId !== 'string' || storeId.trim() === '') {
+        return json({ error: 'storeId is required' }, { status: 400 }, req)
+      }
+
+      const { data: categories, error: catErr } = await adminClient
+        .from('menu_categories')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('sort_order', { ascending: true })
+      if (catErr) throw catErr
+
+      const { data: items, error: itemErr } = await adminClient
+        .from('menu_items')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_deleted', false)
+        .order('sort_order', { ascending: true })
+      if (itemErr) throw itemErr
+
+      return json({ categories, items }, 200, req)
+    }
+
+    if (action === 'update-menu-item') {
+      if (req.method !== 'POST') {
+        return json({ error: 'Method not allowed' }, { status: 405 }, req)
+      }
+
+      let body: { itemId?: unknown; name?: unknown; price?: unknown; is_available?: unknown }
+      try {
+        body = await req.json()
+      } catch {
+        return json({ error: 'Invalid JSON body' }, { status: 400 }, req)
+      }
+
+      const { itemId, name, price, is_available } = body
+      if (typeof itemId !== 'string' || itemId.trim() === '') {
+        return json({ error: 'itemId is required' }, { status: 400 }, req)
+      }
+
+      const updates: Record<string, unknown> = {}
+      if (typeof name === 'string') updates.name = name
+      if (typeof price === 'number') updates.price = price
+      if (typeof is_available === 'boolean') updates.is_available = is_available
+
+      if (Object.keys(updates).length === 0) {
+        return json({ error: 'No fields to update' }, { status: 400 }, req)
+      }
+
+      const { data, error } = await adminClient
+        .from('menu_items')
+        .update(updates)
+        .eq('id', itemId)
+        .select()
+        .single()
+      if (error) throw error
+
+      return json(data, 200, req)
+    }
+
     return json({ error: 'Unknown action' }, 400, req)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '알 수 없는 오류'

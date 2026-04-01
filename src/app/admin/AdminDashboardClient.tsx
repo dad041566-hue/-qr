@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Bell, ChefHat, CheckCircle2, RefreshCcw, LayoutDashboard, LayoutGrid,
-  UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, Home,
+  UtensilsCrossed, Settings, BarChart4, Users, Receipt, Search, LogOut,
   QrCode, Gift, Volume2, X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -13,9 +13,13 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useAuth } from '@/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { isStoreSubscriptionActive } from '@/lib/utils/subscription'
-import { getDailyRevenue, addTable } from '@/lib/api/admin'
+import { getDailyRevenue, getOrderStats, getTopMenuItems, getCategorySales } from '@/lib/api/admin'
+import { addTableAction, renameTableAction, deleteTableAction } from '@/app/actions/admin'
+import { fetchCustomers, fetchStorePointEvents, grantPoints, createCustomerByPhone, setKakaoFriend } from '@/lib/api/customers'
+import type { OrderStats, TopMenuItem, CategorySales } from '@/lib/api/admin'
 import { createOrder } from '@/lib/api/order'
-import { callWaiting as apiCallWaiting, completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting'
+import { completeWaiting as apiCompleteWaiting } from '@/lib/api/waiting'
+import { callWaitingAction } from '@/app/actions/waiting'
 
 import { useOrders } from '@/hooks/useOrders'
 import { useRealtimeTables } from '@/hooks/useRealtimeTables'
@@ -38,6 +42,7 @@ import TablesPanel from '@/app/components/admin/panels/TablesPanel'
 import WaitingPanel from '@/app/components/admin/panels/WaitingPanel'
 import AnalyticsPanel from '@/app/components/admin/panels/AnalyticsPanel'
 import MenuPanel from '@/app/components/admin/panels/MenuPanel'
+import CategoryManagePanel from '@/app/components/admin/panels/CategoryManagePanel'
 import QRPanel from '@/app/components/admin/panels/QRPanel'
 import EventPanel from '@/app/components/admin/panels/EventPanel'
 import CustomersPanel from '@/app/components/admin/panels/CustomersPanel'
@@ -47,14 +52,33 @@ import { CustomerEditModal } from '@/app/components/admin/modals/CustomerEditMod
 import { MenuEditModal } from '@/app/components/admin/modals/MenuEditModal'
 import { TableDetailModal } from '@/app/components/admin/modals/TableDetailModal'
 import { AddOrderModal } from '@/app/components/admin/modals/AddOrderModal'
-import type { EventSettings } from '@/app/components/admin/panels/EventPanel'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/app/components/ui/alert-dialog'
+import type { EventSettings, PointEvent } from '@/app/components/admin/panels/EventPanel'
 import type { Customer } from '@/app/components/admin/panels/CustomersPanel'
 import type { StaffCallOption } from '@/app/components/admin/panels/SettingsPanel'
 
+function toUICustomer(c: {
+  id: string; name: string; profileImage?: string | null; phone?: string | null;
+  kakaoFriend?: boolean; totalPoints: number; visitCount: number; lastVisitedAt?: string | null
+}): Customer {
+  return { id: c.id, name: c.name, profileImage: c.profileImage, phone: c.phone, kakaoFriend: c.kakaoFriend, points: c.totalPoints, visitCount: c.visitCount, lastVisitedAt: c.lastVisitedAt }
+}
+
 export default function AdminDashboardClient() {
   const router = useRouter()
-  const { user, isFirstLogin } = useAuth()
-  const storeId = user?.storeId ?? ''
+  const searchParams = useSearchParams()
+  const { user, isFirstLogin, signOut } = useAuth()
+  // super_admin can override storeId via ?storeId= query param
+  const queryStoreId = searchParams.get('storeId')
+  const storeId = queryStoreId || user?.storeId || ''
+
+  // --- Store slug for QR URLs ---
+  const [storeSlug, setStoreSlug] = useState('')
+  useEffect(() => {
+    if (!storeId) return
+    supabase.from('stores').select('slug').eq('id', storeId).single()
+      .then(({ data }) => { if (data) setStoreSlug((data as { slug: string }).slug) })
+  }, [storeId])
 
   // --- Notification permission ---
   const { showBanner, dismissBanner, requestPermission } = useNotificationPermission()
@@ -83,6 +107,7 @@ export default function AdminDashboardClient() {
   const {
     tables: rawTables,
     updateTableStatus: apiUpdateTableStatus,
+    refetch: refetchTables,
   } = useRealtimeTables(storeId || null)
 
   const {
@@ -93,6 +118,10 @@ export default function AdminDashboardClient() {
     toggleAvailability,
     uploadImage,
     removeMenuItem: apiRemoveMenuItem,
+    addCategory,
+    removeCategory,
+    updateCategoryName,
+    reorderCategories,
   } = useMenuAdmin(storeId || null)
 
   const { waitings: rawWaitings } = useWaitingQueue(storeId || null)
@@ -120,6 +149,8 @@ export default function AdminDashboardClient() {
     () => rawTables.map((t) => ({
       id: t.table_number,
       _realId: t.id,
+      name: t.name ?? '',
+      qrToken: t.qr_token,
       status: t.status,
       time: '',
       amount: 0,
@@ -145,6 +176,10 @@ export default function AdminDashboardClient() {
 
   // --- Revenue data ---
   const [revenueData, setRevenueData] = useState<{ time: string; amount: number }[]>([])
+  const [orderStats, setOrderStats] = useState<OrderStats>({ totalRevenue: 0, orderCount: 0, averageOrderValue: 0 })
+  const [topMenuItems, setTopMenuItems] = useState<TopMenuItem[]>([])
+  const [categorySales, setCategorySales] = useState<CategorySales[]>([])
+
   useEffect(() => {
     if (!storeId) return
     getDailyRevenue(storeId, 7)
@@ -152,25 +187,53 @@ export default function AdminDashboardClient() {
         setRevenueData(rows.map((r) => ({ time: r.date.slice(5), amount: Math.round(r.amount / 10000) }))),
       )
       .catch(() => {})
+    getOrderStats(storeId, 7).then(setOrderStats).catch(() => {})
+    getTopMenuItems(storeId, 7, 5).then(setTopMenuItems).catch(() => {})
+    getCategorySales(storeId, 7).then(setCategorySales).catch(() => {})
   }, [storeId])
 
-  // --- Local UI state synced from hooks ---
-  const [orders, setOrders] = useState<UIOrder[]>([])
-  const [tables, setTables] = useState<UITable[]>([])
-  const [menus, setMenus] = useState<UIMenu[]>([])
+  // --- Optimistic overlay pattern ---
+  // Realtime data = source of truth. Local modifications in overlay Maps.
+  // Merged via useMemo. Overlays cleared when Realtime confirms the change.
 
-  useEffect(() => { setOrders(adaptedOrders) }, [adaptedOrders])
+  // Orders: only pax is local-only
+  const [orderPaxMap, setOrderPaxMap] = useState<Map<string, number>>(new Map())
+  const orders = useMemo<UIOrder[]>(
+    () => adaptedOrders.map((o) => {
+      const pax = orderPaxMap.get(o.id)
+      return pax !== undefined ? { ...o, pax } : o
+    }),
+    [adaptedOrders, orderPaxMap],
+  )
+
+  // Tables: status (optimistic), amount/pax/time (local-only)
+  const [tableOverrides, setTableOverrides] = useState<Map<number, Partial<UITable>>>(new Map())
+  const tables = useMemo<UITable[]>(
+    () => adaptedTables.map((t) => {
+      const override = tableOverrides.get(t.id)
+      return override ? { ...t, ...override } : t
+    }),
+    [adaptedTables, tableOverrides],
+  )
+
+  // Clear table overrides when Realtime confirms the status change
   useEffect(() => {
-    setTables((prev) => {
-      const prevMap = new Map(prev.map((t) => [t.id, t]))
-      return adaptedTables.map((t) => {
-        const existing = prevMap.get(t.id)
-        if (existing) return { ...t, amount: existing.amount, pax: existing.pax, time: existing.time }
-        return t
-      })
+    setTableOverrides((prev) => {
+      const next = new Map(prev)
+      let changed = false
+      for (const t of adaptedTables) {
+        const override = next.get(t.id)
+        if (override?.status && override.status === t.status) {
+          next.delete(t.id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
     })
   }, [adaptedTables])
-  useEffect(() => { setMenus(adaptedMenus) }, [adaptedMenus])
+
+  // Menus: no local state — Realtime is single source of truth
+  const menus = adaptedMenus
 
   // --- App mode / tab ---
   const [appMode, setAppMode] = useState<'pos' | 'admin'>('pos')
@@ -239,7 +302,7 @@ export default function AdminDashboardClient() {
   }
 
   const updateOrderPax = (id: string, pax: number) => {
-    setOrders((prev) => prev.map((o) => o.id === id ? { ...o, pax } : o))
+    setOrderPaxMap((prev) => new Map(prev).set(id, pax))
   }
 
   const deleteOrder = async (id: string) => {
@@ -260,14 +323,14 @@ export default function AdminDashboardClient() {
   const markTableAvailable = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'available')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'available', amount: 0, time: '', pax: 0 }))
     toast.info(`${id}번 테이블 정리가 완료되었습니다.`)
   }
 
   const handleCheckoutTable = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'cleaning')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'cleaning', amount: 0, time: '', pax: 0 }))
     toast.success(`${id}번 테이블 정산이 완료되었습니다. 정리 대기 중입니다.`)
     setIsTableModalOpen(false)
   }
@@ -275,40 +338,35 @@ export default function AdminDashboardClient() {
   const cancelTableOrder = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'available')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'available', amount: 0, time: '', pax: 0 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'available', amount: 0, time: '', pax: 0 }))
     toast.success(`${id}번 테이블 주문이 전체 취소되었습니다.`)
     setIsTableModalOpen(false)
   }
 
+  // TODO: cancelTableMenuItem is local-only (no API call) — should call order item delete API
   const cancelTableMenuItem = (tableId: number, orderId: string, itemIndex: number) => {
     const order = orders.find((o) => o.id === orderId)
     if (!order) return
     const removedItem = order.items[itemIndex]
     const removedPrice = (removedItem.price || 0) * removedItem.qty
 
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o
-        const updatedItems = o.items.filter((_, idx) => idx !== itemIndex)
-        if (updatedItems.length === 0) return null as unknown as UIOrder
-        return { ...o, items: updatedItems, total: o.total - removedPrice }
-      }).filter((o): o is UIOrder => o !== null),
-    )
+    const currentTable = tables.find((t) => t.id === tableId)
+    if (!currentTable) return
+    const newAmount = Math.max(0, currentTable.amount - removedPrice)
+    const tableOrders = orders.filter((o) => o.table === tableId && o.id !== orderId)
+    const isLastItem = order.items.length === 1 && tableOrders.length === 0
 
-    setTables((prev) =>
-      prev.map((t) => {
-        if (t.id !== tableId) return t
-        const newAmount = Math.max(0, t.amount - removedPrice)
-        const tableOrders = orders.filter((o) => o.table === tableId && o.id !== orderId)
-        const isLastItem = order.items.length === 1 && tableOrders.length === 0
-        if (isLastItem) return { ...t, status: 'cleaning', amount: 0, time: '', pax: 0 }
-        return { ...t, amount: newAmount }
-      }),
-    )
+    if (isLastItem) {
+      setTableOverrides((prev) => new Map(prev).set(tableId, { status: 'cleaning', amount: 0, time: '', pax: 0 }))
+    } else {
+      setTableOverrides((prev) => {
+        const existing = prev.get(tableId) ?? {}
+        return new Map(prev).set(tableId, { ...existing, amount: newAmount })
+      })
+    }
 
     if (selectedTable && selectedTable.id === tableId) {
-      const newAmount = Math.max(0, selectedTable.amount - removedPrice)
-      setSelectedTable((prev) => prev ? { ...prev, amount: newAmount } : prev)
+      setSelectedTable((prev) => prev ? { ...prev, amount: isLastItem ? 0 : newAmount } : prev)
     }
     toast.success('메뉴가 취소되었습니다.')
   }
@@ -316,13 +374,16 @@ export default function AdminDashboardClient() {
   const markTableOccupied = (id: number) => {
     const realId = findRealTableId(id)
     if (realId) apiUpdateTableStatus(realId, 'occupied')
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: 'occupied', amount: 0, time: '방금 전', pax: 2 } : t))
+    setTableOverrides((prev) => new Map(prev).set(id, { status: 'occupied', amount: 0, time: '방금 전', pax: 2 }))
     toast.success(`${id}번 테이블 착석 처리되었습니다.`)
     setIsTableModalOpen(false)
   }
 
   const updateTablePax = (id: number, pax: number) => {
-    setTables((prev) => prev.map((t) => t.id === id ? { ...t, pax } : t))
+    setTableOverrides((prev) => {
+      const existing = prev.get(id) ?? {}
+      return new Map(prev).set(id, { ...existing, pax })
+    })
     if (selectedTable && selectedTable.id === id) {
       setSelectedTable((prev) => prev ? { ...prev, pax } : prev)
     }
@@ -331,7 +392,7 @@ export default function AdminDashboardClient() {
   // --- Waiting handlers ---
   const callWaiting = async (waitingId: string, queueNumber: number) => {
     try {
-      await apiCallWaiting(waitingId)
+      await callWaitingAction(waitingId)
       toast.success(`대기 ${queueNumber}번 고객님을 호출했습니다.`, { icon: <Volume2 className="w-5 h-5 text-blue-500" /> })
     } catch {
       toast.error('호출에 실패했습니다.')
@@ -351,10 +412,10 @@ export default function AdminDashboardClient() {
   const toggleMenuStock = (id: string) => {
     const menu = menus.find((m) => m.id === id)
     if (menu) toggleAvailability(id, menu.stock)
-    setMenus((prev) => prev.map((m) => m.id === id ? { ...m, stock: !m.stock } : m))
+    // No local state update needed — toggleAvailability updates DB, Realtime propagates
   }
 
-  const handleSaveMenu = async (e: React.FormEvent<HTMLFormElement>, menuOptions: any[]) => {
+  const handleSaveMenu = async (e: React.FormEvent<HTMLFormElement>, menuOptions: any[], imageUrl?: string) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
@@ -368,9 +429,9 @@ export default function AdminDashboardClient() {
 
     try {
       if (editingMenu) {
-        await editMenuItem(editingMenu.id, { name, category_id, price, description: desc || null, badge })
+        await editMenuItem(editingMenu.id, { name, category_id, price, description: desc || null, badge, ...(imageUrl !== undefined && { image_url: imageUrl }) })
       } else {
-        await addMenuItem({ store_id: storeId, name, category_id, price, description: desc || null, badge })
+        await addMenuItem({ store_id: storeId, name, category_id, price, description: desc || null, badge, image_url: imageUrl ?? null })
       }
     } catch {
       // toast handled by hook
@@ -416,13 +477,17 @@ export default function AdminDashboardClient() {
     try {
       await createOrder({ storeId, tableId: tableRealId, items: orderItems })
       await apiUpdateTableStatus(tableRealId, 'occupied')
-      setTables((prev) =>
-        prev.map((t) =>
-          t.id === orderTableId
-            ? { ...t, status: 'occupied', amount: t.amount + totalAmount, time: t.time || '방금 전', pax: t.pax || 2 }
-            : t,
-        ),
-      )
+      setTableOverrides((prev) => {
+        const existing = prev.get(orderTableId!) ?? {}
+        const currentTable = tables.find((t) => t.id === orderTableId)
+        return new Map(prev).set(orderTableId!, {
+          ...existing,
+          status: 'occupied',
+          amount: (currentTable?.amount ?? 0) + totalAmount,
+          time: existing.time || currentTable?.time || '방금 전',
+          pax: existing.pax || currentTable?.pax || 2,
+        })
+      })
       if (selectedTable && selectedTable.id === orderTableId) {
         setSelectedTable((prev) => prev ? ({
           ...prev, status: 'occupied', amount: (prev.amount || 0) + totalAmount,
@@ -443,11 +508,33 @@ export default function AdminDashboardClient() {
 
   const handleAddTable = async () => {
     try {
-      const nextNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.id)) + 1 : 1
-      await addTable(storeId, nextNumber)
+      await addTableAction(storeId)
+      await refetchTables()
       toast.success('테이블이 추가되었습니다.')
-    } catch {
-      toast.error('테이블 추가에 실패했습니다.')
+    } catch (err: unknown) {
+      const e = err as { message?: string; code?: string; details?: string }
+      console.error('테이블 추가 실패:', e)
+      toast.error(`테이블 추가 실패: ${e?.message ?? '알 수 없는 오류'}`)
+    }
+  }
+
+  const handleRenameTable = async (realId: string, name: string) => {
+    try {
+      await renameTableAction(realId, name)
+      await refetchTables()
+      toast.success('테이블 이름이 변경되었습니다.')
+    } catch (err) {
+      toast.error(`이름 변경 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
+    }
+  }
+
+  const handleDeleteTable = async (realId: string) => {
+    try {
+      await deleteTableAction(realId)
+      await refetchTables()
+      toast.success('테이블이 삭제되었습니다.')
+    } catch (err) {
+      toast.error(`삭제 실패: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
     }
   }
 
@@ -458,6 +545,27 @@ export default function AdminDashboardClient() {
     desc: '참여하고 아메리카노 1잔 무료로 받기!',
     reward: '아메리카노 1잔',
   })
+  const [pointEvents, setPointEvents] = useState<PointEvent[]>([])
+
+  useEffect(() => {
+    if (!storeId) return
+    fetchStorePointEvents(storeId)
+      .then((data) => setPointEvents(data.map((e) => ({ id: e.id, name: e.name, points: e.points, isActive: e.isActive }))))
+      .catch(() => {})
+  }, [storeId])
+
+  const handleGrantEventPoint = async (customerId: string, event: PointEvent) => {
+    try {
+      await grantPoints(customerId, event.points, 'event_grant', event.name)
+      setCustomers((prev) =>
+        prev.map((c) => c.id === customerId ? { ...c, points: c.points + event.points } : c),
+      )
+      toast.success(`${event.name} — ${event.points.toLocaleString()}P 지급 완료`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '포인트 지급에 실패했습니다.')
+      throw err
+    }
+  }
 
   const [staffCallOptions, setStaffCallOptions] = useState<StaffCallOption[]>([
     { id: 1, name: '직원만 호출' },
@@ -482,6 +590,7 @@ export default function AdminDashboardClient() {
     toast.success('직원 호출 옵션이 삭제되었습니다.')
   }
 
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const [pwNew, setPwNew] = useState('')
   const [pwConfirm, setPwConfirm] = useState('')
   const [pwLoading, setPwLoading] = useState(false)
@@ -507,16 +616,22 @@ export default function AdminDashboardClient() {
   }
 
   // --- Customers state ---
-  const [customers, setCustomers] = useState<Customer[]>([
-    { id: '1', name: '단골손님', phone: '010-1234-5678', points: 1500, visits: 12, lastVisit: '2023-10-24' },
-    { id: '2', name: '김철수', phone: '010-9876-5432', points: 500, visits: 3, lastVisit: '2023-10-22' },
-    { id: '3', name: '이영희', phone: '010-5555-4444', points: 3200, visits: 8, lastVisit: '2023-10-20' },
-  ])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [isCustomersLoading, setIsCustomersLoading] = useState(false)
 
   const [pointRate, setPointRate] = useState(5)
   const [isPointPolicyModalOpen, setIsPointPolicyModalOpen] = useState(false)
   const [isCustomerEditModalOpen, setIsCustomerEditModalOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+
+  useEffect(() => {
+    if (!storeId) return
+    setIsCustomersLoading(true)
+    fetchCustomers(storeId)
+      .then((data) => setCustomers(data.map(toUICustomer)))
+      .catch(() => toast.error('고객 목록을 불러오지 못했습니다.'))
+      .finally(() => setIsCustomersLoading(false))
+  }, [storeId])
 
   const handleSavePointPolicy = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -526,14 +641,65 @@ export default function AdminDashboardClient() {
     toast.success('포인트 적립 정책이 저장되었습니다.')
   }
 
-  const handleSaveCustomer = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const updatedPoints = Number(formData.get('points'))
     if (!editingCustomer) return
-    setCustomers((prev) => prev.map((c) => c.id === editingCustomer.id ? { ...c, points: updatedPoints } : c))
-    setIsCustomerEditModalOpen(false)
-    toast.success('고객 정보가 업데이트 되었습니다.')
+    const formData = new FormData(e.currentTarget)
+    const newPoints = Number(formData.get('points'))
+    const delta = newPoints - editingCustomer.points
+    if (delta === 0) {
+      setIsCustomerEditModalOpen(false)
+      return
+    }
+
+    try {
+      await grantPoints(editingCustomer.id, delta, 'manual_grant', '관리자 수동 조정')
+      setCustomers((prev) =>
+        prev.map((c) => c.id === editingCustomer.id ? { ...c, points: newPoints } : c),
+      )
+      setIsCustomerEditModalOpen(false)
+      toast.success('포인트가 업데이트 되었습니다.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '포인트 업데이트에 실패했습니다.')
+    }
+  }
+
+  const handleAddCustomer = async (name: string, phone: string) => {
+    try {
+      const created = await createCustomerByPhone(storeId, name, phone)
+      setCustomers((prev) => [...prev, toUICustomer(created)])
+      toast.success('고객이 추가되었습니다.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '고객 추가에 실패했습니다.')
+      throw err
+    }
+  }
+
+  const handleKakaoFriendConfirm = async () => {
+    if (!editingCustomer) return
+    try {
+      await setKakaoFriend(editingCustomer.id)
+      const kakaoEvent = pointEvents.find((e) => e.isActive && e.name.includes('카카오'))
+      if (kakaoEvent) {
+        await grantPoints(editingCustomer.id, kakaoEvent.points, 'event_grant', kakaoEvent.name)
+        setCustomers((prev) =>
+          prev.map((c) => c.id === editingCustomer.id
+            ? { ...c, kakaoFriend: true, points: c.points + kakaoEvent.points }
+            : c,
+          ),
+        )
+        toast.success(`카카오 친구 확인 완료 — ${kakaoEvent.points.toLocaleString()}P 지급됐습니다.`)
+      } else {
+        setCustomers((prev) =>
+          prev.map((c) => c.id === editingCustomer.id ? { ...c, kakaoFriend: true } : c),
+        )
+        toast.success('카카오 채널 친구로 등록됐습니다.')
+      }
+      setEditingCustomer((prev) => prev ? { ...prev, kakaoFriend: true } : prev)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '처리에 실패했습니다.')
+      throw err
+    }
   }
 
   // --- Table modal state ---
@@ -583,11 +749,11 @@ export default function AdminDashboardClient() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-50 flex font-sans">
+    <div className="h-[100dvh] bg-zinc-50 flex flex-col lg:flex-row font-sans overflow-hidden">
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-zinc-200 h-[70px] pb-safe z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] overflow-x-auto no-scrollbar">
-        <div className="flex items-center h-full w-full justify-around px-2">
+      {/* Mobile Bottom Navigation — flex 마지막에 위치 (하단 고정) */}
+      <nav className="lg:hidden order-last shrink-0 w-full bg-white border-t border-zinc-200 h-[60px] z-50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] overflow-x-auto no-scrollbar relative">
+        <div className="flex items-center h-full w-full justify-around px-1">
           {(appMode === 'pos' ? [
             { id: 'orders', icon: ChefHat, label: 'KDS', badge: pendingOrders.length + preparingOrders.length },
             { id: 'waiting', icon: Users, label: '웨이팅', badge: rawWaitings.length },
@@ -620,11 +786,33 @@ export default function AdminDashboardClient() {
               </span>
             </button>
           ))}
+          {/* 모드 전환 버튼 — owner/manager만 */}
+          {user.role !== 'staff' && (
+            <button
+              onClick={() => {
+                if (appMode === 'pos') { setAppMode('admin'); setActiveTab('analytics') }
+                else { setAppMode('pos'); setActiveTab('orders') }
+              }}
+              className="flex flex-col items-center justify-center flex-1 h-full transition-colors text-zinc-400"
+            >
+              <div className="mb-1">
+                {appMode === 'pos'
+                  ? <Settings className="w-5 h-5" />
+                  : <ChefHat className="w-5 h-5" />}
+              </div>
+              <span className="text-[10px] font-bold text-zinc-500">
+                {appMode === 'pos' ? '매장관리' : 'POS'}
+              </span>
+            </button>
+          )}
         </div>
+        {appMode === 'admin' && (
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white to-transparent" />
+        )}
       </nav>
 
       {/* PC Sidebar */}
-      <aside className="w-64 bg-zinc-950 text-zinc-400 flex-col hidden md:flex shrink-0">
+      <aside className="w-64 bg-zinc-950 text-zinc-400 flex-col hidden lg:flex shrink-0">
         <div className="h-20 flex items-center px-6 border-b border-zinc-800/50">
           <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mr-3 shadow-lg shadow-orange-500/20">
             <UtensilsCrossed className="w-6 h-6 text-white" />
@@ -704,23 +892,23 @@ export default function AdminDashboardClient() {
             </button>
           </div>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => setIsLogoutConfirmOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors text-sm font-bold border border-zinc-800"
           >
-            <Home className="w-4 h-4" /> 홈으로 나가기
+            <LogOut className="w-4 h-4" /> 로그아웃
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-[100dvh] overflow-hidden bg-zinc-50/50 w-full">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-zinc-50/50 w-full">
         {/* Header */}
-        <header className="h-14 md:h-20 bg-white border-b border-zinc-200/80 px-4 md:px-8 flex items-center justify-between shrink-0 shadow-sm z-10 sticky top-0">
-          <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
-            <button onClick={() => router.push('/')} className="md:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
-              <Home className="w-5 h-5" />
+        <header className="h-14 lg:h-20 bg-white border-b border-zinc-200/80 px-4 lg:px-8 flex items-center justify-between shrink-0 shadow-sm z-10 sticky top-0">
+          <div className="flex items-center gap-2 lg:gap-4 w-full lg:w-auto">
+            <button onClick={() => setIsLogoutConfirmOpen(true)} className="lg:hidden p-2 -ml-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
+              <LogOut className="w-5 h-5" />
             </button>
-            <div className="md:hidden flex bg-zinc-100/80 p-1 rounded-xl mx-auto border border-zinc-200/50 shadow-inner">
+            <div className="lg:hidden flex bg-zinc-100/80 p-1 rounded-xl mx-auto border border-zinc-200/50 shadow-inner">
               <button
                 onClick={() => { setAppMode('pos'); setActiveTab('orders') }}
                 className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${appMode === 'pos' ? 'bg-white text-orange-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]' : 'text-zinc-500'}`}
@@ -741,15 +929,15 @@ export default function AdminDashboardClient() {
               <input type="text" placeholder="검색어 입력..." className="bg-transparent border-none outline-none text-sm w-64 font-medium text-zinc-800 placeholder:text-zinc-400" />
             </div>
           </div>
-          <div className="flex items-center gap-2 md:gap-5">
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 font-bold rounded-full text-xs border border-green-200/50">
+          <div className="flex items-center gap-2 lg:gap-5">
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 font-bold rounded-full text-xs border border-green-200/50">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 정상 가동중
             </div>
-            <button className="hidden md:flex items-center gap-2 text-zinc-500 hover:text-zinc-900 font-bold text-sm">
+            <button className="hidden lg:flex items-center gap-2 text-zinc-500 hover:text-zinc-900 font-bold text-sm">
               <RefreshCcw className="w-4 h-4" /> 동기화
             </button>
-            <div className="hidden md:block w-px h-6 bg-zinc-200"></div>
-            <button className="md:hidden p-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
+            <div className="hidden lg:block w-px h-6 bg-zinc-200"></div>
+            <button className="lg:hidden p-2 text-zinc-600 hover:bg-zinc-100 rounded-xl">
               <Search className="w-5 h-5" />
             </button>
             <button className="relative p-2 text-zinc-600 hover:bg-zinc-100 rounded-xl transition-colors">
@@ -771,13 +959,13 @@ export default function AdminDashboardClient() {
             {activeTab === 'dashboard' && (
               <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <DashboardSummary
-                  orders={orders}
                   tables={tables}
                   revenueData={revenueData}
                   recentActivities={recentActivities}
                   pendingOrdersCount={pendingOrders.length}
                   occupiedTablesCount={occupiedTablesCount}
                   totalToday={totalToday}
+                  orderCount={orderStats.orderCount}
                 />
               </motion.div>
             )}
@@ -814,11 +1002,26 @@ export default function AdminDashboardClient() {
             )}
             {activeTab === 'analytics' && (
               <motion.div key="analytics" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <AnalyticsPanel revenueData={revenueData} totalToday={totalToday} />
+                <AnalyticsPanel
+                  revenueData={revenueData}
+                  totalToday={totalToday}
+                  orderCount={orderStats.orderCount}
+                  averageOrderValue={orderStats.averageOrderValue}
+                  categorySales={categorySales}
+                  topMenuItems={topMenuItems}
+                />
               </motion.div>
             )}
             {activeTab === 'menu' && (
-              <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                <CategoryManagePanel
+                  categories={rawCategories}
+                  menuItems={rawMenuItems}
+                  onAdd={addCategory}
+                  onRemove={removeCategory}
+                  onUpdateName={updateCategoryName}
+                  onReorder={reorderCategories}
+                />
                 <MenuPanel
                   menus={menus}
                   categories={Array.from(new Set(menus.map((m) => m.category)))}
@@ -833,8 +1036,10 @@ export default function AdminDashboardClient() {
               <motion.div key="qr" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <QRPanel
                   tables={tables}
-                  storeSlug={storeId}
+                  storeSlug={storeSlug}
                   onAddTable={handleAddTable}
+                  onRenameTable={handleRenameTable}
+                  onDeleteTable={handleDeleteTable}
                 />
               </motion.div>
             )}
@@ -844,6 +1049,9 @@ export default function AdminDashboardClient() {
                   eventSettings={eventSettings}
                   setEventSettings={setEventSettings}
                   storeId={storeId}
+                  pointEvents={pointEvents}
+                  customers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }))}
+                  onGrantEventPoint={handleGrantEventPoint}
                 />
               </motion.div>
             )}
@@ -852,8 +1060,10 @@ export default function AdminDashboardClient() {
                 <CustomersPanel
                   customers={customers}
                   onEditCustomer={(c) => { setEditingCustomer(c); setIsCustomerEditModalOpen(true) }}
+                  onAddCustomer={handleAddCustomer}
                   pointRate={pointRate}
                   onEditPointPolicy={() => setIsPointPolicyModalOpen(true)}
+                  isLoading={isCustomersLoading}
                 />
               </motion.div>
             )}
@@ -895,13 +1105,14 @@ export default function AdminDashboardClient() {
         onClose={() => setIsCustomerEditModalOpen(false)}
         customer={editingCustomer}
         onSave={handleSaveCustomer}
+        onKakaoFriendConfirm={handleKakaoFriendConfirm}
       />
 
       <MenuEditModal
         isOpen={isMenuModalOpen}
         onClose={() => setIsMenuModalOpen(false)}
         editingMenu={editingMenu}
-        categories={Array.from(new Set(menus.map((m) => m.category)))}
+        categories={rawCategories.map((c) => c.name)}
         onSave={handleSaveMenu}
         onImageUpload={uploadImage}
       />
@@ -937,6 +1148,21 @@ export default function AdminDashboardClient() {
         onPlaceOrder={handlePlaceOrder}
         isPlacingOrder={isPlacingOrder}
       />
+
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={setIsLogoutConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>로그아웃</AlertDialogTitle>
+            <AlertDialogDescription>로그아웃 하시겠습니까?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={() => signOut()} className="bg-zinc-900 hover:bg-zinc-800 text-white">
+              로그아웃
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

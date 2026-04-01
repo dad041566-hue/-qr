@@ -142,6 +142,8 @@ export function TableDetailModal({
                                       <span className="font-bold text-zinc-900 text-sm whitespace-nowrap">
                                         {((item.price || 0) * item.qty).toLocaleString()}원
                                       </span>
+                                      {/* TODO: API 연동 후 활성화 */}
+                                      {/*
                                       <button
                                         onClick={() => onCancelMenuItem(table.id, order.id, itemIdx)}
                                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all"
@@ -149,6 +151,7 @@ export function TableDetailModal({
                                       >
                                         <X className="w-3.5 h-3.5" />
                                       </button>
+                                      */}
                                     </div>
                                   </div>
                                 ))}

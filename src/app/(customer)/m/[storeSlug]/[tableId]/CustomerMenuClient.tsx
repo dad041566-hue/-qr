@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ShoppingBag, ChevronLeft, Plus, Minus, X, BellRing, Receipt, Utensils, Coffee, LayoutGrid, Droplets, Star, User, Gift, ChevronRight, MessageCircle } from 'lucide-react'
+import { ShoppingBag, ChevronLeft, Plus, Minus, X, Receipt, Utensils, Coffee, LayoutGrid, Droplets, Star, Gift, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -61,14 +61,13 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
   const storeSlug = store.slug
   const tableId = table.id
   const orderHistoryKey = `order-history:${storeSlug}:${table.qr_token}`
+  const tableDisplayName = table.name || `테이블 ${table.table_number}번`
 
   const [activeCategory, setActiveCategory] = useState('전체')
   const [cart, setCart] = useState<CartItem[]>([])
 
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [isCallStaffOpen, setIsCallStaffOpen] = useState(false)
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false)
-  const [isLoginOpen, setIsLoginOpen] = useState(false)
   const [isEventOpen, setIsEventOpen] = useState(false)
 
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -76,8 +75,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
   const [itemQuantity, setItemQuantity] = useState(1)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [user, setUser] = useState<{ name: string; points: number } | null>(null)
   const [showSplash, setShowSplash] = useState(true)
+  const [showOrderConfirm, setShowOrderConfirm] = useState(false)
 
   React.useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500)
@@ -148,6 +147,16 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
 
   const addToCart = () => {
     if (!selectedItem) return
+
+    // 필수 옵션 미선택 검증
+    const missingRequired = selectedItem.options?.find(
+      (opt) => opt.required && !selectedOptions[opt.name]
+    )
+    if (missingRequired) {
+      toast.error(`${missingRequired.name}을(를) 선택해주세요.`)
+      return
+    }
+
     let extraPrice = 0
     const optionStrings: string[] = []
     const optionsForOrder: SelectedOption[] = []
@@ -169,9 +178,12 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
         }
       })
     }
+
+    // 동일 메뉴+옵션 조합은 수량 병합
+    const cartId = [selectedItem.id, ...optionsForOrder.map((o) => o.option_choice_id).sort()].join('_')
     const cartItem: CartItem = {
       id: selectedItem.id,
-      cartId: Math.random().toString(36).substring(7),
+      cartId,
       name: selectedItem.name,
       price: selectedItem.price + extraPrice,
       qty: itemQuantity,
@@ -179,7 +191,15 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       selectedOptions: optionsForOrder,
       image: selectedItem.image,
     }
-    setCart((prev) => [...prev, cartItem])
+    setCart((prev) => {
+      const existing = prev.find((item) => item.cartId === cartId)
+      if (existing) {
+        return prev.map((item) =>
+          item.cartId === cartId ? { ...item, qty: item.qty + itemQuantity } : item
+        )
+      }
+      return [...prev, cartItem]
+    })
     setSelectedItem(null)
     toast.success('장바구니에 담겼습니다.')
   }
@@ -223,16 +243,10 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
       }
 
       setOrderHistory((prev) => [newOrder, ...prev])
-      toast.success(`주문이 성공적으로 접수되었습니다! (${table.table_number}번 테이블)`, {
+      toast.success(`주문이 성공적으로 접수되었습니다! (${tableDisplayName})`, {
         description: '주방으로 주문이 전달되었습니다.',
         duration: 4000,
       })
-
-      if (user) {
-        const earnedPoints = Math.floor(totalPrice * 0.05)
-        setUser((prev) => prev ? { ...prev, points: prev.points + earnedPoints } : null)
-        toast(`포인트 ${earnedPoints.toLocaleString()}P가 적립되었습니다.`, { icon: '✨' })
-      }
 
       setCart([])
       setIsCartOpen(false)
@@ -241,20 +255,6 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const handleCallStaff = (reason: string) => {
-    toast.info('직원을 호출했습니다. 잠시만 기다려주세요.', {
-      description: `요청사항: ${reason}`,
-      icon: <BellRing className="w-5 h-5 text-blue-500" />,
-    })
-    setIsCallStaffOpen(false)
-  }
-
-  const handleLogin = () => {
-    setUser({ name: '단골손님', points: 1500 })
-    setIsLoginOpen(false)
-    toast.success('로그인이 완료되었습니다!')
   }
 
   return (
@@ -291,7 +291,7 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-center">
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 1, type: 'spring' }} className="bg-orange-500/20 text-orange-400 font-bold px-6 py-2.5 rounded-full text-sm inline-flex items-center gap-2 mb-6 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> 테이블 {table.table_number}번 인식 완료
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" /> {tableDisplayName} 인식 완료
                 </motion.div>
                 <h2 className="text-3xl font-black mb-3 tracking-tight">메뉴판을 준비하고 있어요</h2>
                 <p className="text-zinc-400 text-sm font-medium">잠시만 기다려주세요...</p>
@@ -311,21 +311,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                 <ChevronLeft className="w-4 h-4" />
                 <span className="text-xs sm:text-sm font-bold pr-1">뒤로</span>
               </button>
-              {!user ? (
-                <button onClick={() => setIsLoginOpen(true)} className="px-3 py-2 bg-black/30 backdrop-blur-md rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:bg-black/50 transition-colors border border-white/20 shadow-sm">
-                  <User className="w-4 h-4" /> 로그인
-                </button>
-              ) : (
-                <button onClick={() => setIsLoginOpen(true)} className="px-3 py-2 bg-orange-500/80 backdrop-blur-md rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 border border-orange-400 shadow-sm text-white">
-                  <User className="w-4 h-4" /> {user.name}
-                </button>
-              )}
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setIsCallStaffOpen(true)} className="px-3 py-2 bg-black/30 backdrop-blur-md rounded-full hover:bg-black/50 transition-colors border border-white/20 flex items-center gap-1.5 shadow-sm">
-                <BellRing className="w-4 h-4" />
-                <span className="text-xs sm:text-sm font-bold">호출</span>
-              </button>
               <button onClick={() => setIsOrderHistoryOpen(true)} className="relative px-3 py-2 bg-black/30 backdrop-blur-md rounded-full hover:bg-black/50 transition-colors border border-white/20 flex items-center gap-1.5 shadow-sm text-white">
                 <Receipt className="w-4 h-4" />
                 <span className="text-xs sm:text-sm font-bold">
@@ -339,8 +326,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
           </div>
 
           <div className="absolute bottom-6 left-6 z-10">
-            <p className="text-white/80 text-sm font-bold mb-1.5 drop-shadow-md">{user ? `${user.name}님, 환영합니다! 지금 계신 곳은` : '환영합니다! 지금 계신 곳은'}</p>
-            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">테이블 {table.table_number} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
+            <p className="text-white/80 text-sm font-bold mb-1.5 drop-shadow-md">환영합니다! 지금 계신 곳은</p>
+            <h1 className="text-4xl font-black text-white flex items-end gap-2 drop-shadow-lg tracking-tight">{tableDisplayName} <span className="text-lg font-bold text-white/80 mb-1.5 tracking-normal">입니다</span></h1>
           </div>
         </div>
 
@@ -540,9 +527,9 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                       <div className="flex flex-col items-end justify-between h-20">
                         <button onClick={() => updateCartItemQuantity(item.cartId, -item.qty)} className="text-zinc-300 hover:text-red-500 p-1 transition-colors"><X className="w-4 h-4" /></button>
                         <div className="flex items-center gap-3 bg-zinc-50 rounded-full p-1 border border-zinc-200">
-                          <button onClick={() => updateCartItemQuantity(item.cartId, -1)} className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-zinc-600 shadow-sm"><Minus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartItemQuantity(item.cartId, -1)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-zinc-600 shadow-sm"><Minus className="w-4 h-4" /></button>
                           <span className="text-sm font-bold w-4 text-center text-zinc-900">{item.qty}</span>
-                          <button onClick={() => updateCartItemQuantity(item.cartId, 1)} className="w-7 h-7 bg-zinc-900 text-white rounded-full flex items-center justify-center shadow-sm"><Plus className="w-3 h-3" /></button>
+                          <button onClick={() => updateCartItemQuantity(item.cartId, 1)} className="w-10 h-10 bg-zinc-900 text-white rounded-full flex items-center justify-center shadow-sm"><Plus className="w-4 h-4" /></button>
                         </div>
                       </div>
                     </div>
@@ -550,17 +537,11 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                 </div>
 
                 <div className="p-6 bg-white border-t border-zinc-100 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] pb-safe">
-                  {user && (
-                    <div className="flex justify-between items-center mb-5 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
-                      <span className="text-orange-800 text-sm font-bold flex items-center gap-2"><Star className="w-4 h-4 text-orange-500 fill-orange-500" /> 주문 시 적립 예정 포인트</span>
-                      <span className="text-orange-600 font-black">{Math.floor(totalPrice * 0.05).toLocaleString()} P</span>
-                    </div>
-                  )}
                   <div className="flex justify-between items-center mb-6">
                     <span className="text-zinc-500 font-bold text-lg">총 주문금액</span>
                     <span className="text-3xl font-black text-zinc-900 tracking-tight">₩{totalPrice.toLocaleString()}</span>
                   </div>
-                  <button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 text-white py-5 rounded-2xl font-black text-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button onClick={() => setShowOrderConfirm(true)} disabled={isSubmitting} className="w-full bg-orange-500 text-white py-5 rounded-2xl font-black text-lg hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 flex justify-center items-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
                     {isSubmitting ? (
                       <><span className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> 주문 처리중...</>
                     ) : (
@@ -568,41 +549,6 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                     )}
                   </button>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Login Modal */}
-        <AnimatePresence>
-          {isLoginOpen && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsLoginOpen(false)} className="absolute inset-0 bg-black/60 z-50 backdrop-blur-sm" />
-              <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] z-50 p-6 pb-safe flex flex-col shadow-2xl">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <h2 className="font-extrabold text-2xl text-zinc-900">{user ? '내 정보' : '로그인 / 회원가입'}</h2>
-                    <p className="text-sm text-zinc-500 mt-1 font-medium">포인트를 적립하고 다양한 혜택을 누리세요.</p>
-                  </div>
-                  <button onClick={() => setIsLoginOpen(false)} className="bg-zinc-100 hover:bg-zinc-200 p-2.5 rounded-full transition-colors"><X className="w-5 h-5 text-zinc-600" /></button>
-                </div>
-                {!user ? (
-                  <div className="space-y-3">
-                    <button onClick={handleLogin} className="w-full bg-[#FEE500] text-[#000000] py-4 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 transition hover:bg-[#F4DC00] active:scale-[0.98] shadow-sm"><MessageCircle className="w-5 h-5 fill-current" /> 카카오로 3초만에 시작하기</button>
-                    <button onClick={handleLogin} className="w-full bg-zinc-100 text-zinc-700 py-4 rounded-2xl font-bold text-[15px] transition hover:bg-zinc-200 active:scale-[0.98]">휴대폰 번호로 계속하기</button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-orange-50 border border-orange-100 p-5 rounded-2xl flex items-center justify-between shadow-sm">
-                      <div>
-                        <p className="text-orange-800 text-sm font-bold mb-1">사용 가능한 포인트</p>
-                        <h3 className="text-3xl font-black text-orange-600 tracking-tight">{user.points.toLocaleString()}<span className="text-lg ml-1">P</span></h3>
-                      </div>
-                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm"><Star className="w-6 h-6 text-orange-500 fill-orange-500" /></div>
-                    </div>
-                    <button onClick={() => { setUser(null); setIsLoginOpen(false) }} className="w-full bg-zinc-100 text-zinc-600 py-4 rounded-2xl font-bold text-[15px] hover:bg-zinc-200 transition active:scale-[0.98]">로그아웃</button>
-                  </div>
-                )}
               </motion.div>
             </>
           )}
@@ -629,8 +575,8 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
                     <div className="w-7 h-7 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</div>
                     <p className="text-sm text-zinc-700 font-bold pt-1">네이버 마이플레이스에 영수증을 인증하고 리뷰를 작성합니다.</p>
                   </div>
-                  <button onClick={() => { setIsEventOpen(false); handleCallStaff('영수증 요청 (리뷰 이벤트 참여)') }} className="w-full bg-zinc-900 text-white py-5 rounded-2xl font-bold mt-4 hover:bg-zinc-800 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center gap-2 active:scale-[0.98]">
-                    <Receipt className="w-5 h-5" /> 영수증 요청하기 (직원 호출)
+                  <button onClick={() => { setIsEventOpen(false); toast.info('직원에게 영수증을 요청해 주세요.') }} className="w-full bg-zinc-900 text-white py-5 rounded-2xl font-bold mt-4 hover:bg-zinc-800 transition-all shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center gap-2 active:scale-[0.98]">
+                    <Receipt className="w-5 h-5" /> 확인
                   </button>
                 </div>
               </motion.div>
@@ -698,22 +644,40 @@ export default function CustomerMenuClient({ store, table, categories, items }: 
           )}
         </AnimatePresence>
 
-        {/* Call Staff Modal */}
+        {/* Order Confirmation Dialog */}
         <AnimatePresence>
-          {isCallStaffOpen && (
+          {showOrderConfirm && (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCallStaffOpen(false)} className="absolute inset-0 bg-black/60 z-50 backdrop-blur-sm flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-white rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl">
-                  <div className="bg-zinc-900 p-8 text-center relative">
-                    <button onClick={() => setIsCallStaffOpen(false)} className="absolute top-5 right-5 text-zinc-400 hover:text-white transition-colors bg-white/10 p-2 rounded-full"><X className="w-5 h-5" /></button>
-                    <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/20"><BellRing className="w-8 h-8 text-white" /></div>
-                    <h3 className="text-2xl font-extrabold text-white mb-2">직원 호출</h3>
-                    <p className="text-zinc-400 text-sm font-medium">필요하신 서비스를 선택해주세요.</p>
-                  </div>
-                  <div className="p-6 grid grid-cols-2 gap-3 bg-zinc-50">
-                    {['직원만 호출', '물/얼음물 주세요', '물티슈 주세요', '앞치마 주세요', '주문 수정할게요', '기타 문의'].map((reason) => (
-                      <button key={reason} onClick={() => handleCallStaff(reason)} className="bg-white border border-zinc-200 p-4 rounded-2xl font-bold text-zinc-700 hover:border-orange-500 hover:bg-orange-50 hover:text-orange-600 transition-all text-sm shadow-[0_2px_10px_rgb(0,0,0,0.02)] active:scale-[0.98]">{reason}</button>
-                    ))}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOrderConfirm(false)} className="absolute inset-0 bg-black/60 z-50 backdrop-blur-sm flex items-center justify-center p-4">
+                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={(e) => e.stopPropagation()} className="bg-white rounded-[28px] w-full max-w-sm overflow-hidden shadow-2xl">
+                  <div className="p-6 text-center">
+                    <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <ShoppingBag className="w-7 h-7 text-orange-500" />
+                    </div>
+                    <h3 className="text-xl font-extrabold text-zinc-900 mb-4">주문을 확인해주세요</h3>
+                    <div className="bg-zinc-50 rounded-2xl p-4 mb-4 text-left space-y-2 border border-zinc-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500 font-medium">테이블</span>
+                        <span className="font-bold text-zinc-900">{tableDisplayName}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500 font-medium">총 수량</span>
+                        <span className="font-bold text-zinc-900">{totalItems}개</span>
+                      </div>
+                      <div className="flex justify-between text-sm pt-2 border-t border-zinc-200">
+                        <span className="text-zinc-500 font-bold">총 금액</span>
+                        <span className="font-black text-orange-600">₩{totalPrice.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-zinc-500 mb-6">주문하시겠습니까?</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowOrderConfirm(false)} className="flex-1 py-3.5 rounded-xl font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors">
+                        취소
+                      </button>
+                      <button onClick={() => { setShowOrderConfirm(false); handleOrder() }} disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 disabled:opacity-50">
+                        확인
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>

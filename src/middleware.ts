@@ -38,11 +38,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(isSuperAdmin ? '/superadmin' : '/admin', request.url))
   }
 
-  // super_admin이 /admin 접근 시 /superadmin으로 리다이렉트
-  if (isSuperAdmin && pathname.startsWith('/admin')) {
-    return NextResponse.redirect(new URL('/superadmin', request.url))
-  }
-
   // Protected routes
   if (!user && (pathname.startsWith('/admin') || pathname === '/change-password')) {
     return NextResponse.redirect(new URL('/login', request.url))

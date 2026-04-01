@@ -34,8 +34,20 @@ export default async function CustomerMenuPage({ params }: Props) {
     .eq('slug', storeSlug)
     .single()
 
-  if (storeError || !store || !isStoreSubscriptionActive(store as StoreRow)) notFound()
+  if (storeError || !store) notFound()
   const storeData = store as StoreRow
+
+  if (!isStoreSubscriptionActive(storeData)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-8 text-center gap-3">
+        <p className="text-5xl">🔒</p>
+        <h1 className="text-xl font-black text-zinc-900">서비스 이용 불가</h1>
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          해당 매장은 현재 서비스를 이용할 수 없습니다.<br />매장에 문의해 주세요.
+        </p>
+      </div>
+    )
+  }
 
   // Fetch table, categories, items in parallel
   const [tableResult, categoriesResult, itemsResult] = await Promise.all([
